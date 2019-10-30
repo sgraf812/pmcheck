@@ -176,35 +176,81 @@
 \[
 \begin{array}{rlcl}
   K           \in &\Con &         & \\
-  x,y,a,b,c   \in &\Var &         & \\
+  x,y,a,b     \in &\Var &         & \\
   \tau,\sigma \in &\Type&         & \\
-  \kappa      \in &\Kind&         & \\
   e \in           &\Expr&\Coloneqq& x:\tau \\
-                  &     &\mid     & \genconapp{K}{a:\kappa}{\gamma}{e:\tau} \\
+                  &     &\mid     & \genconapp{K}{a}{\gamma}{e:\tau} \\
                   &     &\mid     & ... \\
 
-  \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \\
-                  &           &\mid     & ... \\
+  \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
 
   g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
-                  &     &\mid     & \grdcon{\genconapp{K}{a:\kappa}{\gamma}{y:\tau}}{x} \\
+                  &     &\mid     & \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \\
                   &     &\mid     & \grdbang{x} \\
-  \\
-
 \end{array}
 \]
 \[ \textbf{Oracle Syntax} \]
 \[
-\begin{array}{rcl}
-  \Delta &\Coloneqq& \langle \Gamma, \Theta \rangle \\
-  \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a:\kappa \\
-  \Theta &\Coloneqq& \notheta \mid \theta \vee   \Theta \\
-  \theta &\Coloneqq& \nodelta \mid \delta \wedge \theta \\
-  \delta &\Coloneqq& \gamma \mid x_1 \termeq x_2 \mid x \termeq K\;\overline{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \\
+\begin{array}{rcll}
+  \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
+  \Theta &\Coloneqq& \noDelta \mid \Gamma \vdash \Delta \mid \Theta_1 \vee \Theta_2 & \text{"Deltas"} \\
+  \Delta &\Coloneqq& \nodelta \mid \Delta \wedge \delta & \text{Delta} \\
+  \delta &\Coloneqq& \gamma \mid x_1 \termeq x_2 \mid x \termeq K\;\overline{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq e & \text{Constraints} \\
+\end{array}
+\]
+\[ \textbf{Adding Constraints} \]
+\[
+\begin{array}{rcrcl}
+  \noDelta &\plustheta& \delta &=& \noDelta \\
+  \Gamma \vdash \Delta&\plustheta& \delta &=& \Gamma \vdash \Delta \wedge \delta \\
+  \Theta_1 \vee \Theta_2 &\plustheta& \delta &=& (\Theta_1 \plustheta \delta) \vee (\Theta_2 \plustheta \delta) \\
+\end{array}
+\]
+\[ \textbf{Binding Free Variables} \]
+\[
+\begin{array}{rcrcl}
+  \noDelta &\plusgamma& x:\tau &=& \noDelta \\
+  \Gamma \vdash \Delta&\plusgamma& x:\tau &=& \Gamma,x:\tau \vdash \Delta \\
+  \Theta_1 \vee \Theta_2 &\plusgamma& x:\tau &=& (\Theta_1 \plusgamma x:\tau) \vee (\Theta_2 \plusgamma x:\tau) \\
+\end{array}
+\]
+\end{figure}
+
+\pagebreak
+
+\begin{figure}[t]
+\centering
+\[ \textbf{Pattern-match Result} \]
+\[
+\begin{array}{c}
+  r \Coloneqq \langle \Theta_u, \Theta_d, \Theta_c \rangle \\
   \\
+  \langle \Theta_u, \Theta_d, \Theta_c \rangle \extunc \Theta = \langle \Theta_u \vee \Theta, \Theta_d, \Theta_c \rangle \\
+  \langle \Theta_u, \Theta_d, \Theta_c \rangle \extdiv \Theta = \langle \Theta_u, \Theta_d \vee \Theta, \Theta_c \rangle \\
+  %\langle \Theta_u, \Theta_d, \Theta_c \rangle \extcov \Theta = \langle \Theta_u, \Theta_d, \Theta_c \vee \Theta \rangle \\
+\end{array}
+\]
+\[ \textbf{Pattern-match checking} \]
+\[ \ruleform{ \pmc{\overline{\Theta}}{\overline{\Grd}} = r } \]
+\[
+\begin{array}{lcl}
+
+\pmc{\Gamma}{\Theta}{\epsilon} &=& \langle \noDelta, \noDelta, \Theta \rangle \\
+\pmc{\Gamma}{\Theta}{(\grdlet{x:\tau}{e}\:\overline{g})} &=& \pmc{\Gamma}{(\Theta \plusgamma x:\tau \plustheta x \termeq e)}{\overline{g}} \\
+\pmc{\Gamma}{\Theta}{(\grdbang{x}\:\overline{g})} &=& \pmc{\Gamma}{(\Theta \plustheta x \ntermeq \bot)}{\overline{g}} \\
+                                                     & & \enspace \extdiv\;\Theta \plustheta x \termeq \bot \\
+\pmc{\Gamma}{\Theta}{(\grdcon{\genconapp{K}{a}{\gamma}{x:\tau}}{y}\:\overline{g})} &=& \pmc{\Gamma}{(\Theta \overline{\plusgamma a} \, \overline{\plusgamma x:\tau} \, \overline{\plustheta \gamma} \plustheta y \termeq K\;\overline{x})}{\overline{g}} \\
+                                                  & & \enspace \extdiv\;\Theta \plustheta x \termeq \bot \\
+                                                  & & \enspace \extunc\;\Theta \plustheta x \ntermeq K \\
 
 \end{array}
 \]
+\end{figure}
+
+\pagebreak
+
+\begin{figure}[t]
+\centering
 \[ \textbf{Pattern-match Result} \]
 \[ \ruleform{ \texttt{ClauseResult} } \]
 \[
@@ -215,7 +261,7 @@
   \\
   r \in &\texttt{ClauseResult} &\Coloneqq& \langle \overline{\Delta}, \texttt{Coverage} \rangle \\
   \\
-        &       \texttt{empty} & =       & \langle \epsilon, \texttt{Redundant} \rangle \\
+        &       \texttt{empty} & =       & \langle \noDelta, \texttt{Redundant} \rangle \\
   \\
 \end{array}
 \]
@@ -245,12 +291,12 @@
 \begin{array}{lcl}
 
 \pmc{\overline{\Delta}}{\epsilon} &=& \texttt{empty} \extcov \overline{\Delta} \\
-\pmc{\overline{\Delta}}{(\grdlet{x:\tau}{e}\:\overline{g})} &=& \pmc{\overline{\Delta \plusdelta x:\tau \plusdelta x \termeq e}}{\overline{g}} \\
-\pmc{\overline{\Delta}}{(\grdbang{x}\:\overline{g})} &=& \pmc{\overline{\Delta \plusdelta x \ntermeq \bot}}{\overline{g}} \\
-                                                     & & \enspace \extdiv\;\overline{\Delta \plusdelta x \termeq \bot} \\
-\pmc{\overline{\Delta}}{(\grdcon{\genconapp{K}{a:\kappa}{Q}{x:\tau}}{y}\:\overline{g})} &=& \pmc{\overline{\Delta \plusdelta \overline{a:\kappa} \plusdelta \overline{Q} \plusdelta \overline{x:\tau} \plusdelta x \termeq \genconapp{K}{a:\kappa}{Q}{x:\tau}}}{\overline{g}} \\
-                                                                                        & & \enspace \extdiv\;\overline{\Delta \plusdelta x \termeq \bot} \\
-                                                                                        & & \enspace \extunc\;\overline{\Delta \plusdelta x \ntermeq K} \\
+\pmc{\overline{\Delta}}{(\grdlet{x:\tau}{e}\:\overline{g})} &=& \pmc{\overline{\Delta \plustheta x:\tau \plustheta x \termeq e}}{\overline{g}} \\
+\pmc{\overline{\Delta}}{(\grdbang{x}\:\overline{g})} &=& \pmc{\overline{\Delta \plustheta x \ntermeq \bot}}{\overline{g}} \\
+                                                     & & \enspace \extdiv\;\overline{\Delta \plustheta x \termeq \bot} \\
+\pmc{\overline{\Delta}}{(\grdcon{\genconapp{K}{a}{\gamma}{x:\tau}}{y}\:\overline{g})} &=& \pmc{\overline{\Delta \plustheta \overline{a} \plustheta \overline{\gamma} \plustheta \overline{x:\tau} \plustheta x \termeq \genconapp{K}{a}{\gamma}{x:\tau}}}{\overline{g}} \\
+                                                                                        & & \enspace \extdiv\;\overline{\Delta \plustheta x \termeq \bot} \\
+                                                                                        & & \enspace \extunc\;\overline{\Delta \plustheta x \ntermeq K} \\
 
 \end{array}
 \]
@@ -341,13 +387,13 @@
 \begin{array}{c}
 
   \prooftree
-    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq \bot}}
+    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq \bot}}
     \quad
     \text{$\{\overline{K}\}$ COMPLETE set}
     \quad
     % TODO: Lacks bindings for K's type variables
     % TODO: \forall instantiation :( Although type-checker helps here
-    \overline{\forall\overline{y:\tau}.\unsat{\Gamma,\overline{y:\tau} \vdash \plusdelta{\Delta}{x \termeq K\;\overline{y}}}}
+    \overline{\forall\overline{y:\tau}.\unsat{\Gamma,\overline{y:\tau} \vdash \plustheta{\Delta}{x \termeq K\;\overline{y}}}}
   \justifies
     \unsat{\vtupnew{\Gamma}{x}{\Delta}}
   \endprooftree
@@ -357,7 +403,7 @@
 \end{array}
 \]
 \[ \textbf{Add a single equality to $\Delta$} \]
-\[\ruleform{ \unsat{\Gamma \vdash \plusdelta{\Delta}{\delta}} }  \]
+\[\ruleform{ \unsat{\Gamma \vdash \plustheta{\Delta}{\delta}} }  \]
 \[
 \begin{array}{c}
   \text{Term stuff: Bottom, negative info, positive info + generativity, positive info + univalence}
@@ -367,7 +413,7 @@
   \prooftree
     x \ntermeq sth \in \Delta
   \justifies
-    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq \bot}}
+    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq \bot}}
   \endprooftree
 
   \qquad
@@ -375,7 +421,7 @@
   \prooftree
     x \termeq K\;\overline{y} \in \Delta
   \justifies
-    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq \bot}}
+    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq \bot}}
   \endprooftree
 
   \\ \\
@@ -384,7 +430,7 @@
     x \ntermeq K \in \Delta
   \justifies
     % TODO: well-formedness... Gamma must bind x and ys
-    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq K\;\overline{y}}}
+    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq K\;\overline{y}}}
   \endprooftree
 
   \qquad
@@ -392,23 +438,23 @@
   \prooftree
     x \termeq K_i\;\overline{y}\in \Delta \quad i \neq j \quad \text{$K_i$ and $K_j$ generative}
   \justifies
-    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq K_j \;\overline{z}}}
+    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq K_j \;\overline{z}}}
   \endprooftree
 
   \\ \\
 
   \prooftree
-    x \termeq K\;\overline{\tau}\;\overline{y}\in \Delta \quad \unsat{\Gamma \vdash \plusdelta{\Delta}{\tau_i \typeeq \sigma_i}}
+    x \termeq K\;\overline{\tau}\;\overline{y}\in \Delta \quad \unsat{\Gamma \vdash \plustheta{\Delta}{\tau_i \typeeq \sigma_i}}
   \justifies
-    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq K \;\overline{\sigma} \;\overline{z}}}
+    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq K \;\overline{\sigma} \;\overline{z}}}
   \endprooftree
 
   \qquad
 
   \prooftree
-    x \termeq K\;\overline{\tau}\;\overline{y}\in \Delta \quad \unsat{\Gamma \vdash \plusdelta{\Delta}{y_i \termeq z_i}}
+    x \termeq K\;\overline{\tau}\;\overline{y}\in \Delta \quad \unsat{\Gamma \vdash \plustheta{\Delta}{y_i \termeq z_i}}
   \justifies
-    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq K \;\overline{\sigma} \;\overline{z}}}
+    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq K \;\overline{\sigma} \;\overline{z}}}
   \endprooftree
 
   \\ \\
@@ -420,7 +466,7 @@
   \prooftree
     \text{$\tau_1$ and $\tau_2$ incompatible to Givens in $\Delta$ according to type oracle}
   \justifies
-    \unsat{\Gamma \vdash \plusdelta{\Delta}{\tau_1 \typeeq \tau_2}}
+    \unsat{\Gamma \vdash \plustheta{\Delta}{\tau_1 \typeeq \tau_2}}
   \endprooftree
 
   \\ \\
@@ -433,7 +479,7 @@
     \overline{\unsat{\vtupnew{\Gamma}{y}{\Delta \cup y \ntermeq \bot}}}
     \quad
   \justifies
-    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq K\;\overline{y}}}
+    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq K\;\overline{y}}}
   \endprooftree
 
 \end{array}
