@@ -249,61 +249,6 @@
 
 \pagebreak
 
-\begin{figure}[t]
-\centering
-\[ \textbf{Pattern-match Result} \]
-\[ \ruleform{ \texttt{ClauseResult} } \]
-\[
-\begin{array}{rlcl}
-  c \in &\texttt{Coverage}     &\Coloneqq& \texttt{Redundant} \\
-        &                      &\mid     & \texttt{RhsInaccessible} \\
-        &                      &\mid     & \texttt{RhsReachable} \\
-  \\
-  r \in &\texttt{ClauseResult} &\Coloneqq& \langle \overline{\Delta}, \texttt{Coverage} \rangle \\
-  \\
-        &       \texttt{empty} & =       & \langle \noDelta, \texttt{Redundant} \rangle \\
-  \\
-\end{array}
-\]
-\[ \ruleform{ r \extdiv \overline{\Delta} } \]
-\[
-\begin{array}{rclcl}
-  \langle \overline{\Delta_u}, \texttt{Redundant} \rangle &\extdiv& \overline{\Delta_d} &=& \langle \overline{\Delta_u}, \texttt{RhsInaccessible} \rangle \text{  if any $\Delta_d$ inhabited} \\
-  r                                                       &\extdiv& \textunderscore{}     &=& r \\
-\end{array}
-\]
-\[ \ruleform{ r \extcov \overline{\Delta} } \]
-\[
-\begin{array}{rclcl}
-  \langle \overline{\Delta_u}, \textunderscore \rangle    &\extcov& \overline{\Delta_c} &=& \langle \overline{\Delta_u}, \texttt{Covered} \rangle \text{  if any $\Delta_c$ inhabited} \\
-  r                                                       &\extcov& \textunderscore{}     &=& r \\
-\end{array}
-\]
-\[ \ruleform{ r \extunc \overline{\Delta} } \]
-\[
-\begin{array}{rclcl}
-  \langle \overline{\Delta_u}, c               \rangle    &\extunc& \overline{\Delta_{u'}} &=& \langle \overline{\Delta_u}\,\overline{\Delta_{u'}}, c \rangle
-\end{array}
-\]
-\[ \textbf{Pattern-match checking} \]
-\[ \ruleform{ \pmc{\overline{\Delta}}{\overline{\Grd}} = r } \]
-\[
-\begin{array}{lcl}
-
-\pmc{\overline{\Delta}}{\epsilon} &=& \texttt{empty} \extcov \overline{\Delta} \\
-\pmc{\overline{\Delta}}{(\grdlet{x:\tau}{e}\:\overline{g})} &=& \pmc{\overline{\Delta \plustheta x:\tau \plustheta x \termeq e}}{\overline{g}} \\
-\pmc{\overline{\Delta}}{(\grdbang{x}\:\overline{g})} &=& \pmc{\overline{\Delta \plustheta x \ntermeq \bot}}{\overline{g}} \\
-                                                     & & \enspace \extdiv\;\overline{\Delta \plustheta x \termeq \bot} \\
-\pmc{\overline{\Delta}}{(\grdcon{\genconapp{K}{a}{\gamma}{x:\tau}}{y}\:\overline{g})} &=& \pmc{\overline{\Delta \plustheta \overline{a} \plustheta \overline{\gamma} \plustheta \overline{x:\tau} \plustheta x \termeq \genconapp{K}{a}{\gamma}{x:\tau}}}{\overline{g}} \\
-                                                                                        & & \enspace \extdiv\;\overline{\Delta \plustheta x \termeq \bot} \\
-                                                                                        & & \enspace \extunc\;\overline{\Delta \plustheta x \ntermeq K} \\
-
-\end{array}
-\]
-\end{figure}
-
-\pagebreak
-
 
 
 
