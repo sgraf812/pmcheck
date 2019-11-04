@@ -239,4 +239,4 @@ TSWLatexianTemp*
 *.sta
 
 # TeX files, because we generate them
-*.tex
+pmcheck.tex
