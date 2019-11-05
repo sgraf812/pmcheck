@@ -193,25 +193,8 @@
 \[
 \begin{array}{rcll}
   \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
-  \Theta &\Coloneqq& \noDelta \mid \Gamma \vdash \Delta \mid \Theta_1 \vee \Theta_2 & \text{"Deltas"} \\
-  \Delta &\Coloneqq& \nodelta \mid \Delta \wedge \delta & \text{Delta} \\
-  \delta &\Coloneqq& \gamma \mid x_1 \termeq x_2 \mid x \termeq K\;\overline{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq e & \text{Constraints} \\
-\end{array}
-\]
-\[ \textbf{Adding Constraints} \]
-\[
-\begin{array}{rcrcl}
-  \noDelta &\plustheta& \delta &=& \noDelta \\
-  \Gamma \vdash \Delta&\plustheta& \delta &=& \Gamma \vdash \Delta \wedge \delta \\
-  \Theta_1 \vee \Theta_2 &\plustheta& \delta &=& (\Theta_1 \plustheta \delta) \vee (\Theta_2 \plustheta \delta) \\
-\end{array}
-\]
-\[ \textbf{Binding Free Variables} \]
-\[
-\begin{array}{rcrcl}
-  \noDelta &\plusgamma& x:\tau &=& \noDelta \\
-  \Gamma \vdash \Delta&\plusgamma& x:\tau &=& \Gamma,x:\tau \vdash \Delta \\
-  \Theta_1 \vee \Theta_2 &\plusgamma& x:\tau &=& (\Theta_1 \plusgamma x:\tau) \vee (\Theta_2 \plusgamma x:\tau) \\
+  \Delta &\Coloneqq& \noDelta \mid \nodelta \mid \delta, \Delta \mid \Delta_1 \vee \Delta_2 & \text{Delta} \\
+  \delta &\Coloneqq& \gamma \mid x_1 \termeq x_2 \mid \ctcon{K\;\overline{a}\;\overline{x:\tau}}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Constraints} \\
 \end{array}
 \]
 \end{figure}
@@ -230,18 +213,31 @@
   %\langle \Theta_u, \Theta_d, \Theta_c \rangle \extcov \Theta = \langle \Theta_u, \Theta_d, \Theta_c \vee \Theta \rangle \\
 \end{array}
 \]
-\[ \textbf{Pattern-match checking} \]
-\[ \ruleform{ \pmc{\overline{\Theta}}{\overline{\Grd}} = r } \]
+\[ \textbf{Constraint tree translation} \]
+\[ \ruleform{ \ctt{\overline{\Grd}} = r } \]
 \[
 \begin{array}{lcl}
 
-\pmc{\Gamma}{\Theta}{\epsilon} &=& \langle \noDelta, \noDelta, \Theta \rangle \\
-\pmc{\Gamma}{\Theta}{(\grdlet{x:\tau}{e}\:\overline{g})} &=& \pmc{\Gamma}{(\Theta \plusgamma x:\tau \plustheta x \termeq e)}{\overline{g}} \\
-\pmc{\Gamma}{\Theta}{(\grdbang{x}\:\overline{g})} &=& \pmc{\Gamma}{(\Theta \plustheta x \ntermeq \bot)}{\overline{g}} \\
-                                                     & & \enspace \extdiv\;\Theta \plustheta x \termeq \bot \\
-\pmc{\Gamma}{\Theta}{(\grdcon{\genconapp{K}{a}{\gamma}{x:\tau}}{y}\:\overline{g})} &=& \pmc{\Gamma}{(\Theta \overline{\plusgamma a} \, \overline{\plusgamma x:\tau} \, \overline{\plustheta \gamma} \plustheta y \termeq K\;\overline{x})}{\overline{g}} \\
-                                                  & & \enspace \extdiv\;\Theta \plustheta x \termeq \bot \\
-                                                  & & \enspace \extunc\;\Theta \plustheta x \ntermeq K \\
+% Can be expressed as a right fold
+\ctt{\epsilon} &=& \langle \noDelta, \noDelta, \nodelta \rangle \\
+\ctt{(\grdlet{x:\tau}{e}\:\overline{g})} &=& \ctlet{x}{e},\ctt{\overline{g}} \\
+\ctt{(\grdbang{x}\:\overline{g})} &=& (x \ntermeq \bot, \ctt{\overline{g}}) \extdiv x \termeq \bot \\
+\ctt{(\grdcon{\genconapp{K}{a}{\gamma}{x:\tau}}{y}\:\overline{g})} &=& (\overline{\gamma}, \ctcon{K\;\overline{a}\;\overline{x:\tau}}{y}, \ctt{\overline{g}}) \extdiv x \termeq \bot \extunc x \ntermeq K \\
+\end{array}
+\]
+%Next function: produce a witness. Then pmc is just calling ctt and then pruning all Deltas that don't have witness
+\[ \textbf{Pattern-match checking} \]
+\[ \ruleform{ \pmc{\overline{\Delta}}{\overline{\Grd}} = r } \]
+\[
+\begin{array}{lcl}
+
+\pmc{\Gamma}{\epsilon} &=& \langle \noDelta, \noDelta, \nodelta \rangle \\
+\pmc{\Gamma}{\Delta}{(\grdlet{x:\tau}{e}\:\overline{g})} &=& \pmc{(\Gamma,x:\tau)}{(\Delta, \ctlet{x}{e})}{\overline{g}} \\
+\pmc{\Gamma}{\Delta}{(\grdbang{x}\:\overline{g})} &=& \pmc{\Gamma}{(\Delta, x \ntermeq \bot)}{\overline{g}} \\
+                                                     & & \enspace \extdiv\;(\Delta, x \termeq \bot) \\
+\pmc{\Gamma}{\Delta}{(\grdcon{\genconapp{K}{a}{\gamma}{x:\tau}}{y}\:\overline{g})} &=& \pmc{(\Gamma,\overline{a},\overline{x:\tau})}{(\Delta, \overline{\gamma}, \ctcon{K\;\overline{a}\;\overline{x:\tau}}{y})}{\overline{g}} \\
+                                                  & & \enspace \extdiv\;\Delta \plustheta x \termeq \bot \\
+                                                  & & \enspace \extunc\;\Delta \plustheta x \ntermeq K \\
 
 \end{array}
 \]
