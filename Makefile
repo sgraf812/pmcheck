@@ -1,8 +1,6 @@
 # .SUFFIXES: .tex .pdf
 # .PHONY: all clean distclean FORCE
 
-export SHELL := /bin/bash
-
 all: main
 
 main:
