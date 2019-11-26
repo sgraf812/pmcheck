@@ -194,8 +194,8 @@
 \[
 \begin{array}{rcll}
   \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
-  \Delta &\Coloneqq& \noDelta \mid \nodelta \mid \delta, \Delta \mid \Delta_1 \vee \Delta_2 & \text{Delta} \\
-  \delta &\Coloneqq& \gamma \mid x_1 \termeq x_2 \mid \ctcon{K\;\overline{a}\;\overline{x:\tau}}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Constraints} \\
+  \Delta &\Coloneqq& \noDelta \mid \nodelta \mid \Delta, \delta \mid \Delta_1 \vee \Delta_2 & \text{Delta} \\
+  \delta &\Coloneqq& \gamma \mid x_1 \termeq x_2 \mid \ctcon{K\;\overline{x:\tau}}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Constraints} \\
 \end{array}
 \]
 \end{figure}
@@ -204,53 +204,43 @@
 
 \begin{figure}[t]
 \centering
-\[ \textbf{Pattern-match Result} \]
+\[ \textbf{Clause tree} \]
 \[
-\begin{array}{c}
-  r \Coloneqq \langle \Theta_u, \Theta_d, \Theta_c \rangle \\
+\begin{array}{rcl}
+  \T[r] &\Coloneqq& \trhs \\
+        &\mid     & \tmany{\overline{r}} \\
   \\
-  \langle \Theta_u, \Theta_d, \Theta_c \rangle \extunc \Theta = \langle \Theta_u \vee \Theta, \Theta_d, \Theta_c \rangle \\
-  \langle \Theta_u, \Theta_d, \Theta_c \rangle \extdiv \Theta = \langle \Theta_u, \Theta_d \vee \Theta, \Theta_c \rangle \\
-  %\langle \Theta_u, \Theta_d, \Theta_c \rangle \extcov \Theta = \langle \Theta_u, \Theta_d, \Theta_c \vee \Theta \rangle \\
+  t_G \in \Gdt &\Coloneqq& \T[t_G] \\
+               &\mid&      \gdtguard{g}{t_G} \\
+  \\
+  t_C \in \Ctt &\Coloneqq& \T[t_C] \\
+               &\mid&      \cttdiv{\delta}{t_C} \\
+               &\mid&      \cttft{\delta}{t_C} \\
+               &\mid&      \cttref{\delta}{t_C} \\
+  \\
+  t_A \in \Ant &\Coloneqq& \T[t_A] \\
+               &\mid&      \antdiv{t_A} \\
+               &\mid&      \antred{t_A} \\
 \end{array}
 \]
-\[ \textbf{Constraint tree translation} \]
-\[ \ruleform{ \ctt{\overline{\Grd}} = r } \]
+
+\[ \textbf{Compiling constraint trees} \]
+\[ \ruleform{ \cct{\Gdt} = \Ctt } \]
 \[
 \begin{array}{lcl}
-
-% ctt can be expressed as a right fold
-% In this representation, the combinatorial explosion comes from the fact that
-% we have to replace every tick (i.e. leaf) in the incoming "uncovered set"
-% with the the tree we produce by ctt.
-% Previously, we would duplicate the incoming Delta in the leafs of the tree, now we just invert that and replace the leafs of the incoming Delta by the new constraints.
-% Also previously, we could cache the inhabitation checks in the nodes of the tree, now it they get invalidated whenever we graft the tree into another tree, or even when we just prepend new constraints.
-% I don't think this will scale to huge matches with a big complete set (ManyAlternatives), because we can't cache residual COMPLETE sets 
-\ctt{\epsilon} &=& \langle \noDelta, \noDelta, \nodelta \rangle \\
-\ctt{(\grdlet{x:\tau}{e}\:\overline{g})} &=& \ctlet{x}{e},\ctt{\overline{g}} \\
-\ctt{(\grdbang{x}\:\overline{g})} &=& (x \ntermeq \bot, \ctt{\overline{g}}) \extdiv x \termeq \bot \\
-\ctt{(\grdcon{\genconapp{K}{a}{\gamma}{x:\tau}}{y}\:\overline{g})} &=& (\ctcon{K\;\overline{a}\;\overline{x:\tau}}{y}, \overline{\gamma}, \ctt{\overline{g}}) \extdiv x \termeq \bot \extunc x \ntermeq K \\
+\cct{\trhs{}} &=& \trhs{} \\
+\cct{\tmany{\overline{t_G}}} &=& \tmany{\overline{\cct{t_G}}} \\
+\cct{\gdtguard{(\grdlet{x}{e})}{t_G}} &=& \cctg{g}{(\cct{t_G})} \\
+\cctg{(\grdlet{x}{e})} &=& \cttref{(\ctlet{x}{e})} \\
+\cctg{(\grdbang{x})} &=& \cttdiv{(x\termeq\bot)} \circ \cttref{(x\ntermeq\bot)} \\
+\cctg{\gdtguard{(\grdbang{x})}} &=& \cttdiv{(x\termeq\bot)} \circ \cttref{(x\ntermeq\bot)} \\
+\cct{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t_G}} &=& \cttdiv{(x\termeq\bot)}{(\cttdiv{(x\termeq\bot)}{(\cttref{(x\termeq \ctcon{K\;\overline{x:\tau}}{y})}{\ctt{t_G}})})} \\
 \end{array}
 \]
-%Next function: produce a witness. Then pmc is just calling ctt and then pruning all Deltas that don't have witness
-\[ \textbf{Pattern-match checking} \]
-\[ \ruleform{ \pmc{\overline{\Delta}}{\overline{\Grd}} = r } \]
-\[
-\begin{array}{lcl}
 
-\pmc{\Gamma}{\epsilon} &=& \langle \noDelta, \noDelta, \nodelta \rangle \\
-\pmc{\Gamma}{\Delta}{(\grdlet{x:\tau}{e}\:\overline{g})} &=& \pmc{(\Gamma,x:\tau)}{(\Delta, \ctlet{x}{e})}{\overline{g}} \\
-\pmc{\Gamma}{\Delta}{(\grdbang{x}\:\overline{g})} &=& \pmc{\Gamma}{(\Delta, x \ntermeq \bot)}{\overline{g}} \\
-                                                     & & \enspace \extdiv\;(\Delta, x \termeq \bot) \\
-\pmc{\Gamma}{\Delta}{(\grdcon{\genconapp{K}{a}{\gamma}{x:\tau}}{y}\:\overline{g})} &=& \pmc{(\Gamma,\overline{a},\overline{x:\tau})}{(\Delta, \overline{\gamma}, \ctcon{K\;\overline{a}\;\overline{x:\tau}}{y})}{\overline{g}} \\
-                                                  & & \enspace \extdiv\;\Delta \plustheta x \termeq \bot \\
-                                                  & & \enspace \extunc\;\Delta \plustheta x \ntermeq K \\
-
-\end{array}
-\]
 \end{figure}
 
-\section{Problems with \ctt{}}
+\section{Problems with \ctt{}{}}
 
 \ctt is rather simple now, but it assumes that the incoming $\Delta$ is
 basically unconstrained (e.g. \nodelta). But that certainly is not true for any

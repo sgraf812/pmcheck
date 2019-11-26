@@ -163,10 +163,30 @@
 \newcommand{\grdlet}[2]{\textsf{let}\;#1\,\textsf{=}\,#2;}
 \newcommand{\grdbang}[1]{\textsf{!}#1;}
 \newcommand{\grdcon}[2]{#1 \leftarrow #2;}
-\newcommand{\ctlet}[2]{\textsf{let}\;#1\,\textsf{=}\,#2}
+\newcommand{\ctlet}[2]{#1\termeq#2}
 \newcommand{\ctcon}[2]{#1 \leftarrow #2}
 \newcommand{\genconapp}[4]{#1\;\overline{#2}\;\overline{#3}\;\overline{#4}}
-\newcommand{\ctt}[1]{\texttt{ctt} \; #1}
+% Clause Tree T
+\newcommand{\T}{\mathcal{T}}
+\newcommand{\trhs}{\texttt{Rhs}}
+\newcommand{\tmany}[1]{\texttt{Many} \; #1}
+% GrdTree Gdt
+\newcommand{\Gdt}{\ty{Gdt}}
+\newcommand{\gdtguard}[2]{\texttt{Guard} \; #1 \; #2}
+% CtTree Ctt
+\newcommand{\Ctt}{\ty{Ctt}}
+\newcommand{\cttdiv}[2]{\texttt{\lightning?} \; #1 \; #2}
+\newcommand{\cttft}[2]{\texttt{FallThroughIf} \; #1 \; #2}
+\newcommand{\cttref}[2]{\texttt{Refine} \; #1 \; #2}
+% AnnTree Ant
+\newcommand{\Ant}{\ty{Ant}}
+\newcommand{\antdiv}[1]{\texttt{Diverges} \; #1}
+\newcommand{\antred}[1]{\texttt{Inaccessible} \; #1}
+% Compiling constraint trees
+\newcommand{\cct}[1]{\texttt{cct} \; #1}
+\newcommand{\cctg}[2]{\texttt{cctg} \; #1 \; #2}
+
+\newcommand{\ctt}[2]{\texttt{ctt} \; #1 \; #2}
 \newcommand{\pmc}[3]{\texttt{pmc} \; #1 \; #2 \; #3}
 \newcommand{\plustheta}{\;\oplus\;}
 \newcommand{\plusgamma}{\;\#\;}
