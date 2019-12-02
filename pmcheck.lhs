@@ -66,7 +66,6 @@
 \usepackage{multicol}
 
 \usepackage{xspace} % We need this for OutsideIn(X)X
-\usepackage{qtree}
 %%%%%%%
 
 \usepackage{float}
@@ -239,117 +238,6 @@
 \]
 
 \end{figure}
-
-\section{Problems with \ctt{}{}}
-
-\ctt is rather simple now, but it assumes that the incoming $\Delta$ is
-basically unconstrained (e.g. \nodelta). But that certainly is not true for any
-clause after the first! Intuitively, we replace all leafs in the incoming
-$\Delta$ (which are \nodelta, since we can immediately prune $\noDelta$).
-Example:
-
-\begin{verbatim}
-data T = A | B | C
-f A A = ()
-f B B = ()
-f C C = ()
-\end{verbatim}
-
-We start with $\{ (x, y) | \nodelta \}$ for the uncovered set. After the first
-clause, we have $\{ (x, y) | (x \ntermeq A,\nodelta) \vee (\ctcon{A}{x},y
-\ntermeq A, \nodelta) \}$ for the uncovered set flowing into the second clause.
-
-The result of \ctt applied to the second clause is $(x \ntermeq B,\nodelta)
-\vee (\ctcon{B}{x},y \ntermeq B, \nodelta)$. But that doesn't consider the
-incoming uncovered set! For that, we have to substitute every \nodelta in the
-incoming uncovered set by the constraint tree we just computed.
-
-In tree form. Incoming $\Delta$:
-
-\Tree[.$\vee$ 
-  [.\texttt{x/=A} [.$\nodelta$ ]]
-  [.\texttt{A<-x} [.\texttt{y/=A} [.$\nodelta$ ]]]
-]
-
-$\Delta$ from \ctt on the second clause:
-
-\Tree[.$\vee$ 
-  [.\texttt{x/=B} [.$\nodelta$ ]]
-  [.\texttt{B<-x} [.\texttt{y/=B} [.$\nodelta$ ]]]
-]
-
-Substituted into the first $\Delta$:
-
-\Tree[.$\vee$ 
-  [.\texttt{x/=A}
-    [.$\vee$ 
-      [.\texttt{x/=B} [.$\nodelta$ ]]
-      [.\texttt{B<-x} [.\texttt{y/=B} [.$\nodelta$ ]]]]]
-  [.\texttt{A<-x}
-    [.\texttt{y/=A}
-      [.$\vee$ 
-        [.\texttt{x/=B} [.$\nodelta$ ]]
-        [.\texttt{B<-x} [.\texttt{y/=B} [.$\nodelta$ ]]]]]]]
-
-Note that we now have 4 \nodelta{}s. So this substitution step reintroduces the exponential blowup.
-
-That alone wouldn't be a problem: Currently, we also would have 4 $\Delta$s in
-flight for this program. But if we execute on the plan here to separately
-translate $\Grd$ into $\Con$ trees for each clause, and then only
-\emph{afterwards} (after the substitution step, that is) check for inhabitants (which is conceptually very beautiful),
-we run into efficiency problems in the implementation, because we have no way
-to share the work involved with checking the \emph{very similar} branches we
-just substituted.
-
-It's a lot like choosing the most efficient evaluation strategy, really! Doing
-the substitution before we digest the tree into a more computably tractable
-form (like in the current implementation where we cache residual COMPLETE
-sets) is a lot like call-by-name and we get asymptotically behavior in
-supposedly trivial cases. The current implementation is more like call-by-value
-in that regard.
-
-Example, inspired by the test case \texttt{ManyAlternatives}:
-
-\begin{verbatim}
-data T = T1 | ... | T1000
-f T1    = ()
-...
-f T1000 = ()
-\end{verbatim}
-
-The constraint tree of the \emph{covered} set of the 1000th clause will look like this:
-
-\Tree[.\texttt{T1000<-x} [.... [.\texttt{x/=T999} [.\texttt{x/=T1} [.$\nodelta$ ]]]]]
-
-The other covered sets are similar. In order to determine whether a clause is
-redundant, we have to check each of these covered sets for inhabitants! But
-with COMPLETE sets, we have to constantly check whether the negative
-constraints form a COMPLETE set. That's very inefficient! And it's the reason
-we currently have the \texttt{vi\_cache} field in \texttt{VarInfo}: For
-gradually deleting candidates from the residual COMPLETE sets when we move from
-clause to clause instead of always beginning from scratch (the full COMPLETE
-set) at each clause and thinning it out with linearly many negative constraints.
-
-So we definitely want the same kind of caching in our new constraint tree
-representation. Now here's the problem: I don't currently see how! Intuitively,
-sharing of work is only possible along the shared path from the root of the
-final constraint tree we check for inhabitants to one of its leafs. Note how
-that's not possible in the tree above, because each tree will have a different
-root, so no sharing on any such paths! If we had the following constraint trees
-instead:
-
-\Tree[.\texttt{x/=T1} [.... [.\texttt{x/=T999} [.\texttt{T1000<-x} [.$\nodelta$ ]]]]]
-
-I.e. with the order of inner nodes reversed, we could share residual COMPLETE
-sets along the shared path prefix. E.g. the the clause for \texttt{T500} could
-re-use the residual COMPLETE sets from \texttt{T499}, like it's currently the
-case.
-
-To achieve this, we have to roll back to the old constraint tree generation
-scheme, where we pass the incoming $\Delta$ to \ctt.
-\pagebreak
-
-
 
 
 
