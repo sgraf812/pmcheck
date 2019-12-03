@@ -47,7 +47,6 @@
 %%%%%%%
 %\usepackage{graphicx}
 \usepackage{todonotes}
-\usepackage{commath}
 \usepackage{mathtools} % loads amsmath too  % for matrices
 \usepackage{hhline}    % for custom lines in matrices
 \usepackage{verbatim}  % for multiline comments
@@ -225,17 +224,10 @@
 \[
 \begin{array}{lcl}
 \unc{\Delta}{\trhs} &=& \varnothing \\
-\unc{\Delta}{\tmany{\overline{t}}} &=& \reprefs{\Delta}{\overline{t}}_{\abs{\{\overline{t}\}}} \\
+\unc{\Delta}{\tmany{\overline{t}}} &=& \unc{...\unc{\unc{\Delta}{t_1}}{t_2}...}{t_n} \\
 \unc{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \unc{\Delta \plusdelta (x \ntermeq \bot)}{t} \\
 \unc{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \unc{\Delta \plusdelta (x \termeq e)}{t} \\
 \unc{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\Delta \plusdelta (x \ntermeq K) \plusdelta (x \ntermeq \bot)) \cup \unc{\Delta \plusdelta (\ctcon{K \; \overline{y:\tau}}{x}) \plusdelta \overline{\gamma}}{gs} \\
-\end{array}
-\]
-\[ \ruleform{ \reprefs{\Delta}{\Gdt} = \Delta_\mathbb{N} } \]
-\[
-\begin{array}{lcl}
-\reprefs{\Delta}{\overline{t}}_0 &=& \Delta \\
-\reprefs{\Delta}{\overline{t}}_{n+1} &=& \unc{\reprefs{\Delta}{\overline{t}}_n}{t_n} \\
 \end{array}
 \]
 \[ \ruleform{ \ann{\Delta}{\Gdt} = \Ant } \]
@@ -245,10 +237,23 @@
     \antred{\trhs}, & \inh{\Gamma}{\Delta} = \varnothing \\
     \trhs, & \text{otherwise} \\
   \end{cases} \\
-\ann{\Delta}{\tmany{\overline{t}}} &=& \tmany{(\ann{\reprefs{\Delta}{\overline{t}}_0}{t_1},\,...\,, \ann{\reprefs{\Delta}{\overline{t}}_{n-1}}{t_n})} \\
-\ann{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \unc{\Delta \plusdelta (x \ntermeq \bot)}{t} \\
-\ann{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \unc{\Delta \plusdelta (x \termeq e)}{t} \\
-\ann{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\Delta \plusdelta (x \ntermeq K) \plusdelta (x \ntermeq \bot)) \cup \unc{\Delta \plusdelta (\ctcon{K \; \overline{y:\tau}}{x}) \plusdelta \overline{\gamma}}{gs} \\
+\ann{\Delta}{\tmany{\overline{t}}} &=& \tmany{(\ann{\Delta'_0}{t_1},\,...\,, \ann{\Delta'_{n-1}}{t_n})}
+  \text{ where } \begin{cases}
+    \Delta'_0 &= \Delta \\
+    \Delta'_{n+1} &= \unc{\Delta'_n}{t_{n+1}} \\
+  \end{cases} \\
+\ann{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \divann{\Delta}{\ann{\Delta \plusdelta (x \ntermeq \bot)}{t}} \\
+\ann{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \ann{\Delta \plusdelta (x \termeq e)}{t} \\
+\ann{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& \divann{\Delta}{\ann{\Delta \plusdelta (\ctcon{K \; \overline{y:\tau}}{x}) \plusdelta \overline{\gamma}}{t}} \\
+\end{array}
+\]
+\[ \ruleform{ \divann{\Delta}{\Ant} = \Ant } \]
+\[
+\begin{array}{lcl}
+\divann{\Delta}{t} &=&  \begin{cases}
+    t, & \inh{\Gamma}{\Delta \plusdelta (x \termeq \bot)} = \varnothing \\
+    \antdiv{t} & \text{otherwise} \\
+  \end{cases} \\
 \end{array}
 \]
 
