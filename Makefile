@@ -9,7 +9,7 @@ REPL_FLAGS = -halt-on-error
 main:
 	lhs2TeX --verb pmcheck.lhs >pmcheck.tex
 	pdflatex $(REPL_FLAGS) pmcheck
-	bibtex   pmcheck
+	# bibtex   pmcheck # as long as we have no bibliogrpahy
 	pdflatex $(REPL_FLAGS) pmcheck
 	pdflatex $(REPL_FLAGS) pmcheck
 
