@@ -47,6 +47,7 @@
 %%%%%%%
 %\usepackage{graphicx}
 \usepackage{todonotes}
+\usepackage{commath}
 \usepackage{mathtools} % loads amsmath too  % for matrices
 \usepackage{hhline}    % for custom lines in matrices
 \usepackage{verbatim}  % for multiline comments
@@ -194,7 +195,8 @@
 \begin{array}{rcll}
   \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
   \Delta &\Coloneqq& \noDelta \mid \nodelta \mid \Delta, \delta \mid \Delta_1 \vee \Delta_2 & \text{Delta} \\
-  \delta &\Coloneqq& \gamma \mid x_1 \termeq x_2 \mid \ctcon{K\;\overline{x:\tau}}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Constraints} \\
+  \Delta &\Coloneqq& \noDelta \mid \nodelta \mid \Delta, \delta \mid \Delta_1 \vee \Delta_2 & \text{Delta} \\
+  \delta &\Coloneqq& \gamma \mid \ctcon{K\;\overline{x:\tau}}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Constraints} \\
 \end{array}
 \]
 \end{figure}
@@ -212,28 +214,41 @@
   t_G \in \Gdt &\Coloneqq& \T[t_G] \\
                &\mid&      \gdtguard{g}{t_G} \\
   \\
-  t_C \in \Ctt &\Coloneqq& \T[t_C] \\
-               &\mid&      \cttdiv{\delta}{t_C} \\
-               &\mid&      \cttft{\delta}{t_C} \\
-               &\mid&      \cttref{\delta}{t_C} \\
-  \\
   t_A \in \Ant &\Coloneqq& \T[t_A] \\
                &\mid&      \antdiv{t_A} \\
                &\mid&      \antred{t_A} \\
 \end{array}
 \]
 
-\[ \textbf{Compiling constraint trees} \]
-\[ \ruleform{ \cct{\Gdt} = \Ctt } \]
+\[ \textbf{Checking guard trees} \]
+\[ \ruleform{ \unc{\Delta}{\Gdt} = \Delta } \]
 \[
 \begin{array}{lcl}
-\cct{\trhs{}} &=& \trhs{} \\
-\cct{\tmany{\overline{t_G}}} &=& \tmany{\overline{\cct{t_G}}} \\
-\cct{\gdtguard{(\grdlet{x}{e})}{t_G}} &=& \cctg{g}{(\cct{t_G})} \\
-\cctg{(\grdlet{x}{e})} &=& \cttref{(\ctlet{x}{e})} \\
-\cctg{(\grdbang{x})} &=& \cttdiv{(x\termeq\bot)} \circ \cttref{(x\ntermeq\bot)} \\
-\cctg{\gdtguard{(\grdbang{x})}} &=& \cttdiv{(x\termeq\bot)} \circ \cttref{(x\ntermeq\bot)} \\
-\cct{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t_G}} &=& \cttdiv{(x\termeq\bot)}{(\cttdiv{(x\termeq\bot)}{(\cttref{(x\termeq \ctcon{K\;\overline{x:\tau}}{y})}{\ctt{t_G}})})} \\
+\unc{\Delta}{\trhs} &=& \varnothing \\
+\unc{\Delta}{\tmany{\overline{t}}} &=& \reprefs{\Delta}{\overline{t}}_{\abs{\{\overline{t}\}}} \\
+\unc{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \unc{\Delta \plusdelta (x \ntermeq \bot)}{t} \\
+\unc{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \unc{\Delta \plusdelta (x \termeq e)}{t} \\
+\unc{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\Delta \plusdelta (x \ntermeq K) \plusdelta (x \ntermeq \bot)) \cup \unc{\Delta \plusdelta (\ctcon{K \; \overline{y:\tau}}{x}) \plusdelta \overline{\gamma}}{gs} \\
+\end{array}
+\]
+\[ \ruleform{ \reprefs{\Delta}{\Gdt} = \Delta_\mathbb{N} } \]
+\[
+\begin{array}{lcl}
+\reprefs{\Delta}{\overline{t}}_0 &=& \Delta \\
+\reprefs{\Delta}{\overline{t}}_{n+1} &=& \unc{\reprefs{\Delta}{\overline{t}}_n}{t_n} \\
+\end{array}
+\]
+\[ \ruleform{ \ann{\Delta}{\Gdt} = \Ant } \]
+\[
+\begin{array}{lcl}
+\ann{\Delta}{\trhs} &=& \begin{cases}
+    \antred{\trhs}, & \inh{\Gamma}{\Delta} = \varnothing \\
+    \trhs, & \text{otherwise} \\
+  \end{cases} \\
+\ann{\Delta}{\tmany{\overline{t}}} &=& \tmany{(\ann{\reprefs{\Delta}{\overline{t}}_0}{t_1},\,...\,, \ann{\reprefs{\Delta}{\overline{t}}_{n-1}}{t_n})} \\
+\ann{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \unc{\Delta \plusdelta (x \ntermeq \bot)}{t} \\
+\ann{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \unc{\Delta \plusdelta (x \termeq e)}{t} \\
+\ann{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\Delta \plusdelta (x \ntermeq K) \plusdelta (x \ntermeq \bot)) \cup \unc{\Delta \plusdelta (\ctcon{K \; \overline{y:\tau}}{x}) \plusdelta \overline{\gamma}}{gs} \\
 \end{array}
 \]
 
@@ -320,13 +335,13 @@
 \begin{array}{c}
 
   \prooftree
-    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq \bot}}
+    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq \bot}}
     \quad
     \text{$\{\overline{K}\}$ COMPLETE set}
     \quad
     % TODO: Lacks bindings for K's type variables
     % TODO: \forall instantiation :( Although type-checker helps here
-    \overline{\forall\overline{y:\tau}.\unsat{\Gamma,\overline{y:\tau} \vdash \plustheta{\Delta}{x \termeq K\;\overline{y}}}}
+    \overline{\forall\overline{y:\tau}.\unsat{\Gamma,\overline{y:\tau} \vdash \plusdelta{\Delta}{x \termeq K\;\overline{y}}}}
   \justifies
     \unsat{\vtupnew{\Gamma}{x}{\Delta}}
   \endprooftree
@@ -336,7 +351,7 @@
 \end{array}
 \]
 \[ \textbf{Add a single equality to $\Delta$} \]
-\[\ruleform{ \unsat{\Gamma \vdash \plustheta{\Delta}{\delta}} }  \]
+\[\ruleform{ \unsat{\Gamma \vdash \plusdelta{\Delta}{\delta}} }  \]
 \[
 \begin{array}{c}
   \text{Term stuff: Bottom, negative info, positive info + generativity, positive info + univalence}
@@ -346,7 +361,7 @@
   \prooftree
     x \ntermeq sth \in \Delta
   \justifies
-    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq \bot}}
+    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq \bot}}
   \endprooftree
 
   \qquad
@@ -354,7 +369,7 @@
   \prooftree
     x \termeq K\;\overline{y} \in \Delta
   \justifies
-    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq \bot}}
+    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq \bot}}
   \endprooftree
 
   \\ \\
@@ -363,7 +378,7 @@
     x \ntermeq K \in \Delta
   \justifies
     % TODO: well-formedness... Gamma must bind x and ys
-    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq K\;\overline{y}}}
+    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq K\;\overline{y}}}
   \endprooftree
 
   \qquad
@@ -371,23 +386,23 @@
   \prooftree
     x \termeq K_i\;\overline{y}\in \Delta \quad i \neq j \quad \text{$K_i$ and $K_j$ generative}
   \justifies
-    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq K_j \;\overline{z}}}
+    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq K_j \;\overline{z}}}
   \endprooftree
 
   \\ \\
 
   \prooftree
-    x \termeq K\;\overline{\tau}\;\overline{y}\in \Delta \quad \unsat{\Gamma \vdash \plustheta{\Delta}{\tau_i \typeeq \sigma_i}}
+    x \termeq K\;\overline{\tau}\;\overline{y}\in \Delta \quad \unsat{\Gamma \vdash \plusdelta{\Delta}{\tau_i \typeeq \sigma_i}}
   \justifies
-    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq K \;\overline{\sigma} \;\overline{z}}}
+    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq K \;\overline{\sigma} \;\overline{z}}}
   \endprooftree
 
   \qquad
 
   \prooftree
-    x \termeq K\;\overline{\tau}\;\overline{y}\in \Delta \quad \unsat{\Gamma \vdash \plustheta{\Delta}{y_i \termeq z_i}}
+    x \termeq K\;\overline{\tau}\;\overline{y}\in \Delta \quad \unsat{\Gamma \vdash \plusdelta{\Delta}{y_i \termeq z_i}}
   \justifies
-    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq K \;\overline{\sigma} \;\overline{z}}}
+    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq K \;\overline{\sigma} \;\overline{z}}}
   \endprooftree
 
   \\ \\
@@ -399,7 +414,7 @@
   \prooftree
     \text{$\tau_1$ and $\tau_2$ incompatible to Givens in $\Delta$ according to type oracle}
   \justifies
-    \unsat{\Gamma \vdash \plustheta{\Delta}{\tau_1 \typeeq \tau_2}}
+    \unsat{\Gamma \vdash \plusdelta{\Delta}{\tau_1 \typeeq \tau_2}}
   \endprooftree
 
   \\ \\
@@ -412,7 +427,7 @@
     \overline{\unsat{\vtupnew{\Gamma}{y}{\Delta \cup y \ntermeq \bot}}}
     \quad
   \justifies
-    \unsat{\Gamma \vdash \plustheta{\Delta}{x \termeq K\;\overline{y}}}
+    \unsat{\Gamma \vdash \plusdelta{\Delta}{x \termeq K\;\overline{y}}}
   \endprooftree
 
 \end{array}

@@ -3,12 +3,15 @@
 
 all: main
 
+# -halt-on-error: Halts on first error, rather than prompting the user
+REPL_FLAGS = -halt-on-error
+
 main:
 	lhs2TeX --verb pmcheck.lhs >pmcheck.tex
-	pdflatex pmcheck
+	pdflatex $(REPL_FLAGS) pmcheck
 	bibtex   pmcheck
-	pdflatex pmcheck
-	pdflatex pmcheck
+	pdflatex $(REPL_FLAGS) pmcheck
+	pdflatex $(REPL_FLAGS) pmcheck
 
 extended:
 	lhs2TeX --verb pmcheck_ext.lhs >pmcheck_ext.tex
