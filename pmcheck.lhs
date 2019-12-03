@@ -12,6 +12,13 @@
 
 \documentclass[acmsmall]{acmart}
 
+% The following lines remove ACM stuff unneeded for prototyping
+% https://tex.stackexchange.com/a/346309/52414
+\settopmatter{printacmref=false} % Removes citation information below abstract
+\renewcommand\footnotetextcopyrightpermission[1]{} % removes footnote with conference information in first column
+\pagestyle{plain} % removes running headers
+
+
 %include lhs2TeX.fmt
 %include lhs2TeX.sty
 
@@ -172,8 +179,9 @@
 
 \begin{figure}[t]
 \centering
-\[ \textbf{Pattern Syntax} \]
+\[ \textbf{Guard Syntax} \]
 \[
+\begin{array}{cc}
 \begin{array}{rlcl}
   K           \in &\Con &         & \\
   x,y,a,b     \in &\Var &         & \\
@@ -181,82 +189,87 @@
   e \in           &\Expr&\Coloneqq& x:\tau \\
                   &     &\mid     & \genconapp{K}{a}{\gamma}{e:\tau} \\
                   &     &\mid     & ... \\
-
+\end{array} &
+\begin{array}{rlcl}
   \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
 
   g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
                   &     &\mid     & \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \\
                   &     &\mid     & \grdbang{x} \\
 \end{array}
+\end{array}
 \]
-\[ \textbf{Oracle Syntax} \]
+\[ \textbf{DNF Syntax} \]
 \[
 \begin{array}{rcll}
   \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
-  \Delta &\Coloneqq& \noDelta \mid \nodelta \mid \Delta, \delta \mid \Delta_1 \vee \Delta_2 & \text{Delta} \\
-  \Delta &\Coloneqq& \noDelta \mid \nodelta \mid \Delta, \delta \mid \Delta_1 \vee \Delta_2 & \text{Delta} \\
-  \delta &\Coloneqq& \gamma \mid \ctcon{K\;\overline{x:\tau}}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Constraints} \\
+  \delta &\Coloneqq& \gamma \mid \ctcon{K\;\overline{x:\tau}}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Literals} \\
+  \Delta &\Coloneqq& \nodelta \mid \Delta \wedge \delta & \text{Clause} \\
+  \nabla &\Coloneqq& \noDelta \mid \Delta \mid \nabla_1 \vee \nabla_2 & \text{Formula} \\
 \end{array}
 \]
-\end{figure}
-
-\pagebreak
-
-\begin{figure}[t]
-\centering
-\[ \textbf{Clause tree} \]
 \[
-\begin{array}{rcl}
-  \T[r] &\Coloneqq& \trhs \\
-        &\mid     & \tmany{\overline{r}} \\
-  \\
-  t_G \in \Gdt &\Coloneqq& \T[t_G] \\
-               &\mid&      \gdtguard{g}{t_G} \\
-  \\
-  t_A \in \Ant &\Coloneqq& \T[t_A] \\
-               &\mid&      \antdiv{t_A} \\
-               &\mid&      \antred{t_A} \\
+\begin{array}{lcll}
+  \noDelta &{}\plusnabla \delta &=& \noDelta \\
+  \Delta   &{}\plusnabla \delta &=& \Delta \wedge \delta \\
+  \nabla_1 \vee \nabla_2 & {}\plusnabla \delta &=& (\nabla_1 \plusnabla \delta) \vee (\nabla_2 \plusnabla \delta) \\
 \end{array}
 \]
 
-\[ \textbf{Checking guard trees} \]
-\[ \ruleform{ \unc{\Delta}{\Gdt} = \Delta } \]
+\[ \textbf{Clause Tree Syntax} \]
+\[
+\begin{array}{rcll}
+  \T[r] &\Coloneqq& \trhs \mid \tmany{\overline{r}}                    \\
+  t_G \in \Gdt &\Coloneqq& \T[t_G] \mid \gdtguard{g}{t_G}              \\
+  t_A \in \Ant &\Coloneqq& \T[t_A] \mid \antdiv{t_A} \mid \antred{t_A} \\
+\end{array}
+\]
+
+\[ \textbf{Checking Guard Trees} \]
+\[ \ruleform{ \unc{\nabla}{\Gdt} = \nabla } \]
 \[
 \begin{array}{lcl}
-\unc{\Delta}{\trhs} &=& \varnothing \\
-\unc{\Delta}{\tmany{\overline{t}}} &=& \unc{...\unc{\unc{\Delta}{t_1}}{t_2}...}{t_n} \\
-\unc{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \unc{\Delta \plusdelta (x \ntermeq \bot)}{t} \\
-\unc{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \unc{\Delta \plusdelta (x \termeq e)}{t} \\
-\unc{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\Delta \plusdelta (x \ntermeq K) \plusdelta (x \ntermeq \bot)) \cup \unc{\Delta \plusdelta (\ctcon{K \; \overline{y:\tau}}{x}) \plusdelta \overline{\gamma}}{gs} \\
+\unc{\nabla}{\trhs} &=& \noDelta \\
+\unc{\nabla}{\tmany{\overline{t}}} &=& \unc{...\unc{\unc{\nabla}{t_1}}{t_2}...}{t_n} \\
+\unc{\nabla}{\gdtguard{(\grdbang{x})}{t}} &=& \unc{\nabla \plusnabla (x \ntermeq \bot)}{t} \\
+\unc{\nabla}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \unc{\nabla \plusnabla (x \termeq e)}{t} \\
+\unc{\nabla}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\nabla \plusnabla (x \ntermeq K) \plusnabla (x \ntermeq \bot)) \cup \unc{\nabla \plusnabla (\ctcon{K \; \overline{y:\tau}}{x}) \plusnabla \overline{\gamma}}{gs} \\
 \end{array}
 \]
-\[ \ruleform{ \ann{\Delta}{\Gdt} = \Ant } \]
+\[ \ruleform{ \ann{\nabla}{\Gdt} = \Ant } \]
 \[
 \begin{array}{lcl}
-\ann{\Delta}{\trhs} &=& \begin{cases}
-    \antred{\trhs}, & \inh{\Gamma}{\Delta} = \varnothing \\
+\ann{\nabla}{\trhs} &=& \begin{cases}
+    \antred{\trhs}, & \inh{\Gamma}{\nabla} = \varnothing \\
     \trhs, & \text{otherwise} \\
   \end{cases} \\
-\ann{\Delta}{\tmany{\overline{t}}} &=& \tmany{(\ann{\Delta'_0}{t_1},\,...\,, \ann{\Delta'_{n-1}}{t_n})}
+\ann{\nabla}{\tmany{\overline{t}}} &=& \tmany{(\ann{\nabla'_0}{t_1},\,...\,, \ann{\nabla'_{n-1}}{t_n})}
   \text{ where } \begin{cases}
-    \Delta'_0 &= \Delta \\
-    \Delta'_{n+1} &= \unc{\Delta'_n}{t_{n+1}} \\
+    \nabla'_0 &= \nabla \\
+    \nabla'_{n+1} &= \unc{\nabla'_n}{t_{n+1}} \\
   \end{cases} \\
-\ann{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \divann{\Delta}{\ann{\Delta \plusdelta (x \ntermeq \bot)}{t}} \\
-\ann{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \ann{\Delta \plusdelta (x \termeq e)}{t} \\
-\ann{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& \divann{\Delta}{\ann{\Delta \plusdelta (\ctcon{K \; \overline{y:\tau}}{x}) \plusdelta \overline{\gamma}}{t}} \\
+\ann{\nabla}{\gdtguard{(\grdbang{x})}{t}} &=& \divann{\nabla}{\ann{\nabla \plusnabla (x \ntermeq \bot)}{t}} \\
+\ann{\nabla}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \ann{\nabla \plusnabla (x \termeq e)}{t} \\
+\ann{\nabla}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& \divann{\nabla}{\ann{\nabla \plusnabla (\ctcon{K \; \overline{y:\tau}}{x}) \plusnabla \overline{\gamma}}{t}} \\
 \end{array}
 \]
-\[ \ruleform{ \divann{\Delta}{\Ant} = \Ant } \]
+\[ \ruleform{ \divann{\nabla}{\Ant} = \Ant } \]
 \[
 \begin{array}{lcl}
-\divann{\Delta}{t} &=&  \begin{cases}
-    t, & \inh{\Gamma}{\Delta \plusdelta (x \termeq \bot)} = \varnothing \\
+\divann{\nabla}{t} &=&  \begin{cases}
+    t, & \inh{\Gamma}{\nabla \plusnabla (x \termeq \bot)} = \varnothing \\
     \antdiv{t} & \text{otherwise} \\
   \end{cases} \\
 \end{array}
 \]
-
+\[ \ruleform{ \inh{\Gamma}{\nabla} = values } \]
+\[ \text{TBD: Oracle implementation. This is \texttt{provideEvidence}} \]
+\[ \textbf{Putting it all together} \]
+  \begin{enumerate}
+    \item[(0)] Input: Context with match vars $\Gamma$ and desugared $\Gdt$ $t$
+    \item Report $n$ value vectors of $\inh{\Gamma}{\unc{\nodelta}{t}}$ as uncovered
+    \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann{\nodelta}{t}$ (TODO: Write a function that collects the RHSs, maybe add numbers to $\trhs$ to distinguish).
+  \end{enumerate}
 \end{figure}
 
 
@@ -303,6 +316,7 @@
 % this to explictly passed vs anyway, because how would we recurse otherwise?
 \begin{figure}[t]
 \centering
+\[ \textbf{This figure is completely out of date, don't waste your time} \]
 \[ \textbf{Test if Oracle state Delta is unsatisfiable} \]
 \[\ruleform{ \unsat{\Gamma \vdash \Delta} }  \]
 \[
@@ -439,11 +453,11 @@
 \]
 \end{figure}
 
-\listoftodos\relax
+%\listoftodos\relax
 
 \nocite{*}
 
-\bibliography{references}
+%\bibliography{references}
 
 \end{document}
 
