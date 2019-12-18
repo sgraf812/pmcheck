@@ -191,6 +191,8 @@
                   &     &\mid     & ... \\
 \end{array} &
 \begin{array}{rlcl}
+  n      \in      &\mathbb{N}&    & \\
+
   \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
 
   g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
@@ -233,14 +235,14 @@
 \unc{\nabla}{\tmany{\overline{t}}} &=& \unc{...\unc{\unc{\nabla}{t_1}}{t_2}...}{t_n} \\
 \unc{\nabla}{\gdtguard{(\grdbang{x})}{t}} &=& \unc{\nabla \plusnabla (x \ntermeq \bot)}{t} \\
 \unc{\nabla}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \unc{\nabla \plusnabla (x \termeq e)}{t} \\
-\unc{\nabla}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\nabla \plusnabla (x \ntermeq K) \plusnabla (x \ntermeq \bot)) \cup \unc{\nabla \plusnabla (\ctcon{K \; \overline{y:\tau}}{x}) \plusnabla \overline{\gamma}}{gs} \\
+\unc{\nabla}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\nabla \plusnabla (x \ntermeq K) \plusnabla (x \ntermeq \bot)) \vee \unc{\nabla \plusnabla (\ctcon{K \; \overline{y:\tau}}{x}) \plusnabla \overline{\gamma}}{gs} \\
 \end{array}
 \]
 \[ \ruleform{ \ann{\nabla}{\Gdt} = \Ant } \]
 \[
 \begin{array}{lcl}
 \ann{\nabla}{\trhs} &=& \begin{cases}
-    \antred{\trhs}, & \inh{\Gamma}{\nabla} = \varnothing \\
+    \antred{\trhs}, & \inh{\Gamma}{\nabla}{\varnothing} \\
     \trhs, & \text{otherwise} \\
   \end{cases} \\
 \ann{\nabla}{\tmany{\overline{t}}} &=& \tmany{(\ann{\nabla'_0}{t_1},\,...\,, \ann{\nabla'_{n-1}}{t_n})}
@@ -257,17 +259,15 @@
 \[
 \begin{array}{lcl}
 \divann{\nabla}{t} &=&  \begin{cases}
-    t, & \inh{\Gamma}{\nabla \plusnabla (x \termeq \bot)} = \varnothing \\
+    t, & \inh{\Gamma}{\nabla \plusnabla (x \termeq \bot)}{\varnothing} \\
     \antdiv{t} & \text{otherwise} \\
   \end{cases} \\
 \end{array}
 \]
-\[ \ruleform{ \inh{\Gamma}{\nabla} = values } \]
-\[ \text{TBD: Oracle implementation. This is \texttt{provideEvidence}} \]
 \[ \textbf{Putting it all together} \]
   \begin{enumerate}
     \item[(0)] Input: Context with match vars $\Gamma$ and desugared $\Gdt$ $t$
-    \item Report $n$ value vectors of $\inh{\Gamma}{\unc{\nodelta}{t}}$ as uncovered
+    \item Report $n$ value vectors of $\inh{\Gamma}{\unc{\nodelta}{t}}{V}$ as uncovered
     \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann{\nodelta}{t}$ (TODO: Write a function that collects the RHSs, maybe add numbers to $\trhs$ to distinguish).
   \end{enumerate}
 \end{figure}
@@ -285,6 +285,78 @@
 
 
 
+
+
+\begin{figure}[t]
+\centering
+\[ \textbf{Generating Inhabitants} \]
+\[ \ruleform{ \inh{\Gamma}{\nabla}{\mathcal{P}(V)} } \]
+\[ \text{This is \texttt{provideEvidence}} \]
+\[
+\begin{array}{c}
+
+  \prooftree
+  \justifies
+    \inh{\Gamma}{\noDelta}{\varnothing}
+  \endprooftree
+
+  \quad
+
+  \prooftree
+    \inh{\Gamma}{\nabla_1}{V_1}
+    \quad
+    \inh{\Gamma}{\nabla_2}{V_2}
+  \justifies
+    \inh{\Gamma}{\nabla_1 \vee \nabla_2}{V_1 \cup V_2}
+  \endprooftree
+
+  \quad
+
+  \prooftree
+  \justifies
+    \inh{\Gamma}{\Delta}{\{ v \mid \inh{\Gamma}{\Delta}{v} \}}
+  \endprooftree
+
+  \\ \\
+
+\end{array}
+\]
+\[ \ruleform{ \inh{\Gamma}{\Delta}{V} } \]
+\[
+\begin{array}{c}
+
+  \prooftree
+    \mathcal{T}(\Delta)
+  \justifies
+    \inh{\varnothing}{\Delta}{()}
+  \endprooftree
+
+  \quad
+
+
+  \prooftree
+    %\text{$K$ is constructor of data type $\tau$ with compatible fields $x_1:\sigma_1,...,x_n:\sigma_n$}
+    %\text{TODO: More precise, with types and all}
+    %\quad
+    \inh{(x_1:\sigma_1,...,x_n:\sigma_n,\Gamma)}{(\ctcon{K\;(x_1:\sigma_1) ... (x_n:\sigma_n)}{y},\Delta)}{(a_1, ..., a_n, v_2, ..., v_m)}
+  \justifies
+    \inh{y:\tau,\Gamma}{\Delta}{(K\;x_1\;...\;x_n, v_2, ..., v_m)}
+  \endprooftree
+
+  \\ \\
+
+  \prooftree
+    \text{no more fuel}
+  \justifies
+    \inh{x_1:\tau_1,...,x_n:\tau_n}{\Delta}{(\_,...,\_)}
+  \endprooftree
+
+
+\end{array}
+\]
+\[ \ruleform{ \mathcal{T}(\Delta) } \]
+\[ \textbf{Test a $\Delta$ for satisfiability} \]
+\end{figure}
 
 
 
