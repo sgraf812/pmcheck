@@ -221,9 +221,8 @@
 \[ \textbf{Clause Tree Syntax} \]
 \[
 \begin{array}{rcll}
-  \T[r] &\Coloneqq& \trhs \mid \tmany{\overline{r}}                    \\
-  t_G \in \Gdt &\Coloneqq& \T[t_G] \mid \gdtguard{g}{t_G}              \\
-  t_A \in \Ant &\Coloneqq& \T[t_A] \mid \antdiv{t_A} \mid \antred{t_A} \\
+  t_G,u_G \in \Gdt &\Coloneqq& \gdtrhs \mid \gdtseq{t_G}{u_G} \mid \gdtguard{g}{t_G}         \\
+  t_A,u_A \in \Ant &\Coloneqq& \antrhs \mid \antred \mid \antseq{t_A}{u_A} \mid \antdiv{t_A} \\
 \end{array}
 \]
 
@@ -231,8 +230,8 @@
 \[ \ruleform{ \unc{\nabla}{\Gdt} = \nabla } \]
 \[
 \begin{array}{lcl}
-\unc{\nabla}{\trhs} &=& \noDelta \\
-\unc{\nabla}{\tmany{\overline{t}}} &=& \unc{...\unc{\unc{\nabla}{t_1}}{t_2}...}{t_n} \\
+\unc{\nabla}{\gdtrhs} &=& \noDelta \\
+\unc{\nabla}{(\gdtseq{t}{u})} &=& \unc{\unc{\nabla}{t}}{u} \\
 \unc{\nabla}{\gdtguard{(\grdbang{x})}{t}} &=& \unc{\nabla \plusnabla (x \ntermeq \bot)}{t} \\
 \unc{\nabla}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \unc{\nabla \plusnabla (x \termeq e)}{t} \\
 \unc{\nabla}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\nabla \plusnabla (x \ntermeq K) \plusnabla (x \ntermeq \bot)) \vee \unc{\nabla \plusnabla (\ctcon{K \; \overline{y:\tau}}{x}) \plusnabla \overline{\gamma}}{gs} \\
@@ -241,34 +240,24 @@
 \[ \ruleform{ \ann{\nabla}{\Gdt} = \Ant } \]
 \[
 \begin{array}{lcl}
-\ann{\nabla}{\trhs} &=& \begin{cases}
-    \antred{\trhs}, & \inh{\Gamma}{\nabla}{\varnothing} \\
-    \trhs, & \text{otherwise} \\
+\ann{\nabla}{\gdtrhs} &=& \begin{cases}
+    \antred, & \inh{\Gamma}{\nabla}{\varnothing} \\
+    \antrhs, & \text{otherwise} \\
   \end{cases} \\
-\ann{\nabla}{\tmany{\overline{t}}} &=& \tmany{(\ann{\nabla'_0}{t_1},\,...\,, \ann{\nabla'_{n-1}}{t_n})}
-  \text{ where } \begin{cases}
-    \nabla'_0 &= \nabla \\
-    \nabla'_{n+1} &= \unc{\nabla'_n}{t_{n+1}} \\
+\ann{\nabla}{(\gdtseq{t}{u})} &=& \antseq{\ann{\nabla}{t}}{\ann{\unc{\nabla}{t}}{u}} \\
+\ann{\nabla}{\gdtguard{(\grdbang{x})}{t}} &=& \begin{cases}
+    \ann{\nabla \plusnabla (x \ntermeq \bot)}{t}, & \inh{\Gamma}{\nabla \plusnabla (x \termeq \bot)}{\varnothing} \\
+    \antdiv{\ann{\nabla \plusnabla (x \ntermeq \bot)}{t}} & \text{otherwise} \\
   \end{cases} \\
-\ann{\nabla}{\gdtguard{(\grdbang{x})}{t}} &=& \divann{\nabla}{\ann{\nabla \plusnabla (x \ntermeq \bot)}{t}} \\
 \ann{\nabla}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \ann{\nabla \plusnabla (x \termeq e)}{t} \\
-\ann{\nabla}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& \divann{\nabla}{\ann{\nabla \plusnabla (\ctcon{K \; \overline{y:\tau}}{x}) \plusnabla \overline{\gamma}}{t}} \\
-\end{array}
-\]
-\[ \ruleform{ \divann{\nabla}{\Ant} = \Ant } \]
-\[
-\begin{array}{lcl}
-\divann{\nabla}{t} &=&  \begin{cases}
-    t, & \inh{\Gamma}{\nabla \plusnabla (x \termeq \bot)}{\varnothing} \\
-    \antdiv{t} & \text{otherwise} \\
-  \end{cases} \\
+\ann{\nabla}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& \ann{\nabla \plusnabla (\ctcon{K \; \overline{y:\tau}}{x}) \plusnabla \overline{\gamma}}{t} \\
 \end{array}
 \]
 \[ \textbf{Putting it all together} \]
   \begin{enumerate}
     \item[(0)] Input: Context with match vars $\Gamma$ and desugared $\Gdt$ $t$
     \item Report $n$ value vectors of $\inh{\Gamma}{\unc{\nodelta}{t}}{V}$ as uncovered
-    \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann{\nodelta}{t}$ (TODO: Write a function that collects the RHSs, maybe add numbers to $\trhs$ to distinguish).
+    \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann{\nodelta}{t}$ (TODO: Write a function that collects the RHSs, maybe add numbers to $\gdtrhs$ to distinguish).
   \end{enumerate}
 \end{figure}
 

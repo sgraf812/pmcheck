@@ -166,22 +166,17 @@
 \newcommand{\ctlet}[2]{#1\termeq#2}
 \newcommand{\ctcon}[2]{#1 \leftarrow #2}
 \newcommand{\genconapp}[4]{#1\;\overline{#2}\;\overline{#3}\;\overline{#4}}
-% Clause Tree T
-\newcommand{\T}{\mathcal{T}}
-\newcommand{\trhs}{\texttt{Rhs}}
-\newcommand{\tmany}[1]{\texttt{Many} \; #1}
 % GrdTree Gdt
 \newcommand{\Gdt}{\ty{Gdt}}
+\newcommand{\gdtrhs}{\texttt{Rhs}}
+\newcommand{\gdtseq}[2]{#1; #2}
 \newcommand{\gdtguard}[2]{\texttt{Guard} \; #1 \; #2}
-% CtTree Ctt
-\newcommand{\Ctt}{\ty{Ctt}}
-\newcommand{\cttdiv}[2]{\texttt{DivergeIf} \; #1 \; #2}
-\newcommand{\cttft}[2]{\texttt{FallThroughIf} \; #1 \; #2}
-\newcommand{\cttref}[2]{\texttt{Refine} \; #1 \; #2}
 % AnnTree Ant
 \newcommand{\Ant}{\ty{Ant}}
+\newcommand{\antred}{\texttt{InaccessibleRhs}}
+\newcommand{\antrhs}{\texttt{AccessibleRhs}}
+\newcommand{\antseq}[2]{#1; #2}
 \newcommand{\antdiv}[1]{\texttt{MayDiverge} \; #1}
-\newcommand{\antred}[1]{\texttt{Inaccessible} \; #1}
 % Checking functions
 \newcommand{\unc}[2]{\mathcal{U}(#1,#2)}
 \newcommand{\ann}[2]{\mathcal{A}_\Gamma(#1,#2)}
