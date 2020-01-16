@@ -197,8 +197,8 @@
 
   \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
 
-  p \in           &\Pat &\Coloneqq& x \\
-                  &     &\mid     & \genconapp{K}{a}{\gamma}{y:\tau} \\
+  p \in           &\Pat &\Coloneqq& \_ \\
+                  &     &\mid     & K \; \overline{y} \\
                   &     &\mid     & ... \\
 
   g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
@@ -240,12 +240,12 @@
 \[
 \begin{array}{lcl}
 \ann{\Delta}{\gdtrhs{n}} &=& \begin{cases}
-    \antred{n}, & \values{\Gamma}{\Delta} = \varnothing \\
+    \antred{n}, & \values{\Gamma}{\Delta} = \emptyset \\
     \antrhs{n}, & \text{otherwise} \\
   \end{cases} \\
 \ann{\Delta}{(\gdtseq{t}{u})} &=& \antseq{\ann{\Delta}{t}}{\ann{\unc{\Delta}{t}}{u}} \\
 \ann{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \begin{cases}
-    \ann{\Delta \wedge (x \ntermeq \bot)}{t}, & \values{\Gamma}{\Delta \wedge (x \termeq \bot)} = \varnothing \\
+    \ann{\Delta \wedge (x \ntermeq \bot)}{t}, & \values{\Gamma}{\Delta \wedge (x \termeq \bot)} = \emptyset \\
     \antdiv{\ann{\Delta \wedge (x \ntermeq \bot)}{t}} & \text{otherwise} \\
   \end{cases} \\
 \ann{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \ann{\Delta \wedge (x \termeq e)}{t} \\
@@ -278,37 +278,6 @@
 
 \begin{figure}[t]
 \centering
-\[ \textbf{Construct inhabited $\nabla$s from $\Delta$} \]
-\[ \ruleform{ \values{\Gamma}{\Delta} = \mathcal{P}(\ctxt{\Gamma}{\nabla}) } \]
-\[ \ruleform{ \values{\ctxt{\Gamma}{\nabla}}{\Delta} = \mathcal{P}(\ctxt{\Gamma}{\nabla}) } \]
-\[
-\begin{array}{lcl}
-
-  \values{\Gamma}{\Delta} &=& \values{\ctxt{\Gamma}{\varnothing}}{\Delta} \\
-  \values{\ctxt{\Gamma}{\nabla}}{\delta} &=& \begin{cases}
-    \addinert{\ctxt{\Gamma}{\nabla}}{\delta} & \text{if $\addinert{\ctxt{\Gamma}{\nabla}}{\delta} \not= \bot$} \\
-    \emptyset & \text{otherwise} \\
-  \end{cases} \\
-  \values{\ctxt{\Gamma}{\nabla}}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \values{\ctxt{\Gamma'}{\nabla'}}{\Delta_2} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \values{\ctxt{\Gamma}{\nabla}}{\Delta_1} \right\} \\
-  \values{\ctxt{\Gamma}{\nabla}}{\Delta_1 \vee \Delta_2} &=& \values{\ctxt{\Gamma}{\nabla}}{\Delta_1} \cup \values{\ctxt{\Gamma}{\nabla}}{\Delta_2}
-
-\end{array}
-\]
-
-\[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
-\[ \ruleform{ \blah{\ctxt{\Gamma}{\nabla}}{\overline{x}} = \mathcal{P}(\overline{p}) } \]
-\[
-\begin{array}{lcl}
-
-  \blah{\ctxt{\Gamma}{\nabla}}{\epsilon} &=& \{ \epsilon \} \\
-  \blah{\ctxt{\Gamma}{\nabla}}{x_1 ... x_n} &=& \begin{cases}
-    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid \forall (q_1 ... q_m \, p_2 ... p_n) \in \blah{\ctxt{\Gamma}{\nabla}}{y_1 ... y_m x_2 ... x_n} \right\} & \text{if $\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \in \nabla$} \\
-    \left\{ \_ \; p_2 ... p_n \mid \forall (p_2 ... p_n) \in \blah{\ctxt{\Gamma}{\nabla}}{x_2 ... x_n} \right\} & \text{otherwise} \\
-  \end{cases} \\
-
-\end{array}
-\]
-
 \[ \textbf{Add a constraint to the inert set} \]
 \[ \ruleform{ \addinert{\ctxt{\Gamma}{\nabla}}{\delta} = \ctxt{\Gamma}{\nabla} } \]
 \[
@@ -401,143 +370,35 @@
 
 
 
-% TODO: mention the vs? I don't think so, satisfiability of Delta should
-% implicitly cover *every* variable in Gamma. But we might want to reduce
-% this to explictly passed vs anyway, because how would we recurse otherwise?
 \begin{figure}[t]
 \centering
-\[ \textbf{This figure is completely out of date, don't waste your time} \]
-\[ \textbf{Test if Oracle state Delta is unsatisfiable} \]
-\[\ruleform{ \unsat{\Gamma \vdash \Delta} }  \]
+\[ \textbf{Construct inhabited $\nabla$s from $\Delta$} \]
+\[ \ruleform{ \values{\Gamma}{\Delta} = \mathcal{P}(\overline{p}) } \]
+\[ \ruleform{ \values{\ctxt{\Gamma}{\nabla}}{\Delta} = \mathcal{P}(\ctxt{\Gamma}{\nabla}) } \]
 \[
-\begin{array}{c}
+\begin{array}{lcl}
 
-  % TODO: Fix unforunate kind of ambiguous syntax
-  \prooftree
-    \unsat{\vtupnew{\Gamma}{fvs \Gamma}{\Delta}}
-  \justifies
-    \unsat{\Gamma \vdash \Delta}
-  \endprooftree
-
-  \\ \\
+  \values{\Gamma}{\Delta} &=& \bigcup \left\{ \blah{\ctxt{\Gamma'}{\nabla'}}{\mathsf{fvs}(\Gamma)} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \values{\ctxt{\Gamma}{\varnothing}}{\Delta} \right\} \\
+  \values{\ctxt{\Gamma}{\nabla}}{\delta} &=& \begin{cases}
+    \left\{ \ctxt{\Gamma'}{\nabla'} \right\} & \text{where $\ctxt{\Gamma'}{\nabla'} = \addinert{\ctxt{\Gamma}{\nabla}}{\delta}$} \\
+    \emptyset & \text{otherwise} \\
+  \end{cases} \\
+  \values{\ctxt{\Gamma}{\nabla}}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \values{\ctxt{\Gamma'}{\nabla'}}{\Delta_2} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \values{\ctxt{\Gamma}{\nabla}}{\Delta_1} \right\} \\
+  \values{\ctxt{\Gamma}{\nabla}}{\Delta_1 \vee \Delta_2} &=& \values{\ctxt{\Gamma}{\nabla}}{\Delta_1} \cup \values{\ctxt{\Gamma}{\nabla}}{\Delta_2}
 
 \end{array}
 \]
-\[ \textbf{Test a list of SAT roots for inhabitants} \]
-\[\ruleform{ \unsat{\vtupnew{\Gamma}{\overline{x}}{\Delta}} }  \]
+
+\[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
+\[ \ruleform{ \blah{\ctxt{\Gamma}{\nabla}}{\overline{x}} = \mathcal{P}(\overline{p}) } \]
 \[
-\begin{array}{c}
+\begin{array}{lcl}
 
-  \prooftree
-    \unsat{\vtupnew{\Gamma}{x_i}{\Delta}}
-  \justifies
-    \unsat{\vtupnew{\Gamma}{\overline{x}}{\Delta}}
-  \endprooftree
-
-  \\ \\
-
-\end{array}
-\]
-\[ \textbf{Test a single SAT root for inhabitants} \]
-\[\ruleform{ \unsat{\vtupnew{\Gamma}{x}{\Delta}} }  \]
-\[
-\begin{array}{c}
-
-  \prooftree
-    \unsat{\Gamma \vdash \wedge{\Delta}{x \termeq \bot}}
-    \quad
-    \text{$\{\overline{K}\}$ COMPLETE set}
-    \quad
-    % TODO: Lacks bindings for K's type variables
-    % TODO: \forall instantiation :( Although type-checker helps here
-    \overline{\forall\overline{y:\tau}.\unsat{\Gamma,\overline{y:\tau} \vdash \wedge{\Delta}{x \termeq K\;\overline{y}}}}
-  \justifies
-    \unsat{\vtupnew{\Gamma}{x}{\Delta}}
-  \endprooftree
-
-  \\ \\
-
-\end{array}
-\]
-\[ \textbf{Add a single equality to $\Delta$} \]
-\[\ruleform{ \unsat{\Gamma \vdash \wedge{\Delta}{\delta}} }  \]
-\[
-\begin{array}{c}
-  \text{Term stuff: Bottom, negative info, positive info + generativity, positive info + univalence}
-
-  \\ \\
-
-  \prooftree
-    x \ntermeq sth \in \Delta
-  \justifies
-    \unsat{\Gamma \vdash \wedge{\Delta}{x \termeq \bot}}
-  \endprooftree
-
-  \qquad
-
-  \prooftree
-    x \termeq K\;\overline{y} \in \Delta
-  \justifies
-    \unsat{\Gamma \vdash \wedge{\Delta}{x \termeq \bot}}
-  \endprooftree
-
-  \\ \\
-
-  \prooftree
-    x \ntermeq K \in \Delta
-  \justifies
-    % TODO: well-formedness... Gamma must bind x and ys
-    \unsat{\Gamma \vdash \wedge{\Delta}{x \termeq K\;\overline{y}}}
-  \endprooftree
-
-  \qquad
-
-  \prooftree
-    x \termeq K_i\;\overline{y}\in \Delta \quad i \neq j \quad \text{$K_i$ and $K_j$ generative}
-  \justifies
-    \unsat{\Gamma \vdash \wedge{\Delta}{x \termeq K_j \;\overline{z}}}
-  \endprooftree
-
-  \\ \\
-
-  \prooftree
-    x \termeq K\;\overline{\tau}\;\overline{y}\in \Delta \quad \unsat{\Gamma \vdash \wedge{\Delta}{\tau_i \typeeq \sigma_i}}
-  \justifies
-    \unsat{\Gamma \vdash \wedge{\Delta}{x \termeq K \;\overline{\sigma} \;\overline{z}}}
-  \endprooftree
-
-  \qquad
-
-  \prooftree
-    x \termeq K\;\overline{\tau}\;\overline{y}\in \Delta \quad \unsat{\Gamma \vdash \wedge{\Delta}{y_i \termeq z_i}}
-  \justifies
-    \unsat{\Gamma \vdash \wedge{\Delta}{x \termeq K \;\overline{\sigma} \;\overline{z}}}
-  \endprooftree
-
-  \\ \\
-
-  \text{Type stuff: Hand over to unspecified type oracle}
-
-  \\ \\
-
-  \prooftree
-    \text{$\tau_1$ and $\tau_2$ incompatible to Givens in $\Delta$ according to type oracle}
-  \justifies
-    \unsat{\Gamma \vdash \wedge{\Delta}{\tau_1 \typeeq \tau_2}}
-  \endprooftree
-
-  \\ \\
-
-  \text{Mixed: Instantiate K and see if that leads to a contradiction TODO: Proper instantiation}
-
-  \\ \\
-
-  \prooftree
-    \overline{\unsat{\vtupnew{\Gamma}{y}{\Delta \cup y \ntermeq \bot}}}
-    \quad
-  \justifies
-    \unsat{\Gamma \vdash \wedge{\Delta}{x \termeq K\;\overline{y}}}
-  \endprooftree
+  \blah{\ctxt{\Gamma}{\nabla}}{\epsilon} &=& \{ \epsilon \} \\
+  \blah{\ctxt{\Gamma}{\nabla}}{x_1 ... x_n} &=& \begin{cases}
+    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid \forall (q_1 ... q_m \, p_2 ... p_n) \in \blah{\ctxt{\Gamma}{\nabla}}{y_1 ... y_m x_2 ... x_n} \right\} & \text{if $\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \in \nabla$} \\
+    \left\{ \_ \; p_2 ... p_n \mid \forall (p_2 ... p_n) \in \blah{\ctxt{\Gamma}{\nabla}}{x_2 ... x_n} \right\} & \text{otherwise} \\
+  \end{cases} \\
 
 \end{array}
 \]
