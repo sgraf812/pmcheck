@@ -153,6 +153,7 @@
 
 % This is the stuff from 2019
 \newcommand{\ty}[1]{\textsf{#1}\xspace}
+\newcommand{\Pat}{\ty{Pat}}
 \newcommand{\Grd}{\ty{Grd}}
 \newcommand{\Con}{\ty{Con}}
 \newcommand{\Var}{\ty{Var}}
@@ -168,24 +169,26 @@
 \newcommand{\genconapp}[4]{#1\;\overline{#2}\;\overline{#3}\;\overline{#4}}
 % GrdTree Gdt
 \newcommand{\Gdt}{\ty{Gdt}}
-\newcommand{\gdtrhs}{\texttt{Rhs}}
+\newcommand{\gdtrhs}[1]{\texttt{Rhs} \; #1}
 \newcommand{\gdtseq}[2]{#1; #2}
 \newcommand{\gdtguard}[2]{\texttt{Guard} \; #1 \; #2}
 % AnnTree Ant
 \newcommand{\Ant}{\ty{Ant}}
-\newcommand{\antred}{\texttt{InaccessibleRhs}}
-\newcommand{\antrhs}{\texttt{AccessibleRhs}}
+\newcommand{\antred}[1]{\texttt{InaccessibleRhs} \; #1}
+\newcommand{\antrhs}[1]{\texttt{AccessibleRhs} \; #1}
 \newcommand{\antseq}[2]{#1; #2}
 \newcommand{\antdiv}[1]{\texttt{MayDiverge} \; #1}
 % Checking functions
 \newcommand{\unc}[2]{\mathcal{U}(#1,#2)}
 \newcommand{\ann}[2]{\mathcal{A}_\Gamma(#1,#2)}
-\newcommand{\divann}[2]{\mathcal{D}(#1,#2)}
-\newcommand{\inh}[3]{\mathcal{V}(#1,#2) \Rightarrow #3}
+\newcommand{\values}[2]{\mathcal{M}(#1,#2)}
+\newcommand{\blah}[2]{\mathcal{I}(#1,#2)}
 
-\newcommand{\extdiv}{\cup_D}
-\newcommand{\extcov}{\cup_C}
-\newcommand{\extunc}{\cup_U}
+\newcommand{\ctxt}[2]{#1 \triangleright #2}
+\newcommand{\addinert}[2]{#1 \oplus #2}
+\newcommand{\inh}[2]{#1 \vdash #2}
+
+\newcommand{\evdnce}[2]{#1 \triangleright #2}
 \newcommand{\vtup}[3]{#1 \vdash #2 \deltasep #3}
 \newcommand{\vtupnew}[3]{#1 \vdash #2 \deltasep #3}
 \newcommand{\sat}[1]{\vdash_\textsc{Sat} #1}

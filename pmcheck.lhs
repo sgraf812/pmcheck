@@ -62,6 +62,8 @@
 \usepackage{paralist}  % For inlined lists
 
 \usepackage{prooftree} % For derivation trees
+\usepackage{stackengine} % For linebraks in derivation tree premises
+\stackMath
 
 \PassOptionsToPackage{table}{xcolor} % for highlight
 \usepackage{pgf}
@@ -187,13 +189,17 @@
   x,y,a,b     \in &\Var &         & \\
   \tau,\sigma \in &\Type&         & \\
   e \in           &\Expr&\Coloneqq& x:\tau \\
-                  &     &\mid     & \genconapp{K}{a}{\gamma}{e:\tau} \\
+                  &     &\mid     & \genconapp{K}{\tau}{\gamma}{e:\tau} \\
                   &     &\mid     & ... \\
 \end{array} &
 \begin{array}{rlcl}
   n      \in      &\mathbb{N}&    & \\
 
   \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
+
+  p \in           &\Pat &\Coloneqq& x \\
+                  &     &\mid     & \genconapp{K}{a}{\gamma}{y:\tau} \\
+                  &     &\mid     & ... \\
 
   g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
                   &     &\mid     & \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \\
@@ -207,49 +213,51 @@
   \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
   \delta &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Constraint Literals} \\
   \Delta &\Coloneqq& \delta \mid \Delta \wedge \Delta \mid \Delta \vee \Delta & \text{Formula} \\
+  \nabla &\Coloneqq& \varnothing \mid \nabla, \delta & \text{Inert Set} \\
 \end{array}
 \]
 
 \[ \textbf{Clause Tree Syntax} \]
 \[
 \begin{array}{rcll}
-  t_G,u_G \in \Gdt &\Coloneqq& \gdtrhs \mid \gdtseq{t_G}{u_G} \mid \gdtguard{g}{t_G}         \\
-  t_A,u_A \in \Ant &\Coloneqq& \antrhs \mid \antred \mid \antseq{t_A}{u_A} \mid \antdiv{t_A} \\
+  t_G,u_G \in \Gdt &\Coloneqq& \gdtrhs{n} \mid \gdtseq{t_G}{u_G} \mid \gdtguard{g}{t_G}         \\
+  t_A,u_A \in \Ant &\Coloneqq& \antrhs{n} \mid \antred{n} \mid \antseq{t_A}{u_A} \mid \antdiv{t_A} \\
 \end{array}
 \]
 
 \[ \textbf{Checking Guard Trees} \]
-\[ \ruleform{ \unc{\Delta}{\Gdt} = \Delta } \]
+\[ \ruleform{ \unc{\Delta}{t_G} = \Delta } \]
 \[
 \begin{array}{lcl}
-\unc{\Delta}{\gdtrhs} &=& \false \\
+\unc{\Delta}{\gdtrhs{n}} &=& \false \\
 \unc{\Delta}{(\gdtseq{t}{u})} &=& \unc{\unc{\Delta}{t}}{u} \\
 \unc{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \unc{\Delta \wedge (x \ntermeq \bot)}{t} \\
 \unc{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \unc{\Delta \wedge (x \termeq e)}{t} \\
 \unc{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\Delta \wedge (x \ntermeq K) \wedge (x \ntermeq \bot)) \vee \unc{\Delta \wedge (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{gs} \\
 \end{array}
 \]
-\[ \ruleform{ \ann{\Delta}{\Gdt} = \Ant } \]
+\[ \ruleform{ \ann{\Delta}{t_G} = t_A } \]
 \[
 \begin{array}{lcl}
-\ann{\Delta}{\gdtrhs} &=& \begin{cases}
-    \antred, & \inh{\Gamma}{\Delta}{\varnothing} \\
-    \antrhs, & \text{otherwise} \\
+\ann{\Delta}{\gdtrhs{n}} &=& \begin{cases}
+    \antred{n}, & \values{\Gamma}{\Delta} = \varnothing \\
+    \antrhs{n}, & \text{otherwise} \\
   \end{cases} \\
 \ann{\Delta}{(\gdtseq{t}{u})} &=& \antseq{\ann{\Delta}{t}}{\ann{\unc{\Delta}{t}}{u}} \\
 \ann{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \begin{cases}
-    \ann{\Delta \wedge (x \ntermeq \bot)}{t}, & \inh{\Gamma}{\Delta \wedge (x \termeq \bot)}{\varnothing} \\
+    \ann{\Delta \wedge (x \ntermeq \bot)}{t}, & \values{\Gamma}{\Delta \wedge (x \termeq \bot)} = \varnothing \\
     \antdiv{\ann{\Delta \wedge (x \ntermeq \bot)}{t}} & \text{otherwise} \\
   \end{cases} \\
 \ann{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \ann{\Delta \wedge (x \termeq e)}{t} \\
 \ann{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& \ann{\Delta \wedge (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t} \\
 \end{array}
 \]
+
 \[ \textbf{Putting it all together} \]
   \begin{enumerate}
     \item[(0)] Input: Context with match vars $\Gamma$ and desugared $\Gdt$ $t$
-    \item Report $n$ value vectors of $\inh{\Gamma}{\unc{\true}{t}}{V}$ as uncovered
-    \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann{\true}{t}$ (TODO: Write a function that collects the RHSs, maybe add numbers to $\gdtrhs$ to distinguish).
+    \item Report $n$ value vectors of $\values{\Gamma}{\unc{\true}{t}}$ as uncovered
+    \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann{\true}{t}$ (TODO: Write a function that collects the RHSs).
   \end{enumerate}
 \end{figure}
 
@@ -270,73 +278,103 @@
 
 \begin{figure}[t]
 \centering
-\[ \textbf{Generating Inhabitants} \]
-\[ \ruleform{ \inh{\Gamma}{\Delta}{\mathcal{P}(V)} } \]
-\[ \text{This is \texttt{provideEvidence}} \]
+\[ \textbf{Construct inhabited $\nabla$s from $\Delta$} \]
+\[ \ruleform{ \values{\Gamma}{\Delta} = \mathcal{P}(\ctxt{\Gamma}{\nabla}) } \]
+\[ \ruleform{ \values{\ctxt{\Gamma}{\nabla}}{\Delta} = \mathcal{P}(\ctxt{\Gamma}{\nabla}) } \]
+\[
+\begin{array}{lcl}
+
+  \values{\Gamma}{\Delta} &=& \values{\ctxt{\Gamma}{\varnothing}}{\Delta} \\
+  \values{\ctxt{\Gamma}{\nabla}}{\delta} &=& \begin{cases}
+    \addinert{\ctxt{\Gamma}{\nabla}}{\delta} & \text{if $\addinert{\ctxt{\Gamma}{\nabla}}{\delta} \not= \bot$} \\
+    \emptyset & \text{otherwise} \\
+  \end{cases} \\
+  \values{\ctxt{\Gamma}{\nabla}}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \values{\ctxt{\Gamma'}{\nabla'}}{\Delta_2} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \values{\ctxt{\Gamma}{\nabla}}{\Delta_1} \right\} \\
+  \values{\ctxt{\Gamma}{\nabla}}{\Delta_1 \vee \Delta_2} &=& \values{\ctxt{\Gamma}{\nabla}}{\Delta_1} \cup \values{\ctxt{\Gamma}{\nabla}}{\Delta_2}
+
+\end{array}
+\]
+
+\[ \textbf{Construct inhabited $\nabla$s from $\Delta$} \]
+\[ \ruleform{ \blah{\ctxt{\Gamma}{\Delta}}{\overline{x}} = \mathcal{P}(\overline{p}) } \]
+\[ \ruleform{ \values{\ctxt{\Gamma}{\nabla}}{\Delta} = \mathcal{P}(\ctxt{\Gamma}{\nabla}) } \]
+\[
+\begin{array}{lcl}
+
+  \values{\Gamma}{\Delta} &=& \values{\ctxt{\Gamma}{\varnothing}}{\Delta} \\
+  \values{\ctxt{\Gamma}{\nabla}}{\delta} &=& \begin{cases}
+    \addinert{\ctxt{\Gamma}{\nabla}}{\delta} & \text{if $\addinert{\ctxt{\Gamma}{\nabla}}{\delta} \not= \bot$} \\
+    \emptyset & \text{otherwise} \\
+  \end{cases} \\
+  \values{\ctxt{\Gamma}{\nabla}}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \values{\ctxt{\Gamma'}{\nabla'}}{\Delta_2} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \values{\ctxt{\Gamma}{\nabla}}{\Delta_1} \right\} \\
+  \values{\ctxt{\Gamma}{\nabla}}{\Delta_1 \vee \Delta_2} &=& \values{\ctxt{\Gamma}{\nabla}}{\Delta_1} \cup \values{\ctxt{\Gamma}{\nabla}}{\Delta_2}
+
+\end{array}
+\]
+
+\[ \textbf{Add a constraint to the inert set} \]
+\[ \ruleform{ \addinert{\ctxt{\Gamma}{\nabla}}{\delta} = \ctxt{\Gamma}{\nabla} } \]
+\[
+\begin{array}{lcl}
+
+  \addinert{\ctxt{\Gamma}{\nabla}}{\false} &=& \bot \\
+  \addinert{\ctxt{\Gamma}{\nabla}}{\true} &=& \ctxt{\Gamma}{\nabla} \\
+  \addinert{\ctxt{\Gamma}{\nabla}}{\gamma} &=& \begin{cases}
+    \ctxt{\Gamma}{(\nabla,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\nabla$ \\ and $\forall x \in \mathsf{fvs}(\Gamma): \inh{\ctxt{\Gamma}{(\nabla,\gamma)}}{x}$} \\
+    \bot & \text{otherwise} \\
+  \end{cases} \\
+  \addinert{\ctxt{\Gamma}{\nabla}}{\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}} &=& \begin{cases}
+    \addinert{\addinert{\addinert{\ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\nabla}}{\overline{a \typeeq b}}}{\overline{\gamma}}}{\overline{\ctlet{y}{z}}} & \text{if $\ctcon{\genconapp{K}{b}{\gamma}{z:\tau}}{x} \in \nabla$ } \\
+    \ctxt{\Gamma'}{(\nabla',\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})} & \parbox[t]{0.6\textwidth}{where $\ctxt{\Gamma'}{\nabla'} = \addinert{\ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\nabla}}{\overline{\gamma}}$ \\ and $x \ntermeq K \not\in \nabla$ \\ and $\overline{\inh{\ctxt{\Gamma'}{\nabla'}}{y}}$} \\
+    \bot & \text{otherwise} \\
+  \end{cases} \\
+  \addinert{\ctxt{\Gamma}{\nabla}}{x \ntermeq K} &=& \begin{cases}
+    \bot & \text{if $\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \in \nabla$} \\
+    \bot & \parbox[t]{0.6\textwidth}{if $x:\tau \in \Gamma$ \\ and $\forall K':\sigma \in \mathsf{Cons}(\ctxt{\Gamma}{\nabla}, \tau): x \ntermeq K' \in (\nabla,x \ntermeq K)$} \\
+    \bot & \text{if not $\inh{\ctxt{\Gamma}{(\nabla,x\ntermeq K)}}{x}$} \\
+    \ctxt{\Gamma}{(\nabla,x\ntermeq K)} & \text{otherwise} \\
+  \end{cases} \\
+  \addinert{\ctxt{\Gamma}{\nabla}}{x \termeq \bot} &=& \begin{cases}
+    \bot & \text{if $x \ntermeq \bot \in \nabla$} \\
+    \ctxt{\Gamma}{(\nabla,x\termeq \bot)} & \text{otherwise} \\
+  \end{cases} \\
+  \addinert{\ctxt{\Gamma}{\nabla}}{x \ntermeq \bot} &=& \begin{cases}
+    \bot & \text{if $x \termeq \bot \in \nabla$} \\
+    \bot & \text{if not $\inh{\ctxt{\Gamma}{(\nabla,x\ntermeq\bot)}}{x}$} \\
+    \ctxt{\Gamma}{(\nabla,x\ntermeq \bot)} & \text{otherwise} \\
+  \end{cases} \\
+  \addinert{\ctxt{\Gamma}{\nabla}}{\ctlet{x}{y}} &=& \begin{cases}
+    \ctxt{\Gamma}{\nabla} & \text{if $\nabla(x) = z = \nabla(y)$} \\
+    \addinert{\ctxt{\Gamma}{\nabla}, \ctlet{x}{y}}{\bigwedge \{ \delta \in \nabla \cap x \mid \text{x in $\delta$ renamed to y} \}} & \text{if $\nabla(x) \not= z$ or $\nabla(y) \not= z$} \\
+  \end{cases} \\
+  \addinert{\ctxt{\Gamma}{\nabla}}{\ctlet{x}{\genconapp{K}{\tau}{\gamma}{e'}}} &=& \addinert{\addinert{\addinert{\ctxt{\Gamma,\overline{a},\overline{y:todo}}{\nabla}}{\ctcon{\genconapp{K}{a}{\gamma}{y}}{x}}}{\overline{a \typeeq \tau}}}{\overline{\ctlet{y}{e'}}} \text{ where $\overline{a \# \Gamma}$, $\overline{y:todo \# (\Gamma, \overline{a})}$} \\ 
+  \addinert{\ctxt{\Gamma}{\nabla}}{\ctlet{x}{e}} &=& \ctxt{\Gamma}{\nabla} \\
+
+\end{array}
+\]
+\[ \textbf{Test if $x$ is inhabited considering $\nabla$} \]
+\[ \ruleform{ \inh{\ctxt{\Gamma}{\nabla}}{x} } \]
 \[
 \begin{array}{c}
 
   \prooftree
+    (\addinert{\ctxt{\Gamma}{\nabla}}{x \termeq \bot}) \not= \bot
   \justifies
-    \inh{\Gamma}{\false}{\varnothing}
+    \inh{\ctxt{\Gamma}{\nabla}}{x}
   \endprooftree
 
   \quad
 
   \prooftree
-    \inh{\Gamma}{\Delta_1}{V_1}
-    \quad
-    \inh{\Gamma}{\Delta_2}{V_2}
+    \Shortstack{{x:\tau \in \Gamma \quad K:\sigma \in \mathsf{Cons}(\ctxt{\Gamma}{\nabla},\tau)}
+                {instantiate}
+               {(\addinert{\ctxt{\Gamma,\overline{y:\tau'}}{\nabla}}{\ctcon{\genconapp{K}{a}{\gamma}{y}}{x}}) \not= \bot}}
   \justifies
-    \inh{\Gamma}{\Delta_1 \vee \Delta_2}{V_1 \cup V_2}
+    \inh{\ctxt{\Gamma}{\nabla}}{x}
   \endprooftree
-
-  \quad
-
-  \prooftree
-  \justifies
-    \inh{\Gamma}{\Delta}{\{ v \mid \inh{\Gamma}{\Delta}{v} \}}
-  \endprooftree
-
-  \\ \\
 
 \end{array}
 \]
-\[ \ruleform{ \inh{\Gamma}{\Delta}{V} } \]
-\[
-\begin{array}{c}
-
-  \prooftree
-    \mathcal{T}(\Delta)
-  \justifies
-    \inh{\varnothing}{\Delta}{()}
-  \endprooftree
-
-  \quad
-
-
-  \prooftree
-    %\text{$K$ is constructor of data type $\tau$ with compatible fields $x_1:\sigma_1,...,x_n:\sigma_n$}
-    %\text{TODO: More precise, with types and all}
-    %\quad
-    \inh{(x_1:\sigma_1,...,x_n:\sigma_n,\Gamma)}{(\ctcon{K\;(x_1:\sigma_1) ... (x_n:\sigma_n)}{y},\Delta)}{(a_1, ..., a_n, v_2, ..., v_m)}
-  \justifies
-    \inh{y:\tau,\Gamma}{\Delta}{(K\;x_1\;...\;x_n, v_2, ..., v_m)}
-  \endprooftree
-
-  \\ \\
-
-  \prooftree
-    \text{no more fuel}
-  \justifies
-    \inh{x_1:\tau_1,...,x_n:\tau_n}{\Delta}{(\_,...,\_)}
-  \endprooftree
-
-
-\end{array}
-\]
-\[ \ruleform{ \mathcal{T}(\Delta) } \]
-\[ \textbf{Test a $\Delta$ for satisfiability} \]
 \end{figure}
 
 
