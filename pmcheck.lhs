@@ -295,19 +295,16 @@
 \end{array}
 \]
 
-\[ \textbf{Construct inhabited $\nabla$s from $\Delta$} \]
-\[ \ruleform{ \blah{\ctxt{\Gamma}{\Delta}}{\overline{x}} = \mathcal{P}(\overline{p}) } \]
-\[ \ruleform{ \values{\ctxt{\Gamma}{\nabla}}{\Delta} = \mathcal{P}(\ctxt{\Gamma}{\nabla}) } \]
+\[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
+\[ \ruleform{ \blah{\ctxt{\Gamma}{\nabla}}{\overline{x}} = \mathcal{P}(\overline{p}) } \]
 \[
 \begin{array}{lcl}
 
-  \values{\Gamma}{\Delta} &=& \values{\ctxt{\Gamma}{\varnothing}}{\Delta} \\
-  \values{\ctxt{\Gamma}{\nabla}}{\delta} &=& \begin{cases}
-    \addinert{\ctxt{\Gamma}{\nabla}}{\delta} & \text{if $\addinert{\ctxt{\Gamma}{\nabla}}{\delta} \not= \bot$} \\
-    \emptyset & \text{otherwise} \\
+  \blah{\ctxt{\Gamma}{\nabla}}{\epsilon} &=& \{ \epsilon \} \\
+  \blah{\ctxt{\Gamma}{\nabla}}{x_1 ... x_n} &=& \begin{cases}
+    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid \forall (q_1 ... q_m \, p_2 ... p_n) \in \blah{\ctxt{\Gamma}{\nabla}}{y_1 ... y_m x_2 ... x_n} \right\} & \text{if $\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \in \nabla$} \\
+    \left\{ \_ \; p_2 ... p_n \mid \forall (p_2 ... p_n) \in \blah{\ctxt{\Gamma}{\nabla}}{x_2 ... x_n} \right\} & \text{otherwise} \\
   \end{cases} \\
-  \values{\ctxt{\Gamma}{\nabla}}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \values{\ctxt{\Gamma'}{\nabla'}}{\Delta_2} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \values{\ctxt{\Gamma}{\nabla}}{\Delta_1} \right\} \\
-  \values{\ctxt{\Gamma}{\nabla}}{\Delta_1 \vee \Delta_2} &=& \values{\ctxt{\Gamma}{\nabla}}{\Delta_1} \cup \values{\ctxt{\Gamma}{\nabla}}{\Delta_2}
 
 \end{array}
 \]
@@ -320,6 +317,8 @@
   \addinert{\ctxt{\Gamma}{\nabla}}{\false} &=& \bot \\
   \addinert{\ctxt{\Gamma}{\nabla}}{\true} &=& \ctxt{\Gamma}{\nabla} \\
   \addinert{\ctxt{\Gamma}{\nabla}}{\gamma} &=& \begin{cases}
+    % TODO: This rule can loop indefinitely for GADTs... I believe we do this
+    % only one level deep in the implementation and assume that it's inhabited otherwise
     \ctxt{\Gamma}{(\nabla,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\nabla$ \\ and $\forall x \in \mathsf{fvs}(\Gamma): \inh{\ctxt{\Gamma}{(\nabla,\gamma)}}{x}$} \\
     \bot & \text{otherwise} \\
   \end{cases} \\
