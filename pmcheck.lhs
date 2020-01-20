@@ -198,7 +198,7 @@
   \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
 
   p \in           &\Pat &\Coloneqq& \_ \\
-                  &     &\mid     & K \; \overline{y} \\
+                  &     &\mid     & K \; \overline{p} \\
                   &     &\mid     & ... \\
 
   g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
@@ -233,7 +233,7 @@
 \unc{\Delta}{(\gdtseq{t}{u})} &=& \unc{\unc{\Delta}{t}}{u} \\
 \unc{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \unc{\Delta \wedge (x \ntermeq \bot)}{t} \\
 \unc{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \unc{\Delta \wedge (x \termeq e)}{t} \\
-\unc{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\Delta \wedge (x \ntermeq K) \wedge (x \ntermeq \bot)) \vee \unc{\Delta \wedge (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{gs} \\
+\unc{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\Delta \wedge (x \ntermeq K)) \vee \unc{\Delta \wedge (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{gs} \\
 \end{array}
 \]
 \[ \ruleform{ \ann{\Delta}{t_G} = t_A } \]
@@ -338,6 +338,7 @@
   \end{cases} \\
   \addinert{\ctxt{\Gamma}{\nabla}}{x \ntermeq K} &=& \begin{cases}
     \bot & \text{if $\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \in \nabla$} \\
+    % TODO: I'm not sure if we really need the next line. It should be covered by the following case
     \bot & \parbox[t]{0.6\textwidth}{if $x:\tau \in \Gamma$ \\ and $\forall K' \in \mathsf{Cons}(\ctxt{\Gamma}{\nabla}, \tau): x \ntermeq K' \in (\nabla,x \ntermeq K)$} \\
     \bot & \text{if not $\inhabited{\ctxt{\Gamma}{(\nabla,x\ntermeq K)}}{x}$} \\
     \ctxt{\Gamma}{(\nabla,x\ntermeq K)} & \text{otherwise} \\
@@ -452,26 +453,178 @@
 
 
 
+\section{End to end example}
 
+We'll start from the following source Haskell program and see how each of the steps (translation to guard trees, checking guard trees and ultimately generating inhabitants of the occurring $\Delta$s) work.
 
+\begin{code}
+f :: Maybe Int -> Int
+f Nothing         = 0 -- RHS 1
+f x | Just y <- x = y -- RHS 2
+\end{code} 
 
+\subsection{Translation to guard trees}
 
+The program (by a function we probably only give in the appendix?) corresponds to the following guard tree $t$:
+\[
+\begin{array}{c}
+  \gdtseq{\gdtguard{(\grdbang{x})}{\gdtguard{(\grdcon{\mathtt{Nothing}}{x})}{\gdtrhs{1}}}}{\\ \gdtguard{(\grdbang{x})}{\gdtguard{(\grdcon{\mathtt{Just} \; y}{x})}{\gdtrhs{2}}}}
+\end{array}
+\]
 
+Data constructor matches are strict, so we add a bang for each match.
 
+\subsection{Checking}
 
+\subsubsection{Uncovered values}
 
+First compute the uncovered $\Delta$s, after the first and the second clause respectively.
 
+\begin{enumerate}
+  \item \[
+      \begin{array}{lcl}
+        \Delta_1 &:=& \unc{\true}{\gdtguard{(\grdbang{x})}{\gdtguard{(\grdcon{\mathtt{Nothing}}{x})}{\gdtrhs{1}}}} \\
+                 &= & (\true \wedge x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}) \vee (\true \wedge x \ntermeq \bot \wedge \false)
+      \end{array}
+    \]
+  \item \[
+      \begin{array}{lcl}
+        \Delta_2 &:=& \unc{\true}{t} \\
+                 &= & (\Delta_1 \wedge x \ntermeq \bot \wedge x \ntermeq \mathtt{Just}) \vee (\Delta_1 \wedge x \ntermeq \bot \wedge \false)
+      \end{array}
+    \]
+\end{enumerate}
 
+Note how $\Delta_1$ gets duplicated in $\Delta_2$. The right operands of $\vee$
+are vacuous, but the purely syntactical transformation doesn't see that. Hence
+it makes sense for the implementation to do work on $\Delta_1$ prior to
+duplicating it, so that the same work doesn't have to be performed twice (or
+exponentially often). In practice, this works by converting to $\nabla$
+eagerly. It's quite similar to the situation with call-by-name (where we might
+need to "evaluate" $\Delta_1$ multiple times) vs. call-by-value (where we
+evaluate once up front).
+ 
+\subsubsection{Redundancy}
 
+We'll just give the four $\Delta$s that we need to generate the inhabitants
+for (as part of computing $\ann{\Delta}{t}$): One for each bang (for knowing
+whether we need to wrap a $\antdiv{}$ and one for each RHS (where we have to
+decide for $\antred{}$ or $\antrhs{}$).
 
+\begin{enumerate}
+  \item The first divergence check: $\Delta_3 := \true \wedge x \termeq \bot$
+  \item Upon reaching the first RHS: $\Delta_4 := \true \wedge x \ntermeq \bot \wedge \ctcon{\mathtt{Nothing}}{x}$
+  \item The second divergence check: $\Delta_5 := \Delta_1 \wedge x \termeq \bot$
+  \item Upon reaching the second RHS: $\Delta_6 := \Delta_1 \wedge x \ntermeq \bot \wedge \ctcon{\mathtt{Just} \; y}{x}$
+\end{enumerate}
 
+The missing equations and the annotated tree then depend on the inhabitants of these $\Delta$s, i.e. on the result of $\generate{x:\texttt{Maybe Int}}{\Delta_i}$.
 
+\subsection{Generating inhabitants}
 
+Let's start with $\generate{\Gamma}{\Delta_3}$, where $\Gamma =
+x:\texttt{Maybe Int}$.
 
+We immediately have $\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_3}$ as a
+sub-goal. The first constraint $\true$ is added very easily to the initial
+$\nabla$ by discarding it, the second one ($x \termeq \bot$) is not conflicting
+with any $x \ntermeq \bot$ constraint in the incoming $\nabla$ $\varnothing$,
+so we end up with $\ctxt{\Gamma}{x \termeq \bot}$ as proof that $\Delta_3$ is
+in fact inhabited. Indeed, $\expand{\ctxt{\Gamma}{x \termeq \bot}}{x}$
+generate $\_$ as the inhabitant (which is rather unhelpful, but correct).
 
+The result of $\generate{\Gamma}{\Delta_3}$ is thus $\{\_\}$, which is not
+empty. Thus, $\ann{\Delta}{t}$ will wrap a $\antdiv{}$ around the first RHS.
 
+Similarly, $\generate{\Gamma}{\Delta_4}$ needs
+$\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_4}$, which in turn will add $x
+\ntermeq \bot$ to an initially empty $\nabla$. That entails an inhabitance
+check to see if $x$ might take on any values besides $\bot$.
 
+This is one possible derivation of the $\inhabited{\ctxt{\Gamma}{x \ntermeq \bot}}{x}$ predicate:
+\[
+  \begin{array}{c}
 
+  \prooftree
+    \Shortstack{{x:\texttt{Maybe Int} \in \Gamma \quad \mathtt{Nothing} \in \mathsf{Cons}(\ctxt{\Gamma}{x \ntermeq \bot},\texttt{Maybe Int})}
+                {\inst{\Gamma}{x}{\mathtt{Nothing}} = \ctcon{\mathtt{Nothing}}{x}}
+               {(\addinert{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}) \not= \bot}}
+  \justifies
+    \inhabited{\ctxt{\Gamma}{x \ntermeq \bot}}{x}
+  \endprooftree
+
+  \end{array}
+\]
+
+The subgoal $\addinert{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}$
+is handled by the second case of the match on constructor pattern constraints,
+because there are no other constructor pattern constraints yet in the incoming
+$\nabla$. Since there are no type constraints carried by \texttt{Nothing}, no
+fields and no constraints of the form $x \ntermeq K$ in $\nabla$, we end up
+with $\ctxt{\Gamma}{x \ntermeq \bot, \ctcon{\mathtt{Nothing}}{x}}$. Which is
+not $\bot$, thus we conclude our proof of
+$\inhabited{\ctxt{\Gamma}{x \ntermeq \bot}}{x}$.
+
+Next, we have to add $\ctcon{\mathtt{Nothing}}{x}$ to our $\nabla = x \ntermeq \bot$,
+which amounts to computing
+$\addinert{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}$.
+Conveniently, we just did that! So the result of
+$\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_4}$ is
+$\ctxt{\Gamma}{x \ntermeq \bot, \ctcon{\mathtt{Nothing}}{x}}$.
+
+Now, we see that
+$\expand{\ctxt{\Gamma}{(x \ntermeq \bot, \ctcon{\mathtt{Nothing}}{x})}}{x} = \{\mathtt{Nothing}\}$,
+which is also the result of $\generate{\Gamma}{\Delta_4}$.
+
+The checks for $\Delta_5$ and $\Delta_6$ are quite similar, only that we start
+from $\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_1}$ (which occur
+syntactically in $\Delta_5$ and $\Delta_6$) as the initial $\nabla$. So, we
+first compute that.
+
+Fast forward to computing $\addinert{\ctxt{\Gamma}{x \ntermeq \bot}}{x \ntermeq \mathtt{Nothing}}$.
+Ultimately, this entails a proof of
+$\inhabited{\ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}}{x}$, for which we need to instantiate the \texttt{Just} constructor:
+\[
+  \begin{array}{c}
+
+  \prooftree
+    \Shortstack{{x:\texttt{Maybe Int} \in \Gamma \quad \mathtt{Just} \in \mathsf{Cons}(\ctxt{\Gamma}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})},\texttt{Maybe Int})}
+                {\inst{\Gamma}{x}{\mathtt{Just}} = \ctcon{\mathtt{Just} \; y}{x}}
+               {(\addinert{\ctxt{\Gamma,y:\mathtt{Int}}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})}}{\ctcon{\mathtt{Just} \; y}{x}}) \not= \bot}}
+  \justifies
+    \inhabited{\ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}}{x}
+  \endprooftree
+
+  \end{array}
+\]
+
+$\addinert{\ctxt{\Gamma,y:\mathtt{Int}}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})}}{\ctcon{\mathtt{Just} \; y}{x}})$
+is in fact not $\bot$, which is enough to conclude
+$\inhabited{\ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}}{x}$.
+
+The second operand of $\vee$ in $\Delta_1$ is similar, but ultimately ends in
+$\false$, so will never produce a $\nabla$, so
+$\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_1} = \ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}$.
+
+$\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_5}$ will then just add
+$x \termeq \bot$ to that $\nabla$, which immediately refutes with
+$x \ntermeq \bot$. So no $\antdiv{}$ around the second RHS.
+
+$\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_6}$ is very similar to the
+situation with $\Delta_4$, just with more (non-conflicting) constraints in the
+incoming $\nabla$ and with $\ctcon{\mathtt{Just}\;y}{x}$ instead of
+$\ctcon{\mathtt{Nothing}}{x}$. Thus, $\generate{\Gamma}{\Delta_6} = \{\mathtt{Just}\; \_\}$.
+
+The last bit concerns $\generate{\Gamma}{\Delta_2}$, which is empty because we
+ultimately would add $x \ntermeq \mathtt{Just}$ to the inert set
+$x \ntermeq \bot, x \ntermeq \mathtt{Nothing}$, which refutes by the second
+case of $\addinert{\_}{\_}$. (The $\vee$ operand with $\false$ in it is empty,
+as usual).
+
+So we have $\generate{\Gamma}{\Delta_2} = \emptyset$ and the pattern-match is
+exhaustive.
+
+The result of $\ann{\Gamma}{t}$ is thus $\antseq{\antdiv{\antrhs{1}}}{\antrhs{2}}$.
 
 %\listoftodos\relax
 
@@ -480,10 +633,3 @@
 %\bibliography{references}
 
 \end{document}
-
-%                       Revision History
-%                       -------- -------
-%  Date         Person  Ver.    Change
-%  ----         ------  ----    ------
-
-%  2013.06.29   TU      0.1--4  comments on permission/copyright notices
