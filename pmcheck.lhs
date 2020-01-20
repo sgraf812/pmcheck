@@ -240,12 +240,12 @@
 \[
 \begin{array}{lcl}
 \ann{\Delta}{\gdtrhs{n}} &=& \begin{cases}
-    \antred{n}, & \values{\Gamma}{\Delta} = \emptyset \\
+    \antred{n}, & \generate{\Gamma}{\Delta} = \emptyset \\
     \antrhs{n}, & \text{otherwise} \\
   \end{cases} \\
 \ann{\Delta}{(\gdtseq{t}{u})} &=& \antseq{\ann{\Delta}{t}}{\ann{\unc{\Delta}{t}}{u}} \\
 \ann{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \begin{cases}
-    \ann{\Delta \wedge (x \ntermeq \bot)}{t}, & \values{\Gamma}{\Delta \wedge (x \termeq \bot)} = \emptyset \\
+    \ann{\Delta \wedge (x \ntermeq \bot)}{t}, & \generate{\Gamma}{\Delta \wedge (x \termeq \bot)} = \emptyset \\
     \antdiv{\ann{\Delta \wedge (x \ntermeq \bot)}{t}} & \text{otherwise} \\
   \end{cases} \\
 \ann{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \ann{\Delta \wedge (x \termeq e)}{t} \\
@@ -256,7 +256,7 @@
 \[ \textbf{Putting it all together} \]
   \begin{enumerate}
     \item[(0)] Input: Context with match vars $\Gamma$ and desugared $\Gdt$ $t$
-    \item Report $n$ value vectors of $\values{\Gamma}{\unc{\true}{t}}$ as uncovered
+    \item Report $n$ pattern vectors of $\generate{\Gamma}{\unc{\true}{t}}$ as uncovered
     \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann{\true}{t}$ (TODO: Write a function that collects the RHSs).
   \end{enumerate}
 \end{figure}
@@ -266,6 +266,46 @@
 
 
 
+
+\begin{figure}[t]
+\centering
+\[ \textbf{Generate inhabitants of $\Delta$} \]
+\[ \ruleform{ \generate{\Gamma}{\Delta} = \mathcal{P}(\PS) } \]
+\[
+\begin{array}{c}
+   \generate{\Gamma}{\Delta} = \bigcup \left\{ \expand{\ctxt{\Gamma'}{\nabla'}}{\mathsf{fvs}(\Gamma)} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \construct{\ctxt{\Gamma}{\varnothing}}{\Delta} \right\}
+\end{array}
+\]
+
+\[ \textbf{Construct inhabited $\nabla$s from $\Delta$} \]
+\[ \ruleform{ \construct{\ctxt{\Gamma}{\nabla}}{\Delta} = \mathcal{P}(\ctxt{\Gamma}{\nabla}) } \]
+\[
+\begin{array}{lcl}
+
+  \construct{\ctxt{\Gamma}{\nabla}}{\delta} &=& \begin{cases}
+    \left\{ \ctxt{\Gamma'}{\nabla'} \right\} & \text{where $\ctxt{\Gamma'}{\nabla'} = \addinert{\ctxt{\Gamma}{\nabla}}{\delta}$} \\
+    \emptyset & \text{otherwise} \\
+  \end{cases} \\
+  \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \construct{\ctxt{\Gamma'}{\nabla'}}{\Delta_2} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1} \right\} \\
+  \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1 \vee \Delta_2} &=& \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1} \cup \construct{\ctxt{\Gamma}{\nabla}}{\Delta_2}
+
+\end{array}
+\]
+
+\[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
+\[ \ruleform{ \expand{\ctxt{\Gamma}{\nabla}}{\overline{x}} = \mathcal{P}(\PS) } \]
+\[
+\begin{array}{lcl}
+
+  \expand{\ctxt{\Gamma}{\nabla}}{\epsilon} &=& \{ \epsilon \} \\
+  \expand{\ctxt{\Gamma}{\nabla}}{x_1 ... x_n} &=& \begin{cases}
+    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid \forall (q_1 ... q_m \, p_2 ... p_n) \in \expand{\ctxt{\Gamma}{\nabla}}{y_1 ... y_m x_2 ... x_n} \right\} & \text{if $\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \in \nabla$} \\
+    \left\{ \_ \; p_2 ... p_n \mid \forall (p_2 ... p_n) \in \expand{\ctxt{\Gamma}{\nabla}}{x_2 ... x_n} \right\} & \text{otherwise} \\
+  \end{cases} \\
+
+\end{array}
+\]
+\end{figure}
 
 
 
@@ -288,18 +328,18 @@
   \addinert{\ctxt{\Gamma}{\nabla}}{\gamma} &=& \begin{cases}
     % TODO: This rule can loop indefinitely for GADTs... I believe we do this
     % only one level deep in the implementation and assume that it's inhabited otherwise
-    \ctxt{\Gamma}{(\nabla,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\nabla$ \\ and $\forall x \in \mathsf{fvs}(\Gamma): \inh{\ctxt{\Gamma}{(\nabla,\gamma)}}{x}$} \\
+    \ctxt{\Gamma}{(\nabla,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\nabla$ \\ and $\forall x \in \mathsf{fvs}(\Gamma): \inhabited{\ctxt{\Gamma}{(\nabla,\gamma)}}{x}$} \\
     \bot & \text{otherwise} \\
   \end{cases} \\
   \addinert{\ctxt{\Gamma}{\nabla}}{\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}} &=& \begin{cases}
     \addinert{\addinert{\addinert{\ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\nabla}}{\overline{a \typeeq b}}}{\overline{\gamma}}}{\overline{\ctlet{y}{z}}} & \text{if $\ctcon{\genconapp{K}{b}{\gamma}{z:\tau}}{x} \in \nabla$ } \\
-    \ctxt{\Gamma'}{(\nabla',\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})} & \parbox[t]{0.6\textwidth}{where $\ctxt{\Gamma'}{\nabla'} = \addinert{\ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\nabla}}{\overline{\gamma}}$ \\ and $x \ntermeq K \not\in \nabla$ \\ and $\overline{\inh{\ctxt{\Gamma'}{\nabla'}}{y}}$} \\
+    \ctxt{\Gamma'}{(\nabla',\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})} & \parbox[t]{0.6\textwidth}{where $\ctxt{\Gamma'}{\nabla'} = \addinert{\ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\nabla}}{\overline{\gamma}}$ \\ and $x \ntermeq K \not\in \nabla$ \\ and $\overline{\inhabited{\ctxt{\Gamma'}{\nabla'}}{y}}$} \\
     \bot & \text{otherwise} \\
   \end{cases} \\
   \addinert{\ctxt{\Gamma}{\nabla}}{x \ntermeq K} &=& \begin{cases}
     \bot & \text{if $\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \in \nabla$} \\
-    \bot & \parbox[t]{0.6\textwidth}{if $x:\tau \in \Gamma$ \\ and $\forall K':\sigma \in \mathsf{Cons}(\ctxt{\Gamma}{\nabla}, \tau): x \ntermeq K' \in (\nabla,x \ntermeq K)$} \\
-    \bot & \text{if not $\inh{\ctxt{\Gamma}{(\nabla,x\ntermeq K)}}{x}$} \\
+    \bot & \parbox[t]{0.6\textwidth}{if $x:\tau \in \Gamma$ \\ and $\forall K' \in \mathsf{Cons}(\ctxt{\Gamma}{\nabla}, \tau): x \ntermeq K' \in (\nabla,x \ntermeq K)$} \\
+    \bot & \text{if not $\inhabited{\ctxt{\Gamma}{(\nabla,x\ntermeq K)}}{x}$} \\
     \ctxt{\Gamma}{(\nabla,x\ntermeq K)} & \text{otherwise} \\
   \end{cases} \\
   \addinert{\ctxt{\Gamma}{\nabla}}{x \termeq \bot} &=& \begin{cases}
@@ -308,41 +348,105 @@
   \end{cases} \\
   \addinert{\ctxt{\Gamma}{\nabla}}{x \ntermeq \bot} &=& \begin{cases}
     \bot & \text{if $x \termeq \bot \in \nabla$} \\
-    \bot & \text{if not $\inh{\ctxt{\Gamma}{(\nabla,x\ntermeq\bot)}}{x}$} \\
+    \bot & \text{if not $\inhabited{\ctxt{\Gamma}{(\nabla,x\ntermeq\bot)}}{x}$} \\
     \ctxt{\Gamma}{(\nabla,x\ntermeq \bot)} & \text{otherwise} \\
   \end{cases} \\
   \addinert{\ctxt{\Gamma}{\nabla}}{\ctlet{x}{y}} &=& \begin{cases}
     \ctxt{\Gamma}{\nabla} & \text{if $\nabla(x) = z = \nabla(y)$} \\
-    \addinert{\ctxt{\Gamma}{\nabla}, \ctlet{x}{y}}{\bigwedge \{ \delta \in \nabla \cap x \mid \text{x in $\delta$ renamed to y} \}} & \text{if $\nabla(x) \not= z$ or $\nabla(y) \not= z$} \\
+    \addinert{\ctxt{\Gamma}{\nabla}, \ctlet{x}{y}}{(\nabla \cap x)[y / x]} & \text{if $\nabla(x) \not= z$ or $\nabla(y) \not= z$} \\
   \end{cases} \\
-  \addinert{\ctxt{\Gamma}{\nabla}}{\ctlet{x}{\genconapp{K}{\tau}{\gamma}{e'}}} &=& \addinert{\addinert{\addinert{\ctxt{\Gamma,\overline{a},\overline{y:todo}}{\nabla}}{\ctcon{\genconapp{K}{a}{\gamma}{y}}{x}}}{\overline{a \typeeq \tau}}}{\overline{\ctlet{y}{e'}}} \text{ where $\overline{a \# \Gamma}$, $\overline{y:todo \# (\Gamma, \overline{a})}$} \\ 
+  \addinert{\ctxt{\Gamma}{\nabla}}{\ctlet{x}{\genconapp{K}{\tau}{\gamma}{e}}} &=& \addinert{\addinert{\addinert{\ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\nabla}}{\ctcon{\genconapp{K}{a}{\gamma}{y}}{x}}}{\overline{a \typeeq \tau}}}{\overline{\ctlet{y}{e}}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\sigma}$} \\ 
   \addinert{\ctxt{\Gamma}{\nabla}}{\ctlet{x}{e}} &=& \ctxt{\Gamma}{\nabla} \\
 
 \end{array}
 \]
+
+\[ \ruleform{ \nabla \cap x = \nabla } \]
+\[
+\begin{array}{lcl}
+  \varnothing \cap x &=& \varnothing \\
+  (\nabla,\ctcon{\genconapp{K}{a}{\gamma}{y}}{x}) \cap x &=& (\nabla \cap x), \ctcon{\genconapp{K}{a}{\gamma}{y}}{x} \\
+  (\nabla,x \ntermeq K) \cap x &=& (\nabla \cap x), x \ntermeq K \\
+  (\nabla,x \termeq \bot) \cap x &=& (\nabla \cap x), x \termeq \bot \\
+  (\nabla,x \ntermeq \bot) \cap x &=& (\nabla \cap x), x \ntermeq \bot \\
+  (\nabla,x \termeq e) \cap x &=& (\nabla \cap x), x \termeq e \\
+  (\nabla,\delta) \cap x &=& \nabla \cap x \\
+\end{array}
+\]
+\end{figure}
+
+\begin{figure}[t]
+\centering
 \[ \textbf{Test if $x$ is inhabited considering $\nabla$} \]
-\[ \ruleform{ \inh{\ctxt{\Gamma}{\nabla}}{x} } \]
+\[ \ruleform{ \inhabited{\ctxt{\Gamma}{\nabla}}{x} } \]
 \[
 \begin{array}{c}
 
   \prooftree
     (\addinert{\ctxt{\Gamma}{\nabla}}{x \termeq \bot}) \not= \bot
   \justifies
-    \inh{\ctxt{\Gamma}{\nabla}}{x}
+    \inhabited{\ctxt{\Gamma}{\nabla}}{x}
   \endprooftree
 
   \quad
 
   \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad K:\sigma \in \mathsf{Cons}(\ctxt{\Gamma}{\nabla},\tau)}
-                {instantiate}
-               {(\addinert{\ctxt{\Gamma,\overline{y:\tau'}}{\nabla}}{\ctcon{\genconapp{K}{a}{\gamma}{y}}{x}}) \not= \bot}}
+    \Shortstack{{x:\tau \in \Gamma \quad K \in \mathsf{Cons}(\ctxt{\Gamma}{\nabla},\tau)}
+                {\inst{\Gamma}{x}{K} = \overline{\delta}}
+               {(\addinert{\ctxt{\Gamma,\overline{y:\tau'}}{\nabla}}{\overline{\delta}}) \not= \bot}}
   \justifies
-    \inh{\ctxt{\Gamma}{\nabla}}{x}
+    \inhabited{\ctxt{\Gamma}{\nabla}}{x}
+  \endprooftree
+
+  \\
+  \\
+
+  \prooftree
+    {x:\tau \in \Gamma \quad \mathsf{Cons}(\ctxt{\Gamma}{\nabla},\tau) = \bot}
+  \justifies
+    \inhabited{\ctxt{\Gamma}{\nabla}}{x}
+  \endprooftree
+
+  \quad
+
+  \prooftree
+    \Shortstack{{x:\tau \in \Gamma \quad K \in \mathsf{Cons}(\ctxt{\Gamma}{\nabla},\tau)}
+                {\inst{\Gamma}{x}{K} = \bot}}
+  \justifies
+    \inhabited{\ctxt{\Gamma}{\nabla}}{x}
   \endprooftree
 
 \end{array}
 \]
+
+\[ \textbf{Find data constructors of $\tau$} \]
+\[ \ruleform{ \cons{\ctxt{\Gamma}{\nabla}}{\tau} = \overline{K}} \]
+\[
+\begin{array}{c}
+
+  \cons{\ctxt{\Gamma}{\nabla}}{\tau} = \begin{cases}
+    \overline{K} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ data type with constructors $\overline{K}$ \\ (after normalisation according to the type constraints in $\nabla$)} \\
+    \bot & \text{otherwise} \\
+  \end{cases} \\
+
+\end{array}
+\]
+
+% This is mkOneConFull
+\[ \textbf{Instantiate $x$ to data constructor $K$} \]
+\[ \ruleform{ \inst{\Gamma}{x}{K} = \overline{\gamma} } \]
+\[
+\begin{array}{c}
+
+  \inst{\Gamma}{x}{K} = \begin{cases}
+    \tau_x \typeeq \tau, \ctcon{\genconapp{K}{a}{\gamma}{y}}{x}, \overline{y' \ntermeq \bot} & \parbox[t]{0.8\textwidth}{$K : \forall \overline{a}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{y} \# \Gamma$, $\overline{a} \# \Gamma$, $x:\tau_x \in \Gamma$, $\overline{y'}$ bind strict fields} \\
+    \bot & \text{otherwise} \\
+  \end{cases} \\
+
+\end{array}
+\]
+
+
 \end{figure}
 
 
@@ -368,41 +472,6 @@
 
 
 
-
-
-\begin{figure}[t]
-\centering
-\[ \textbf{Construct inhabited $\nabla$s from $\Delta$} \]
-\[ \ruleform{ \values{\Gamma}{\Delta} = \mathcal{P}(\overline{p}) } \]
-\[ \ruleform{ \values{\ctxt{\Gamma}{\nabla}}{\Delta} = \mathcal{P}(\ctxt{\Gamma}{\nabla}) } \]
-\[
-\begin{array}{lcl}
-
-  \values{\Gamma}{\Delta} &=& \bigcup \left\{ \blah{\ctxt{\Gamma'}{\nabla'}}{\mathsf{fvs}(\Gamma)} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \values{\ctxt{\Gamma}{\varnothing}}{\Delta} \right\} \\
-  \values{\ctxt{\Gamma}{\nabla}}{\delta} &=& \begin{cases}
-    \left\{ \ctxt{\Gamma'}{\nabla'} \right\} & \text{where $\ctxt{\Gamma'}{\nabla'} = \addinert{\ctxt{\Gamma}{\nabla}}{\delta}$} \\
-    \emptyset & \text{otherwise} \\
-  \end{cases} \\
-  \values{\ctxt{\Gamma}{\nabla}}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \values{\ctxt{\Gamma'}{\nabla'}}{\Delta_2} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \values{\ctxt{\Gamma}{\nabla}}{\Delta_1} \right\} \\
-  \values{\ctxt{\Gamma}{\nabla}}{\Delta_1 \vee \Delta_2} &=& \values{\ctxt{\Gamma}{\nabla}}{\Delta_1} \cup \values{\ctxt{\Gamma}{\nabla}}{\Delta_2}
-
-\end{array}
-\]
-
-\[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
-\[ \ruleform{ \blah{\ctxt{\Gamma}{\nabla}}{\overline{x}} = \mathcal{P}(\overline{p}) } \]
-\[
-\begin{array}{lcl}
-
-  \blah{\ctxt{\Gamma}{\nabla}}{\epsilon} &=& \{ \epsilon \} \\
-  \blah{\ctxt{\Gamma}{\nabla}}{x_1 ... x_n} &=& \begin{cases}
-    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid \forall (q_1 ... q_m \, p_2 ... p_n) \in \blah{\ctxt{\Gamma}{\nabla}}{y_1 ... y_m x_2 ... x_n} \right\} & \text{if $\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \in \nabla$} \\
-    \left\{ \_ \; p_2 ... p_n \mid \forall (p_2 ... p_n) \in \blah{\ctxt{\Gamma}{\nabla}}{x_2 ... x_n} \right\} & \text{otherwise} \\
-  \end{cases} \\
-
-\end{array}
-\]
-\end{figure}
 
 %\listoftodos\relax
 
