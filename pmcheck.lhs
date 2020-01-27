@@ -226,14 +226,14 @@
 \]
 
 \[ \textbf{Checking Guard Trees} \]
-\[ \ruleform{ \unc{\Delta}{t_G} = \Delta } \]
+\[ \ruleform{ \unc{t_G} = \Delta } \]
 \[
 \begin{array}{lcl}
-\unc{\Delta}{\gdtrhs{n}} &=& \false \\
-\unc{\Delta}{(\gdtseq{t}{u})} &=& \unc{\unc{\Delta}{t}}{u} \\
-\unc{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \unc{\Delta \wedge (x \ntermeq \bot)}{t} \\
-\unc{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \unc{\Delta \wedge (x \termeq e)}{t} \\
-\unc{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (\Delta \wedge (x \ntermeq K)) \vee \unc{\Delta \wedge (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{gs} \\
+\unc{\gdtrhs{n}} &=& \false \\
+\unc{\gdtseq{t}{u}} &=& \unc{t} \wedge \unc{u} \\
+\unc{\gdtguard{(\grdbang{x})}{t}} &=& (x \ntermeq \bot) \wedge \unc{t} \\
+\unc{\gdtguard{(\grdlet{x}{e})}{t}} &=& (x \termeq e) \wedge \unc{t} \\
+\unc{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (x \ntermeq K) \vee ((\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}) \wedge \unc{gs}) \\
 \end{array}
 \]
 \[ \ruleform{ \ann{\Delta}{t_G} = t_A } \]
@@ -243,7 +243,7 @@
     \antred{n}, & \generate{\Gamma}{\Delta} = \emptyset \\
     \antrhs{n}, & \text{otherwise} \\
   \end{cases} \\
-\ann{\Delta}{(\gdtseq{t}{u})} &=& \antseq{\ann{\Delta}{t}}{\ann{\unc{\Delta}{t}}{u}} \\
+\ann{\Delta}{(\gdtseq{t}{u})} &=& \antseq{\ann{\Delta}{t}}{\ann{\Delta \wedge \unc{t}}{u}} \\
 \ann{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \begin{cases}
     \ann{\Delta \wedge (x \ntermeq \bot)}{t}, & \generate{\Gamma}{\Delta \wedge (x \termeq \bot)} = \emptyset \\
     \antdiv{\ann{\Delta \wedge (x \ntermeq \bot)}{t}} & \text{otherwise} \\
@@ -256,7 +256,7 @@
 \[ \textbf{Putting it all together} \]
   \begin{enumerate}
     \item[(0)] Input: Context with match vars $\Gamma$ and desugared $\Gdt$ $t$
-    \item Report $n$ pattern vectors of $\generate{\Gamma}{\unc{\true}{t}}$ as uncovered
+    \item Report $n$ pattern vectors of $\generate{\Gamma}{\unc{t}}$ as uncovered
     \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann{\true}{t}$ (TODO: Write a function that collects the RHSs).
   \end{enumerate}
 \end{figure}
@@ -465,7 +465,7 @@ f x | Just y <- x = y -- RHS 2
 
 \subsection{Translation to guard trees}
 
-The program (by a function we probably only give in the appendix?) corresponds to the following guard tree $t$:
+The program (by a function we probably only give in the appendix?) corresponds to the following guard tree $t_{\mathtt{f}}$:
 \[
 \begin{array}{c}
   \gdtseq{\gdtguard{(\grdbang{x})}{\gdtguard{(\grdcon{\mathtt{Nothing}}{x})}{\gdtrhs{1}}}}{\\ \gdtguard{(\grdbang{x})}{\gdtguard{(\grdcon{\mathtt{Just} \; y}{x})}{\gdtrhs{2}}}}
@@ -483,14 +483,13 @@ First compute the uncovered $\Delta$s, after the first and the second clause res
 \begin{enumerate}
   \item \[
       \begin{array}{lcl}
-        \Delta_1 &:=& \unc{\true}{\gdtguard{(\grdbang{x})}{\gdtguard{(\grdcon{\mathtt{Nothing}}{x})}{\gdtrhs{1}}}} \\
-                 &= & (\true \wedge x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}) \vee (\true \wedge x \ntermeq \bot \wedge \false)
+        \Delta_1 &:=& \unc{\gdtguard{(\grdbang{x})}{\gdtguard{(\grdcon{\mathtt{Nothing}}{x})}{\gdtrhs{1}}}} \\
+                 &= & x \ntermeq \bot \wedge (x \ntermeq \mathtt{Nothing} \vee \false)
       \end{array}
     \]
   \item \[
       \begin{array}{lcl}
-        \Delta_2 &:=& \unc{\true}{t} \\
-                 &= & (\Delta_1 \wedge x \ntermeq \bot \wedge x \ntermeq \mathtt{Just}) \vee (\Delta_1 \wedge x \ntermeq \bot \wedge \false)
+        \Delta_2 &:=& \unc{t_{\mathtt{f}}} = \Delta_1 \wedge x \ntermeq \bot \wedge (x \ntermeq \mathtt{Just} \vee \false)
       \end{array}
     \]
 \end{enumerate}
