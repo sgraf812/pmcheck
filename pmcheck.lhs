@@ -233,7 +233,7 @@
 \unc{\gdtseq{t}{u}} &=& \unc{t} \wedge \unc{u} \\
 \unc{\gdtguard{(\grdbang{x})}{t}} &=& (x \ntermeq \bot) \wedge \unc{t} \\
 \unc{\gdtguard{(\grdlet{x}{e})}{t}} &=& (x \termeq e) \wedge \unc{t} \\
-\unc{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (x \ntermeq K) \vee ((\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}) \wedge \unc{gs}) \\
+\unc{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (x \ntermeq K) \vee ((\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}) \wedge \unc{t}) \\
 \end{array}
 \]
 \[ \ruleform{ \ann{\Delta}{t_G} = t_A } \]
@@ -273,7 +273,7 @@
 \[ \ruleform{ \generate{\Gamma}{\Delta} = \mathcal{P}(\PS) } \]
 \[
 \begin{array}{c}
-   \generate{\Gamma}{\Delta} = \bigcup \left\{ \expand{\ctxt{\Gamma'}{\nabla'}}{\mathsf{fvs}(\Gamma)} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \construct{\ctxt{\Gamma}{\varnothing}}{\Delta} \right\}
+   \generate{\Gamma}{\Delta} = \bigcup \left\{ \expand{\ctxt{\Gamma'}{\nabla'}}{\mathsf{dom}(\Gamma)} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \construct{\ctxt{\Gamma}{\varnothing}}{\Delta} \right\}
 \end{array}
 \]
 
@@ -286,7 +286,7 @@
     \left\{ \ctxt{\Gamma'}{\nabla'} \right\} & \text{where $\ctxt{\Gamma'}{\nabla'} = \addinert{\ctxt{\Gamma}{\nabla}}{\delta}$} \\
     \emptyset & \text{otherwise} \\
   \end{cases} \\
-  \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \construct{\ctxt{\Gamma'}{\nabla'}}{\Delta_2} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1} \right\} \\
+  \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \construct{\ctxt{\Gamma'}{\nabla'}}{\Delta_2} \mid (\ctxt{\Gamma'}{\nabla'}) \in \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1} \right\} \\
   \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1 \vee \Delta_2} &=& \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1} \cup \construct{\ctxt{\Gamma}{\nabla}}{\Delta_2}
 
 \end{array}
@@ -328,7 +328,7 @@
   \addinert{\ctxt{\Gamma}{\nabla}}{\gamma} &=& \begin{cases}
     % TODO: This rule can loop indefinitely for GADTs... I believe we do this
     % only one level deep in the implementation and assume that it's inhabited otherwise
-    \ctxt{\Gamma}{(\nabla,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\nabla$ \\ and $\forall x \in \mathsf{fvs}(\Gamma): \inhabited{\ctxt{\Gamma}{(\nabla,\gamma)}}{x}$} \\
+    \ctxt{\Gamma}{(\nabla,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\nabla$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\nabla,\gamma)}}{x}$} \\
     \bot & \text{otherwise} \\
   \end{cases} \\
   \addinert{\ctxt{\Gamma}{\nabla}}{\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}} &=& \begin{cases}
@@ -494,43 +494,87 @@ First compute the uncovered $\Delta$s, after the first and the second clause res
     \]
 \end{enumerate}
 
-Note how $\Delta_1$ gets duplicated in $\Delta_2$. The right operands of $\vee$
-are vacuous, but the purely syntactical transformation doesn't see that. Hence
-it makes sense for the implementation to do work on $\Delta_1$ prior to
-duplicating it, so that the same work doesn't have to be performed twice (or
-exponentially often). In practice, this works by converting to $\nabla$
-eagerly. It's quite similar to the situation with call-by-name (where we might
-need to "evaluate" $\Delta_1$ multiple times) vs. call-by-value (where we
-evaluate once up front).
- 
+The right operands of $\vee$ are vacuous, but the purely syntactical transformation doesn't see that. 
+
+We can see that $\Delta_2$ is in fact uninhabited, because the three
+constraints $x \ntermeq \bot$, $x \ntermeq \mathtt{Nothing}$ and $x \ntermeq
+\mathtt{Just}$ cover all possible data constructors of the \texttt{Maybe} data
+type. And indeed $\generate{x:\texttt{Maybe Int}}{\Delta_2} = \emptyset$, as we'll see later.
+
 \subsubsection{Redundancy}
 
-We'll just give the four $\Delta$s that we need to generate the inhabitants
-for (as part of computing $\ann{\Delta}{t}$): One for each bang (for knowing
-whether we need to wrap a $\antdiv{}$ and one for each RHS (where we have to
-decide for $\antred{}$ or $\antrhs{}$).
+In order to compute the annotated clause tree $\ann{\true}{t_{\mathtt{f}}}$, we
+need to perform the following four inhabitance checks, one for each bang (for
+knowing whether we need to wrap a $\antdiv{}$ and one for each RHS (where we
+have to decide for $\antred{}$ or $\antrhs{}$):
 
 \begin{enumerate}
   \item The first divergence check: $\Delta_3 := \true \wedge x \termeq \bot$
   \item Upon reaching the first RHS: $\Delta_4 := \true \wedge x \ntermeq \bot \wedge \ctcon{\mathtt{Nothing}}{x}$
-  \item The second divergence check: $\Delta_5 := \Delta_1 \wedge x \termeq \bot$
-  \item Upon reaching the second RHS: $\Delta_6 := \Delta_1 \wedge x \ntermeq \bot \wedge \ctcon{\mathtt{Just} \; y}{x}$
-\end{enumerate}
+  \item The second divergence check: $\Delta_5 := \true \wedge \Delta_1 \wedge x \termeq \bot$
+  \item Upon reaching the second RHS: $\Delta_6 := \true \wedge \Delta_1 \wedge x \ntermeq \bot \wedge \ctcon{\mathtt{Just} \; y}{x}$ \end{enumerate}
 
-The missing equations and the annotated tree then depend on the inhabitants of these $\Delta$s, i.e. on the result of $\generate{x:\texttt{Maybe Int}}{\Delta_i}$.
+Except for $\Delta_5$, these are all inhabited, i.e.
+$\generate{x:\texttt{Maybe Int}}{\Delta_i} \not= \emptyset$ (as we'll see in the next
+section).
+
+Thus, we will get the following annotated tree:
+\[
+  \antseq{\antdiv{\antrhs{1}}}{\antrhs{2}}
+\]
 
 \subsection{Generating inhabitants}
 
-Let's start with $\generate{\Gamma}{\Delta_3}$, where $\Gamma =
-x:\texttt{Maybe Int}$.
+The last section left open how $\generate{}{}$ works, which was used to
+establish or refute vacuosity of a $\Delta$.
 
-We immediately have $\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_3}$ as a
-sub-goal. The first constraint $\true$ is added very easily to the initial
-$\nabla$ by discarding it, the second one ($x \termeq \bot$) is not conflicting
-with any $x \ntermeq \bot$ constraint in the incoming $\nabla$ $\varnothing$,
-so we end up with $\ctxt{\Gamma}{x \termeq \bot}$ as proof that $\Delta_3$ is
-in fact inhabited. Indeed, $\expand{\ctxt{\Gamma}{x \termeq \bot}}{x}$
-generate $\_$ as the inhabitant (which is rather unhelpful, but correct).
+$\generate{}{}$ proceeds in two steps: First it constructs zero, one or many
+\emph{inert sets} $\nabla$ with $\construct{}{}$ (each of them representing a
+set of mutually compatible constraints) and then expands each of the returned
+inert sets into one or more pattern vectors $\overline{p}$ with $\expand{}{}$,
+which is the preferred representation to show to the user.
+
+The interesting bit happens in $\construct{}{}$, where a $\Delta$ is basically
+transformed into disjunctive normal form, represented by a set of independently
+inhabited $\nabla$. This happens by gradually adding individual constraints to
+the incoming inert set with $\addinert{}{}$, which starts out empty in
+$\generate{}{}$. Conjunction is handled by performing the equivalent of a
+\hs{concatMap}, whereas disjunction simply translates to set union.
+
+Let's see how that works for $\Delta_3$ above. Recall that 
+$\Gamma = x:\texttt{Maybe Int}$ and $\Delta_3 = \true \wedge x \termeq \bot$:
+
+\[
+  \begin{array}{ll}
+    & \construct{\Gamma}{\true \wedge x \termeq \bot} \\
+  = & \quad \{ \text{ Conjunction } \} \\
+    & \bigcup \left\{ \construct{\ctxt{\Gamma'}{\nabla'}}{x \termeq \bot} \mid \ctxt{\Gamma'}{\nabla'} \in \construct{\ctxt{\Gamma}{\varnothing}}{\true} \right\} \\
+  = & \quad \{ \text{ Single constraint } \} \\
+    & \begin{cases}
+        \construct{\ctxt{\Gamma'}{\nabla'}}{x \termeq \bot} & \text{where $\ctxt{\Gamma'}{\nabla'} = \addinert{\ctxt{\Gamma}{\varnothing}}{\true}$} \\
+        \emptyset & \text{otherwise} \\
+    \end{cases} \\
+  = & \quad \{ \text{ $\true$ case of $\addinert{}{}$ } \} \\
+    & \construct{\ctxt{\Gamma}{\varnothing}}{x \termeq \bot} \\
+  = & \quad \{ \text{ Single constraint } \} \\
+    & \begin{cases}
+        \{ \ctxt{\Gamma'}{\nabla'} \} & \text{where $\ctxt{\Gamma'}{\nabla'} = \addinert{\ctxt{\Gamma}{\varnothing}}{x \termeq \bot}$} \\
+        \emptyset & \text{otherwise} \\
+    \end{cases} \\
+  = & \quad \{ \text{ $x \termeq \bot$ case of $\addinert{}{}$ } \} \\
+    & \{ \ctxt{\Gamma}{x \termeq \bot} \}
+  \end{array}
+\]
+
+Let's start with $\generate{\Gamma}{\Delta_3}$, where
+$\Gamma = x:\texttt{Maybe Int}$ and recall that
+$\Delta_3 = \true \wedge x \termeq \bot$. The first constraint $\true$ is added
+very easily to the initial nabla by discarding it, the second one ($x
+\termeq \bot$) is not conflicting with any $x \ntermeq \bot$ constraint in the
+incoming, still empty ($\varnothing$) nabla, so we end up with
+$\ctxt{\Gamma}{x \termeq \bot}$ as proof that $\Delta_3$ is in fact inhabited.
+Indeed, $\expand{\ctxt{\Gamma}{x \termeq \bot}}{x}$ generate $\_$ as the
+inhabitant (which is rather unhelpful, but correct).
 
 The result of $\generate{\Gamma}{\Delta_3}$ is thus $\{\_\}$, which is not
 empty. Thus, $\ann{\Delta}{t}$ will wrap a $\antdiv{}$ around the first RHS.
