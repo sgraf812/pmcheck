@@ -189,7 +189,7 @@
   x,y,a,b     \in &\Var &         & \\
   \tau,\sigma \in &\Type&         & \\
   e \in           &\Expr&\Coloneqq& x:\tau \\
-                  &     &\mid     & \genconapp{K}{\tau}{\gamma}{e:\tau} \\
+                  &     &\mid     & \genconapp{K}{\tau}{\gamma}{e:\tau} \\ % TODO: We should probably have univ tvs split from ex
                   &     &\mid     & ... \\
 \end{array} &
 \begin{array}{rlcl}
@@ -213,7 +213,9 @@
   \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
   \delta &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Constraint Literals} \\
   \Delta &\Coloneqq& \delta \mid \Delta \wedge \Delta \mid \Delta \vee \Delta & \text{Formula} \\
-  \nabla &\Coloneqq& \varnothing \mid \nabla, \delta & \text{Inert Set} \\
+  \varphi   &\Coloneqq& \gamma \mid x \termeq \phiconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot & \text{Simple constraints without scoping} \\
+  \Phi   &\Coloneqq& \varnothing \mid \Phi,\varphi & \text{Set of simple constraints} \\
+  \nabla &\Coloneqq& \ctxt{\Gamma}{\Phi} & \text{Inert Set} \\
 \end{array}
 \]
 
@@ -225,6 +227,10 @@
 \end{array}
 \]
 
+\caption{Syntax}
+\end{figure}
+
+\begin{figure}
 \[ \textbf{Checking Guard Trees} \]
 \[ \ruleform{ \unc{t_G} = \Delta } \]
 \[
@@ -259,6 +265,8 @@
     \item Report $n$ pattern vectors of $\generate{\Gamma}{\unc{t}}$ as uncovered
     \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann{\true}{t}$ (TODO: Write a function that collects the RHSs).
   \end{enumerate}
+
+\caption{Pattern-match checking}
 \end{figure}
 
 
@@ -273,38 +281,52 @@
 \[ \ruleform{ \generate{\Gamma}{\Delta} = \mathcal{P}(\PS) } \]
 \[
 \begin{array}{c}
-   \generate{\Gamma}{\Delta} = \bigcup \left\{ \expand{\ctxt{\Gamma'}{\nabla'}}{\mathsf{dom}(\Gamma)} \mid \forall (\ctxt{\Gamma'}{\nabla'}) \in \construct{\ctxt{\Gamma}{\varnothing}}{\Delta} \right\}
+   \generate{\Gamma}{\Delta} = \bigcup \left\{ \expand{\nabla}{\mathsf{dom}(\Gamma)} \mid \nabla \in \construct{\ctxt{\Gamma}{\varnothing}}{\Delta} \right\}
 \end{array}
 \]
 
 \[ \textbf{Construct inhabited $\nabla$s from $\Delta$} \]
-\[ \ruleform{ \construct{\ctxt{\Gamma}{\nabla}}{\Delta} = \mathcal{P}(\ctxt{\Gamma}{\nabla}) } \]
+\[ \ruleform{ \construct{\nabla}{\Delta} = \mathcal{P}(\nabla) } \]
 \[
 \begin{array}{lcl}
 
-  \construct{\ctxt{\Gamma}{\nabla}}{\delta} &=& \begin{cases}
-    \left\{ \ctxt{\Gamma'}{\nabla'} \right\} & \text{where $\ctxt{\Gamma'}{\nabla'} = \addinert{\ctxt{\Gamma}{\nabla}}{\delta}$} \\
+  \construct{\nabla}{\delta} &=& \begin{cases}
+    \left\{ \nabla' \right\} & \text{where $\nabla' = \addinert{\nabla}{\delta}$} \\
     \emptyset & \text{otherwise} \\
   \end{cases} \\
-  \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \construct{\ctxt{\Gamma'}{\nabla'}}{\Delta_2} \mid (\ctxt{\Gamma'}{\nabla'}) \in \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1} \right\} \\
-  \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1 \vee \Delta_2} &=& \construct{\ctxt{\Gamma}{\nabla}}{\Delta_1} \cup \construct{\ctxt{\Gamma}{\nabla}}{\Delta_2}
+  \construct{\nabla}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \construct{\nabla'}{\Delta_2} \mid \nabla' \in \construct{\nabla}{\Delta_1} \right\} \\
+  \construct{\nabla}{\Delta_1 \vee \Delta_2} &=& \construct{\nabla}{\Delta_1} \cup \construct{\nabla}{\Delta_2}
 
 \end{array}
 \]
 
 \[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
-\[ \ruleform{ \expand{\ctxt{\Gamma}{\nabla}}{\overline{x}} = \mathcal{P}(\PS) } \]
+\[ \ruleform{ \expand{\nabla}{\overline{x}} = \mathcal{P}(\PS) } \]
 \[
 \begin{array}{lcl}
 
-  \expand{\ctxt{\Gamma}{\nabla}}{\epsilon} &=& \{ \epsilon \} \\
-  \expand{\ctxt{\Gamma}{\nabla}}{x_1 ... x_n} &=& \begin{cases}
-    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid \forall (q_1 ... q_m \, p_2 ... p_n) \in \expand{\ctxt{\Gamma}{\nabla}}{y_1 ... y_m x_2 ... x_n} \right\} & \text{if $\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \in \nabla$} \\
-    \left\{ \_ \; p_2 ... p_n \mid \forall (p_2 ... p_n) \in \expand{\ctxt{\Gamma}{\nabla}}{x_2 ... x_n} \right\} & \text{otherwise} \\
+  \expand{\nabla}{\epsilon} &=& \{ \epsilon \} \\
+  \expand{\ctxt{\Gamma}{\Phi}}{x_1 ... x_n} &=& \begin{cases}
+    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid (q_1 ... q_m \, p_2 ... p_n) \in \expand{\ctxt{\Gamma}{\Phi}}{y_1 ... y_m x_2 ... x_n} \right\} & \text{if $\rep{\Phi}{x} \termeq \phiconapp{K}{a}{y} \in \Phi$} \\
+    \left\{ \_ \; p_2 ... p_n \mid (p_2 ... p_n) \in \expand{\ctxt{\Gamma}{\Phi}}{x_2 ... x_n} \right\} & \text{otherwise} \\
   \end{cases} \\
 
 \end{array}
 \]
+
+\[ \textbf{Finding the representative of a variable in $\Phi$} \]
+\[ \ruleform{ \rep{\Phi}{x} = y } \]
+\[
+\begin{array}{lcl}
+  \rep{\Phi}{x} &=& \begin{cases}
+    \rep{\Phi}{y} & x \termeq y \in \Phi \\
+    x & \text{otherwise} \\
+  \end{cases} \\
+\end{array}
+\]
+
+
+\caption{Bridging between the facade $\Delta$ and $\nabla$}
 \end{figure}
 
 
@@ -319,61 +341,65 @@
 \begin{figure}[t]
 \centering
 \[ \textbf{Add a constraint to the inert set} \]
-\[ \ruleform{ \addinert{\ctxt{\Gamma}{\nabla}}{\delta} = \ctxt{\Gamma}{\nabla} } \]
+\[ \ruleform{ \addinert{\nabla}{\delta} = \nabla } \]
 \[
 \begin{array}{lcl}
 
-  \addinert{\ctxt{\Gamma}{\nabla}}{\false} &=& \bot \\
-  \addinert{\ctxt{\Gamma}{\nabla}}{\true} &=& \ctxt{\Gamma}{\nabla} \\
-  \addinert{\ctxt{\Gamma}{\nabla}}{\gamma} &=& \begin{cases}
+  \addinert{\nabla}{\false} &=& \bot \\
+  \addinert{\nabla}{\true} &=& \nabla \\
+  \addinert{\ctxt{\Gamma}{\Phi}}{\gamma} &=& \begin{cases}
     % TODO: This rule can loop indefinitely for GADTs... I believe we do this
     % only one level deep in the implementation and assume that it's inhabited otherwise
-    \ctxt{\Gamma}{(\nabla,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\nabla$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\nabla,\gamma)}}{x}$} \\
+    \ctxt{\Gamma}{(\Phi,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Phi$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\Phi,\gamma)}}{\rep{\Phi}{x}}$} \\
     \bot & \text{otherwise} \\
   \end{cases} \\
-  \addinert{\ctxt{\Gamma}{\nabla}}{\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}} &=& \begin{cases}
-    \addinert{\addinert{\addinert{\ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\nabla}}{\overline{a \typeeq b}}}{\overline{\gamma}}}{\overline{\ctlet{y}{z}}} & \text{if $\ctcon{\genconapp{K}{b}{\gamma}{z:\tau}}{x} \in \nabla$ } \\
-    \ctxt{\Gamma'}{(\nabla',\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})} & \parbox[t]{0.6\textwidth}{where $\ctxt{\Gamma'}{\nabla'} = \addinert{\ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\nabla}}{\overline{\gamma}}$ \\ and $x \ntermeq K \not\in \nabla$ \\ and $\overline{\inhabited{\ctxt{\Gamma'}{\nabla'}}{y}}$} \\
+  \addinert{\ctxt{\Gamma}{\Phi}}{\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}} &=& \begin{cases}
+    \addinert{\addinert{\addinert{\ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Phi}}{\overline{a \typeeq b}}}{\overline{\gamma}}}{\overline{\ctlet{y}{z}}} & \text{if $\rep{\Phi}{x} \termeq \phiconapp{K}{b}{z} \in \Phi$ } \\
+    \ctxt{\Gamma'}{(\Phi',\rep{\Phi}{x} \termeq \phiconapp{K}{a}{y})} & \parbox[t]{0.6\textwidth}{where $\ctxt{\Gamma'}{\Phi'} = \addinert{\ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Phi}}{\overline{\gamma}}$ \\ and $\rep{\Phi}{x} \ntermeq K \not\in \Phi$ \\ and $\overline{\inhabited{\ctxt{\Gamma'}{\Phi'}}{y}}$} \\
     \bot & \text{otherwise} \\
   \end{cases} \\
-  \addinert{\ctxt{\Gamma}{\nabla}}{x \ntermeq K} &=& \begin{cases}
-    \bot & \text{if $\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \in \nabla$} \\
-    % TODO: I'm not sure if we really need the next line. It should be covered by the following case
-    \bot & \parbox[t]{0.6\textwidth}{if $x:\tau \in \Gamma$ \\ and $\forall K' \in \mathsf{Cons}(\ctxt{\Gamma}{\nabla}, \tau): x \ntermeq K' \in (\nabla,x \ntermeq K)$} \\
-    \bot & \text{if not $\inhabited{\ctxt{\Gamma}{(\nabla,x\ntermeq K)}}{x}$} \\
-    \ctxt{\Gamma}{(\nabla,x\ntermeq K)} & \text{otherwise} \\
+  \addinert{\ctxt{\Gamma}{\Phi}}{x \ntermeq K} &=& \begin{cases}
+    \bot & \text{if $\rep{\Phi}{x} \termeq \phiconapp{K}{a}{y} \in \Phi$} \\
+    % TODO: I'm not sure if we really need the next line. It should be covered
+    % by the following case, which will try to instantiate all constructors and
+    % see if any is still possible by the x ~ K as gammas ys case
+    \bot & \parbox[t]{0.6\textwidth}{if $\rep{\Phi}{x}:\tau \in \Gamma$ \\ and $\forall K' \in \cons{\ctxt{\Gamma}{\Phi}}{\tau}: \rep{\Phi}{x} \ntermeq K' \in (\Phi,\rep{\Phi}{x} \ntermeq K)$} \\
+    \bot & \text{if not $\inhabited{\ctxt{\Gamma}{(\Phi,\rep{\Phi}{x} \ntermeq K)}}{\rep{\Phi}{x}}$} \\
+    \ctxt{\Gamma}{(\Phi,\rep{\Phi}{x}\ntermeq K)} & \text{otherwise} \\
   \end{cases} \\
-  \addinert{\ctxt{\Gamma}{\nabla}}{x \termeq \bot} &=& \begin{cases}
-    \bot & \text{if $x \ntermeq \bot \in \nabla$} \\
-    \ctxt{\Gamma}{(\nabla,x\termeq \bot)} & \text{otherwise} \\
+  \addinert{\ctxt{\Gamma}{\Phi}}{x \termeq \bot} &=& \begin{cases}
+    \bot & \text{if $\rep{\Phi}{x} \ntermeq \bot \in \Phi$} \\
+    \ctxt{\Gamma}{(\Phi,\rep{\Phi}{x}\termeq \bot)} & \text{otherwise} \\
   \end{cases} \\
-  \addinert{\ctxt{\Gamma}{\nabla}}{x \ntermeq \bot} &=& \begin{cases}
-    \bot & \text{if $x \termeq \bot \in \nabla$} \\
-    \bot & \text{if not $\inhabited{\ctxt{\Gamma}{(\nabla,x\ntermeq\bot)}}{x}$} \\
-    \ctxt{\Gamma}{(\nabla,x\ntermeq \bot)} & \text{otherwise} \\
+  \addinert{\ctxt{\Gamma}{\Phi}}{x \ntermeq \bot} &=& \begin{cases}
+    \bot & \text{if $\rep{\Phi}{x} \termeq \bot \in \Phi$} \\
+    \bot & \text{if not $\inhabited{\ctxt{\Gamma}{(\Phi,\rep{\Phi}{x}\ntermeq\bot)}}{\rep{\Phi}{x}}$} \\
+    \ctxt{\Gamma}{(\Phi,\rep{\Phi}{x} \ntermeq \bot)} & \text{otherwise} \\
   \end{cases} \\
-  \addinert{\ctxt{\Gamma}{\nabla}}{\ctlet{x}{y}} &=& \begin{cases}
-    \ctxt{\Gamma}{\nabla} & \text{if $\nabla(x) = z = \nabla(y)$} \\
-    \addinert{\ctxt{\Gamma}{\nabla}, \ctlet{x}{y}}{(\nabla \cap x)[y / x]} & \text{if $\nabla(x) \not= z$ or $\nabla(y) \not= z$} \\
+  \addinert{\ctxt{\Gamma}{\Phi}}{\ctlet{x}{y}} &=& \begin{cases}
+    \ctxt{\Gamma}{\Phi} & \text{if $\rep{\Phi}{x} = \rep{\Phi}{y}$} \\
+    % TODO: Write the function that adds a Phi to a nabla
+    \addinert{\ctxt{\Gamma}{(\Phi, \rep{\Phi}{x} \termeq \rep{\Phi}{y})}}{((\Phi \cap \rep{\Phi}{x})[\rep{\Phi}{y} / \rep{\Phi}{x}])} & \text{otherwise} \\
   \end{cases} \\
-  \addinert{\ctxt{\Gamma}{\nabla}}{\ctlet{x}{\genconapp{K}{\tau}{\gamma}{e}}} &=& \addinert{\addinert{\addinert{\ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\nabla}}{\ctcon{\genconapp{K}{a}{\gamma}{y}}{x}}}{\overline{a \typeeq \tau}}}{\overline{\ctlet{y}{e}}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\sigma}$} \\ 
-  \addinert{\ctxt{\Gamma}{\nabla}}{\ctlet{x}{e}} &=& \ctxt{\Gamma}{\nabla} \\
+  \addinert{\ctxt{\Gamma}{\Phi}}{\ctlet{x}{\genconapp{K}{\tau}{\gamma}{e}}} &=& \addinert{\addinert{\addinert{\ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Phi}}{\ctcon{\genconapp{K}{a}{\gamma}{y}}{x}}}{\overline{a \typeeq \tau}}}{\overline{\ctlet{y}{e}}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\sigma}$} \\ 
+  \addinert{\nabla}{\ctlet{x}{e}} &=& \nabla \\
 
 \end{array}
 \]
 
-\[ \ruleform{ \nabla \cap x = \nabla } \]
+\[ \ruleform{ \Phi \cap x = \Phi } \]
 \[
 \begin{array}{lcl}
   \varnothing \cap x &=& \varnothing \\
-  (\nabla,\ctcon{\genconapp{K}{a}{\gamma}{y}}{x}) \cap x &=& (\nabla \cap x), \ctcon{\genconapp{K}{a}{\gamma}{y}}{x} \\
-  (\nabla,x \ntermeq K) \cap x &=& (\nabla \cap x), x \ntermeq K \\
-  (\nabla,x \termeq \bot) \cap x &=& (\nabla \cap x), x \termeq \bot \\
-  (\nabla,x \ntermeq \bot) \cap x &=& (\nabla \cap x), x \ntermeq \bot \\
-  (\nabla,x \termeq e) \cap x &=& (\nabla \cap x), x \termeq e \\
-  (\nabla,\delta) \cap x &=& \nabla \cap x \\
+  (\Phi,x \termeq \phiconapp{K}{a}{y}) \cap x &=& (\Phi \cap x), x \termeq \phiconapp{K}{a}{y} \\
+  (\Phi,x \ntermeq K) \cap x &=& (\Phi \cap x), x \ntermeq K \\
+  (\Phi,x \termeq \bot) \cap x &=& (\Phi \cap x), x \termeq \bot \\
+  (\Phi,x \ntermeq \bot) \cap x &=& (\Phi \cap x), x \ntermeq \bot \\
+  (\Phi,\varphi) \cap x &=& \Phi \cap x \\
 \end{array}
 \]
+
+\caption{Adding a constraint to the inert set $\nabla$}
 \end{figure}
 
 \begin{figure}[t]
@@ -392,7 +418,7 @@
   \quad
 
   \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad K \in \mathsf{Cons}(\ctxt{\Gamma}{\nabla},\tau)}
+    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons{\ctxt{\Gamma}{\nabla}}{\tau}}
                 {\inst{\Gamma}{x}{K} = \overline{\delta}}
                {(\addinert{\ctxt{\Gamma,\overline{y:\tau'}}{\nabla}}{\overline{\delta}}) \not= \bot}}
   \justifies
@@ -403,7 +429,7 @@
   \\
 
   \prooftree
-    {x:\tau \in \Gamma \quad \mathsf{Cons}(\ctxt{\Gamma}{\nabla},\tau) = \bot}
+    {x:\tau \in \Gamma \quad \cons{\ctxt{\Gamma}{\nabla}}{\tau} = \bot}
   \justifies
     \inhabited{\ctxt{\Gamma}{\nabla}}{x}
   \endprooftree
@@ -411,7 +437,7 @@
   \quad
 
   \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad K \in \mathsf{Cons}(\ctxt{\Gamma}{\nabla},\tau)}
+    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons{\ctxt{\Gamma}{\nabla}}{\tau}}
                 {\inst{\Gamma}{x}{K} = \bot}}
   \justifies
     \inhabited{\ctxt{\Gamma}{\nabla}}{x}
@@ -447,7 +473,7 @@
 \end{array}
 \]
 
-
+\caption{Inhabitance test}
 \end{figure}
 
 
@@ -589,7 +615,7 @@ This is one possible derivation of the $\inhabited{\ctxt{\Gamma}{x \ntermeq \bot
   \begin{array}{c}
 
   \prooftree
-    \Shortstack{{x:\texttt{Maybe Int} \in \Gamma \quad \mathtt{Nothing} \in \mathsf{Cons}(\ctxt{\Gamma}{x \ntermeq \bot},\texttt{Maybe Int})}
+    \Shortstack{{x:\texttt{Maybe Int} \in \Gamma \quad \mathtt{Nothing} \in \cons{\ctxt{\Gamma}{x \ntermeq \bot}}{\texttt{Maybe Int}}}
                 {\inst{\Gamma}{x}{\mathtt{Nothing}} = \ctcon{\mathtt{Nothing}}{x}}
                {(\addinert{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}) \not= \bot}}
   \justifies
@@ -631,7 +657,7 @@ $\inhabited{\ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}}{x}$, fo
   \begin{array}{c}
 
   \prooftree
-    \Shortstack{{x:\texttt{Maybe Int} \in \Gamma \quad \mathtt{Just} \in \mathsf{Cons}(\ctxt{\Gamma}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})},\texttt{Maybe Int})}
+    \Shortstack{{x:\texttt{Maybe Int} \in \Gamma \quad \mathtt{Just} \in \cons{\ctxt{\Gamma}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})}}{\texttt{Maybe Int}}}
                 {\inst{\Gamma}{x}{\mathtt{Just}} = \ctcon{\mathtt{Just} \; y}{x}}
                {(\addinert{\ctxt{\Gamma,y:\mathtt{Int}}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})}}{\ctcon{\mathtt{Just} \; y}{x}}) \not= \bot}}
   \justifies

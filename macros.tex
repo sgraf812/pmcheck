@@ -41,6 +41,7 @@
 \newcommand{\ctlet}[2]{#1\termeq#2}
 \newcommand{\ctcon}[2]{#1 \leftarrow #2}
 \newcommand{\genconapp}[4]{#1\;\overline{#2}\;\overline{#3}\;\overline{#4}}
+\newcommand{\phiconapp}[3]{#1\;\overline{#2}\;\overline{#3}}
 % GrdTree Gdt
 \newcommand{\Gdt}{\ty{Gdt}}
 \newcommand{\gdtrhs}[1]{\texttt{Rhs} \; #1}
@@ -64,12 +65,8 @@
 \newcommand{\inhabited}[2]{#1 \vdash #2}
 \newcommand{\cons}[2]{\mathsf{Cons}(#1,#2)}
 \newcommand{\inst}[3]{\mathsf{Inst}(#1,#2,#3)}
+\newcommand{\rep}[2]{#1(#2)}
 
-\newcommand{\evdnce}[2]{#1 \triangleright #2}
-\newcommand{\vtup}[3]{#1 \vdash #2 \deltasep #3}
-\newcommand{\vtupnew}[3]{#1 \vdash #2 \deltasep #3}
-\newcommand{\sat}[1]{\vdash_\textsc{Sat} #1}
-\newcommand{\unsat}[1]{\nvdash_\textsc{Sat} #1}
 % Different views on "Delta":
 % - The set of values it approximates. Ties to abstract interpretation
 % - A boolean formula, about which you can ask if it's satisfiable (= non-empty)
