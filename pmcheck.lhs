@@ -188,8 +188,8 @@
   K           \in &\Con &         & \\
   x,y,a,b     \in &\Var &         & \\
   \tau,\sigma \in &\Type&         & \\
-  e \in           &\Expr&\Coloneqq& x:\tau \\
-                  &     &\mid     & \genconapp{K}{\tau}{\gamma}{e:\tau} \\ % TODO: We should probably have univ tvs split from ex
+  e \in           &\Expr&\Coloneqq& x \\
+                  &     &\mid     & \expconapp{K}{\tau}{\sigma}{\gamma}{e} \\ % TODO: We should probably have univ tvs split from ex
                   &     &\mid     & ... \\
 \end{array} &
 \begin{array}{rlcl}
@@ -300,6 +300,15 @@
 \end{array}
 \]
 
+\[ \textbf{Convert $\Delta$ to $\nabla$ (without checking consistency)} \]
+\[ \ruleform{ \translate{\Gamma}{\Delta} = \mathcal{P}(\PS) } \]
+\[
+\begin{array}{c}
+   \generate{\Gamma}{\Delta} = \bigcup \left\{ \expand{\nabla}{\mathsf{dom}(\Gamma)} \mid \nabla \in \construct{\ctxt{\Gamma}{\varnothing}}{\Delta} \right\}
+\end{array}
+\]
+
+
 \[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
 \[ \ruleform{ \expand{\nabla}{\overline{x}} = \mathcal{P}(\PS) } \]
 \[
@@ -381,7 +390,7 @@
     % TODO: Write the function that adds a Phi to a nabla
     \addinert{\ctxt{\Gamma}{(\Phi, \rep{\Phi}{x} \termeq \rep{\Phi}{y})}}{((\Phi \cap \rep{\Phi}{x})[\rep{\Phi}{y} / \rep{\Phi}{x}])} & \text{otherwise} \\
   \end{cases} \\
-  \addinert{\ctxt{\Gamma}{\Phi}}{\ctlet{x}{\genconapp{K}{\tau}{\gamma}{e}}} &=& \addinert{\addinert{\addinert{\ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Phi}}{\ctcon{\genconapp{K}{a}{\gamma}{y}}{x}}}{\overline{a \typeeq \tau}}}{\overline{\ctlet{y}{e}}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\sigma}$} \\ 
+  \addinert{\ctxt{\Gamma}{\Phi}}{\ctlet{x}{\expconapp{K}{\tau'}{\tau}{\gamma}{e}}} &=& \addinert{\addinert{\addinert{\ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Phi}}{\ctcon{\genconapp{K}{a}{\gamma}{y}}{x}}}{\overline{a \typeeq \tau}}}{\overline{\ctlet{y}{e}}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\sigma}$} \\ 
   \addinert{\nabla}{\ctlet{x}{e}} &=& \nabla \\
 
 \end{array}
@@ -461,7 +470,7 @@
 
 % This is mkOneConFull
 \[ \textbf{Instantiate $x$ to data constructor $K$} \]
-\[ \ruleform{ \inst{\Gamma}{x}{K} = \overline{\gamma} } \]
+\[ \ruleform{ \inst{\Gamma}{x}{K} = \overline{\delta} } \]
 \[
 \begin{array}{c}
 
