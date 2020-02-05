@@ -215,7 +215,7 @@
   \Delta &\Coloneqq& \delta \mid \Delta \wedge \Delta \mid \Delta \vee \Delta & \text{Formula} \\
   \varphi   &\Coloneqq& \gamma \mid x \termeq \phiconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Simple constraints without scoping} \\
   \Phi   &\Coloneqq& \varnothing \mid \Phi,\varphi & \text{Set of simple constraints} \\
-  \nabla &\Coloneqq& \ctxt{\Gamma}{\Phi} & \text{Inert Set} \\
+  \nabla &\Coloneqq& \ctxt{\Gamma}{\Phi} \mid \false & \text{Inert Set} \\
 \end{array}
 \]
 
@@ -291,7 +291,7 @@
 \begin{array}{lcl}
 
   \construct{\nabla}{\delta} &=& \begin{cases}
-    \left\{ \nabla' \right\} & \text{where $\nabla' = \adddelta{\nabla}{\delta}$} \\
+    \left\{ \ctxt{\Gamma'}{\Phi'} \right\} & \text{where $\ctxt{\Gamma'}{\Phi'} = \adddelta{\nabla}{\delta}$} \\
     \emptyset & \text{otherwise} \\
   \end{cases} \\
   \construct{\nabla}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \construct{\nabla'}{\Delta_2} \mid \nabla' \in \construct{\nabla}{\Delta_1} \right\} \\
@@ -345,7 +345,7 @@
 \[
 \begin{array}{lcl}
 
-  \adddelta{\nabla}{\false} &=& \bot \\
+  \adddelta{\nabla}{\false} &=& \false \\
   \adddelta{\nabla}{\true} &=& \nabla \\
   \adddelta{\ctxt{\Gamma}{\Phi}}{\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}} &=&
     \addphi{\addphi{\ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Phi}}{\overline{\gamma}}}{x \termeq \phiconapp{K}{a}{y}} \\
@@ -363,24 +363,25 @@
 \[
 \begin{array}{lcl}
 
+  \addphi{\false}{\varphi} &=& \false \\
   \addphi{\ctxt{\Gamma}{\Phi}}{\gamma} &=& \begin{cases}
     % TODO: This rule can loop indefinitely for GADTs... I believe we do this
     % only one level deep in the implementation and assume that it's inhabited otherwise
     \ctxt{\Gamma}{(\Phi,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Phi$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\Phi,\gamma)}}{\rep{\Phi}{x}}$} \\
-    \bot & \text{otherwise} \\
+    \false & \text{otherwise} \\
   \end{cases} \\
   \addphi{\ctxt{\Gamma}{\Phi}}{x \termeq \phiconapp{K}{a}{y}} &=& \begin{cases}
     \addphi{\addphi{\ctxt{\Gamma}{\Phi}}{\overline{a \typeeq b}}}{\overline{y \termeq z}} & \text{if $\rep{\Phi}{x} \termeq \phiconapp{K}{b}{z} \in \Phi$ } \\
-    \ctxt{\Gamma'}{(\Phi',\rep{\Phi}{x} \termeq \phiconapp{K}{a}{y})} & \parbox[t]{0.6\textwidth}{where $\ctxt{\Gamma'}{\Phi'} = \addphi{\ctxt{\Gamma}{\Phi}}{\overline{\gamma}}$ \\ and $\rep{\Phi'}{x} \ntermeq K \not\in \Phi'$ \\ and $\overline{\inhabited{\ctxt{\Gamma'}{\Phi'}}{y}}$} \\
-    \bot & \text{otherwise} \\
+    \ctxt{\Gamma'}{(\Phi',\rep{\Phi}{x} \termeq \phiconapp{K}{a}{y})} & \parbox[t]{0.6\textwidth}{where $\ctxt{\Gamma'}{\Phi'} = \addphi{\ctxt{\Gamma}{\Phi}}{\overline{\gamma}}$ \\ and $\rep{\Phi'}{x} \ntermeq K \not\in \Phi'$ and $\overline{\inhabited{\ctxt{\Gamma'}{\Phi'}}{y}}$} \\
+    \false & \text{otherwise} \\
   \end{cases} \\
   \addphi{\ctxt{\Gamma}{\Phi}}{x \ntermeq K} &=& \begin{cases}
-    \bot & \text{if $\rep{\Phi}{x} \termeq \phiconapp{K}{a}{y} \in \Phi$} \\
+    \false & \text{if $\rep{\Phi}{x} \termeq \phiconapp{K}{a}{y} \in \Phi$} \\
     % TODO: I'm not sure if we really need the next line. It should be covered
     % by the following case, which will try to instantiate all constructors and
     % see if any is still possible by the x ~ K as gammas ys case
     % \bot & \parbox[t]{0.6\textwidth}{if $\rep{\Phi}{x}:\tau \in \Gamma$ \\ and $\forall K' \in \cons{\ctxt{\Gamma}{\Phi}}{\tau}: \rep{\Phi}{x} \ntermeq K' \in (\Phi,\rep{\Phi}{x} \ntermeq K)$} \\
-    \bot & \text{if not $\inhabited{\ctxt{\Gamma}{(\Phi,\rep{\Phi}{x} \ntermeq K)}}{\rep{\Phi}{x}}$} \\
+    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Phi,\rep{\Phi}{x} \ntermeq K)}}{\rep{\Phi}{x}}$} \\
     \ctxt{\Gamma}{(\Phi,\rep{\Phi}{x}\ntermeq K)} & \text{otherwise} \\
   \end{cases} \\
   \addphi{\ctxt{\Gamma}{\Phi}}{x \termeq \bot} &=& \begin{cases}
@@ -388,8 +389,8 @@
     \ctxt{\Gamma}{(\Phi,\rep{\Phi}{x}\termeq \bot)} & \text{otherwise} \\
   \end{cases} \\
   \addphi{\ctxt{\Gamma}{\Phi}}{x \ntermeq \bot} &=& \begin{cases}
-    \bot & \text{if $\rep{\Phi}{x} \termeq \bot \in \Phi$} \\
-    \bot & \text{if not $\inhabited{\ctxt{\Gamma}{(\Phi,\rep{\Phi}{x}\ntermeq\bot)}}{\rep{\Phi}{x}}$} \\
+    \false & \text{if $\rep{\Phi}{x} \termeq \bot \in \Phi$} \\
+    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Phi,\rep{\Phi}{x}\ntermeq\bot)}}{\rep{\Phi}{x}}$} \\
     \ctxt{\Gamma}{(\Phi,\rep{\Phi}{x} \ntermeq \bot)} & \text{otherwise} \\
   \end{cases} \\
   \addphi{\ctxt{\Gamma}{\Phi}}{x \termeq y} &=& \begin{cases}
@@ -420,54 +421,56 @@
 \begin{figure}[t]
 \centering
 \[ \textbf{Test if $x$ is inhabited considering $\nabla$} \]
-\[ \ruleform{ \inhabited{\ctxt{\Gamma}{\nabla}}{x} } \]
+\[ \ruleform{ \inhabited{\nabla}{x} } \]
 \[
 \begin{array}{c}
 
   \prooftree
-    (\addphi{\ctxt{\Gamma}{\nabla}}{x \termeq \bot}) \not= \bot
+    (\addphi{\ctxt{\Gamma}{\Phi}}{x \termeq \bot}) \not= \false
   \justifies
-    \inhabited{\ctxt{\Gamma}{\nabla}}{x}
+    \inhabited{\ctxt{\Gamma}{\Phi}}{x}
   \endprooftree
 
   \quad
 
   \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons{\ctxt{\Gamma}{\nabla}}{\tau}}
-                {\inst{\Gamma}{x}{K} = \overline{\delta}}
-               {(\addphi{\ctxt{\Gamma,\overline{y:\tau'}}{\nabla}}{\overline{\delta}}) \not= \bot}}
+    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons{\ctxt{\Gamma}{\Phi}}{\tau}}
+                {\inst{\Gamma}{x}{K} = \overline{\varphi}}
+               {(\addphi{\ctxt{\Gamma,\overline{y:\tau'}}{\Phi}}{\overline{\varphi}}) \not= \false}}
   \justifies
-    \inhabited{\ctxt{\Gamma}{\nabla}}{x}
+    \inhabited{\ctxt{\Gamma}{\Phi}}{x}
   \endprooftree
 
   \\
   \\
 
   \prooftree
-    {x:\tau \in \Gamma \quad \cons{\ctxt{\Gamma}{\nabla}}{\tau} = \bot}
+    {x:\tau \in \Gamma \quad \cons{\ctxt{\Gamma}{\Phi}}{\tau} = \bot}
   \justifies
-    \inhabited{\ctxt{\Gamma}{\nabla}}{x}
+    \inhabited{\ctxt{\Gamma}{\Phi}}{x}
   \endprooftree
 
   \quad
 
   \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons{\ctxt{\Gamma}{\nabla}}{\tau}}
+    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons{\ctxt{\Gamma}{\Phi}}{\tau}}
                 {\inst{\Gamma}{x}{K} = \bot}}
   \justifies
-    \inhabited{\ctxt{\Gamma}{\nabla}}{x}
+    \inhabited{\ctxt{\Gamma}{\Phi}}{x}
   \endprooftree
 
 \end{array}
 \]
 
 \[ \textbf{Find data constructors of $\tau$} \]
-\[ \ruleform{ \cons{\ctxt{\Gamma}{\nabla}}{\tau} = \overline{K}} \]
+\[ \ruleform{ \cons{\ctxt{\Gamma}{\Phi}}{\tau} = \overline{K}} \]
 \[
 \begin{array}{c}
 
-  \cons{\ctxt{\Gamma}{\nabla}}{\tau} = \begin{cases}
-    \overline{K} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ data type with constructors $\overline{K}$ \\ (after normalisation according to the type constraints in $\nabla$)} \\
+  \cons{\ctxt{\Gamma}{\Phi}}{\tau} = \begin{cases}
+    \overline{K} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ data type with constructors $\overline{K}$ \\ (after normalisation according to the type constraints in $\Phi$)} \\
+    % TODO: We'd need a cosntraint like \delta's \false here... Or maybe we
+    % just omit this case and accept that the function is partial
     \bot & \text{otherwise} \\
   \end{cases} \\
 
@@ -476,12 +479,14 @@
 
 % This is mkOneConFull
 \[ \textbf{Instantiate $x$ to data constructor $K$} \]
-\[ \ruleform{ \inst{\Gamma}{x}{K} = \overline{\delta} } \]
+\[ \ruleform{ \inst{\Gamma}{x}{K} = \overline{\varphi} } \]
 \[
 \begin{array}{c}
 
   \inst{\Gamma}{x}{K} = \begin{cases}
-    \tau_x \typeeq \tau, \ctcon{\genconapp{K}{a}{\gamma}{y}}{x}, \overline{y' \ntermeq \bot} & \parbox[t]{0.8\textwidth}{$K : \forall \overline{a}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{y} \# \Gamma$, $\overline{a} \# \Gamma$, $x:\tau_x \in \Gamma$, $\overline{y'}$ bind strict fields} \\
+    \tau_x \typeeq \tau, \overline{\gamma}, x \termeq \phiconapp{K}{a}{y}, \overline{y' \ntermeq \bot} & \parbox[t]{0.8\textwidth}{$K : \forall \overline{a}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{y} \# \Gamma$, $\overline{a} \# \Gamma$, $x:\tau_x \in \Gamma$, $\overline{y'}$ bind strict fields} \\
+    % TODO: We'd need a cosntraint like \delta's \false here... Or maybe we
+    % just omit this case and accept that the function is partial
     \bot & \text{otherwise} \\
   \end{cases} \\
 
