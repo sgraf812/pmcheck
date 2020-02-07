@@ -329,6 +329,12 @@ But that wouldn't be true if the second clause wasn't there to "keep alive" the
 |()| pattern!
 
 Here is the corresponding annotated tree after checking:
+\sg{Actually, very naively we would turn the boolean guards into pattern guards
+on auxiliary variables and would have to insert bang patterns on them, which
+ultimately lead to $\antdiv{s}$ everywhere. In our implementation we see that
+the auxiliary variables can't be bottom (since they bind |True|/|False|), so
+don't generate these $\antdiv{s}$. Not sure if that is detail we should mention
+here.}
 
 \[
 \antseq{\antdiv{(\antseq{\antred{1}}{\antrhs{2}})}}{\antrhs{3}}
@@ -338,6 +344,14 @@ In general, at least one GRHS under a $\antdiv{}$ may not be flagged as redundan
 The decision which GRHSs are redundant (\vs just inaccessible) can thus only
 happen in an additional pass over the annotated tree, rather than when the checking
 algorithm reaches a particular $\gdtrhs{}$.
+
+\sg{It's a bit unfortunate to diverge from the running example function |f| here.
+Maybe mention the previous ideas at some later point. Here's |f|'s annotated tree
+for completeness, collapsing multiple nested $\antdiv{}$ into one:}
+
+\[
+\antseq{\antdiv{\antrhs{1}}}{\antdiv{(\antseq{\antdiv{\antrhs{2}}}{\antdiv{\antrhs{3}}})}}
+\]
 
 Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
 guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
