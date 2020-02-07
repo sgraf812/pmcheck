@@ -278,13 +278,13 @@ syntax):
 
 This representation is quite a bit more explicit than the original program. For
 one thing, every source-level pattern guard is strict in its scrutinee, whereas
-the pattern guards in our tree language don't have that semantics, so we had to
-insert bang patterns. \sg{This makes me question again if that was the right
-choice. But I like to keep the logic of bang patterns orthogonal to pattern
-guards in our checking function.} For another thing, the pattern guards in
-$\Grd$ only scrutinise variables (and only one level deep), so the comparison
-in the boolean guard's scrutinee had to be bound to an auxiliary variable in a
-let binding.
+the pattern guards in our tree language are not, so we had to insert bang
+patterns. \sg{This makes me question again if making pattern guards "lazy" was
+the right choice. But I like to keep the logic of bang patterns orthogonal to
+pattern guards in our checking function.} For another thing, the pattern guards
+in $\Grd$ only scrutinise variables (and only one level deep), so the
+comparison in the boolean guard's scrutinee had to be bound to an auxiliary
+variable in a let binding.
 
 Pattern guards in $\Grd$ are the only guards that can possibly fail to match,
 in which case the value of the scrutinee was not of the shape of the
@@ -293,10 +293,55 @@ determines how to cope with a failed guard. Left-to-right matching semantics is
 captured by $\gdtguard{}{}$, whereas top-to-bottom backtracking is expressed by
 sequence ($\gdtseq{}{}$). The leaves in this tree, $\gdtrhs{}$, each correspond
 to a GRHS.
+\sg{The preceding and following paragraph would benefit from illustrations.
+It's hard to come up with something concrete that doesn't go into too much
+detail. GMTM just shows a top-to-bottom pipeline. But why should we leave out
+left-to-right composition? Also we produce an annotated syntax tree $\Ant$
+instead of a covered set.}
+
+Pattern match checking works by gradually refining the set of uncovered values
+as they flow through the tree and produces two values: The uncovered set that
+wasn't covered by any clause and an annotated guard tree skeleton $\Ant$ with
+the same shape as the guard tree to check, capturing redundancy ($\antrhs{}$
+\vs $\antred{}$ when the uncovered set that reaches the $\gdtrhs{}$ was empty)
+and divergence (expressed through a $\antdiv{}$ wrapper when a bang pattern
+forces a value that still can diverge) information. 
+
+We can generate missing clauses from the final uncovered set falling out at the 
+bottom, just by generating inhabitants. The annotated tree on the other hand
+can be used to compute inaccessible and redundant GRHSs. \sg{I think this kind
+of detail should be motivated in a prior section and then referenced here for
+its solution.} Why not compute the redundant GRHSs directly? Because
+determining inaccessibility \vs redundancy is a non-local problem. Consider
+this example:
+
+\begin{code}
+g :: () -> Int 
+g ()   | False   = 1
+       | True    = 2
+g _              = 3
+\end{code}
+
+Is the first clause inaccessible or even redundant? Although the match on |()| forces
+the argument, we can delete the first clause without
+changing program semantics, so clearly it's redundant.
+But that wouldn't be true if the second clause wasn't there to "keep alive" the
+|()| pattern!
+
+Here is the corresponding annotated tree after checking:
+
+\[
+\antseq{\antdiv{(\antseq{\antred{1}}{\antrhs{2}})}}{\antrhs{3}}
+\]
+
+In general, at least one GRHS under a $\antdiv{}$ may not be flagged as redundant.
+The decision which GRHSs are redundant (\vs just inaccessible) can thus only
+happen in an additional pass over the annotated tree, rather than when the checking
+algorithm reaches a particular $\gdtrhs{}$.
 
 Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
-guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$ is
-expressive enough to express all pattern matching in the original program!  
+guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
+expressive enough to express all pattern matching in Haskell (cf. fig. TODO)!
 We have yet to find a language extension that doesn't fit into this framework.
 
 \begin{figure}[t]
@@ -626,8 +671,8 @@ We'll start from the following source Haskell program and see how each of the st
 
 \begin{code}
 f :: Maybe Int -> Int
-f Nothing         = 0 -- RHS 1
-f x | Just y <- x = y -- RHS 2
+f Nothing          = 0  -- RHS 1
+f x | Just y <- x  = y  -- RHS 2
 \end{code} 
 
 \subsection{Translation to guard trees}
