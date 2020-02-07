@@ -1,0 +1,7 @@
+%include polycode.fmt
+
+% suppress some built-in formatting of lhs2TeX:
+%format not = "\id{not}"
+%format == = "\mathop{==}"
+%format /= = "\mathop{{/}{=}}"
+%format && = "\mathop{\&\&}"

@@ -7,14 +7,14 @@ all: main
 REPL_FLAGS = -halt-on-error
 
 main:
-	lhs2TeX --verb pmcheck.lhs >pmcheck.tex
+	lhs2TeX --poly pmcheck.lhs >pmcheck.tex
 	pdflatex $(REPL_FLAGS) pmcheck
 	# bibtex   pmcheck # as long as we have no bibliogrpahy
 	pdflatex $(REPL_FLAGS) pmcheck
 	pdflatex $(REPL_FLAGS) pmcheck
 
 extended:
-	lhs2TeX --verb pmcheck_ext.lhs >pmcheck_ext.tex
+	lhs2TeX --poly pmcheck_ext.lhs >pmcheck_ext.tex
 	pdflatex pmcheck_ext
 	bibtex   pmcheck_ext
 	pdflatex pmcheck_ext

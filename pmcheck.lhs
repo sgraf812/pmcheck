@@ -10,17 +10,15 @@
 %% For final camera-ready submission, w/ required CCS and ACM Reference
 %\documentclass[acmsmall]{acmart}\settopmatter{}
 
-\documentclass[acmsmall]{acmart}
+\documentclass[acmsmall,review]{acmart}
+
+%include custom.fmt
 
 % The following lines remove ACM stuff unneeded for prototyping
 % https://tex.stackexchange.com/a/346309/52414
 \settopmatter{printacmref=false} % Removes citation information below abstract
 \renewcommand\footnotetextcopyrightpermission[1]{} % removes footnote with conference information in first column
 \pagestyle{plain} % removes running headers
-
-
-%include lhs2TeX.fmt
-%include lhs2TeX.sty
 
 %% Journal information
 %% Supplied to authors by publisher for camera-ready submission;
@@ -90,6 +88,7 @@
 \newtheorem{theorem}{Theorem}
 
 \usepackage{hyperref}
+\usepackage{cleveref}
 
 \input{macros}
 
@@ -174,10 +173,131 @@
 %% comma separated list
 \keywords{Haskell, pattern matching, Generalized Algebraic Data Types, \OutsideIn{X}}  %% \keywords are mandatory in final camera-ready submission
 
+\begin{figure}[t]
+\centering
+\begin{verbatim}
+\end{verbatim}
+\[
+\begin{array}{cc}
+\textbf{Meta variables} & \textbf{Pattern Syntax} \\
+\begin{array}{rl}
+  x,y,z,f,g,h &\text{Term variables} \\
+  a,b,c       &\text{Type variables} \\
+  K           &\text{Data constructors} \\
+  P           &\text{Pattern synonyms} \\
+  T           &\text{Type constructors} \\
+\end{array} &
+\begin{array}{rcl}
+  defn   &\Coloneqq& \overline{clause} \\
+  clause &\Coloneqq&  f \; \overline{pat} \; \overline{match} \\
+  pat    &\Coloneqq& x \mid K \; \overline{pat} \\
+  match  &\Coloneqq& \mathtt{=} \; expr \mid \overline{grhss} \\ % Or: clause?
+  grhss  &\Coloneqq& \mathtt{\mid} \; \overline{guard} \; \mathtt{=} \; expr \\
+  guard  &\Coloneqq& pat \leftarrow expr \mid expr \mid \mathtt{let} \; x \; \mathtt{=} \; expr \\
+\end{array}
+\end{array}
+\]
 
+\caption{Source syntax}
+\label{fig:srcsyn}
+\end{figure}
 
+\section{Our Solution}
 
-\pagebreak
+% TODO:
+% Clarify nomenclature: Clause vs. (guarded) RHS
+% syntax from language report:
+%   f p11 … p1k match1
+% and each match has multiple guarded RHSs. The report seems to call the above a clause:
+%   "Note that all clauses defining a function must be contiguous, and the number of patterns in each clause must be the same."
+% We *could* treat multiple GRHSs as a language extension, but I don't see the point.
+% TODO: better words
+It is customary to define Haskell functions using pattern-matching, possibly
+with one or more \emph{guarded right-hand sides} (GRHS) per \emph{clause} (see
+\cref{fig:srcsyn}). Consider for example this 3 AM attempt at lifting equality
+over \hs{Maybe}:
+
+% TODO: better code style
+\begin{code}
+f Nothing  Nothing  = True
+f (Just x) (Just y)
+  | x == y          = True
+  | otherwise       = False
+\end{code}
+
+This function will crash for the call site |f (Just 1) Nothing|. To see that,
+we can follow Haskell's top-to-bottom, left-to-right pattern match semantics.
+The first clause already fails to match |Nothing| against |Just 1|, while the
+second clause successfully matches |x| with |1|, but then fails trying to
+match |Just y| against |Nothing|. There is no third clause, and an
+\emph{uncovered} value vector that falls out at the bottom of this process will
+lead to a crash.
+
+Compare that to matching on |(Just 1) (Just 2)|: While matching against the first 
+clause fails, the second matches |x| to |1| and |y| to |2|. Since there are
+multiple guarded right-hand sides, every one of them in turn has to be tried in
+a top-to-bottom fashion. The first GRHS consists of a single
+boolean guard (in general we have to consider each of them in a left-to-right
+fashion!) \sg{Maybe an example with more guards would be helpful} that will
+fail because |1 /= 2|. So the second GRHS is tried successfully, because
+|otherwise| is a boolean guard that never fails.
+
+Note how both the pattern matching per clause and the guard checking within a
+syntactic $match$ share top-to-bottom and left-to-right semantics. Having to
+make sense of both pattern and guard semantics seems like a waste of energy.
+Why can't we just express all pattern matching simply by pattern guards on an
+auxiliary variable match? See for yourself:
+
+\begin{code}
+f mx my
+  | Nothing <- mx, Nothing <- my              = True
+  | Just x <- mx,  Just y <- my  | x == y     = True
+                                 | otherwise  = False
+\end{code}
+
+Transforming the first clause with its single GRHS was quite successful.
+But the second clause already had two GRHSs before, and the resulting tree-like
+nesting of guards definitely is not valid Haskell! Although intuitively, this
+is just what we want: After the successful match on the first two guards
+left-to-right, we try to match each of the GRHSs in turn, top-to-bottom (and
+their individual guards left-to-right). In fact, it seems rather arbitrary to
+only allow one level of nested guards! Hence our algorithm desugars the source
+syntax to the following \emph{guard tree} (see \cref{fig:syn} for the full
+syntax):
+
+\sg{Find shorter aliases for the syntax, maybe make top-to-bottom sequence prefix. Or a more graphic representation, even. Will sketch it out when we have some prose to work on. For now assume that Guard binds stronger than sequence (;)}
+\sg{The bangs are distracting. Also the otherwise. Also binding the temporary.}
+
+\[
+\begin{array}{l}
+  \gdtseq{\gdtguard{(\grdbang{mx})}{\gdtguard{(\grdcon{\mathtt{Nothing}}{mx})}{\gdtguard{(\grdbang{my})}{\gdtguard{(\grdcon{\mathtt{Nothing}}{my})}{\gdtrhs{1}}}}}}{}\\
+  \gdtguard{(\grdbang{mx})}{\gdtguard{(\grdcon{\mathtt{Just}\;x}{mx})}{\gdtguard{(\grdbang{my})}{\gdtguard{(\grdcon{\mathtt{Just}\;y}{my})}{\\ (\gdtseq{\gdtguard{(\grdlet{t}{|x == y|})}{\gdtguard{(\grdbang{t})}{\gdtguard{(\grdcon{\mathtt{True}}{t})}{\gdtrhs{2}}}}}{\\ \gdtguard{(\grdbang{otherwise})}{\gdtguard{(\grdcon{\mathtt{True}}{otherwise})}{\gdtrhs{3}}}})}}}}\\
+  
+\end{array}
+\]
+
+This representation is quite a bit more explicit than the original program. For
+one thing, every source-level pattern guard is strict in its scrutinee, whereas
+the pattern guards in our tree language don't have that semantics, so we had to
+insert bang patterns. \sg{This makes me question again if that was the right
+choice. But I like to keep the logic of bang patterns orthogonal to pattern
+guards in our checking function.} For another thing, the pattern guards in
+$\Grd$ only scrutinise variables (and only one level deep), so the comparison
+in the boolean guard's scrutinee had to be bound to an auxiliary variable in a
+let binding.
+
+Pattern guards in $\Grd$ are the only guards that can possibly fail to match,
+in which case the value of the scrutinee was not of the shape of the
+constructor application it was matched against. The $\Gdt$ tree language
+determines how to cope with a failed guard. Left-to-right matching semantics is
+captured by $\gdtguard{}{}$, whereas top-to-bottom backtracking is expressed by
+sequence ($\gdtseq{}{}$). The leaves in this tree, $\gdtrhs{}$, each correspond
+to a GRHS.
+
+Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
+guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$ is
+expressive enough to express all pattern matching in the original program!  
+We have yet to find a language extension that doesn't fit into this framework.
 
 \begin{figure}[t]
 \centering
@@ -227,7 +347,8 @@
 \end{array}
 \]
 
-\caption{Syntax}
+\caption{IR Syntax}
+\label{fig:syn}
 \end{figure}
 
 \begin{figure}
