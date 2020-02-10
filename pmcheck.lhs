@@ -63,6 +63,8 @@
 \usepackage{stackengine} % For linebraks in derivation tree premises
 \stackMath
 \usepackage[edges]{forest} % For guard trees
+\usepackage{tikz}
+\usetikzlibrary{arrows,decorations.pathmorphing,shapes}
 
 \PassOptionsToPackage{table}{xcolor} % for highlight
 \usepackage{pgf}
@@ -110,23 +112,6 @@
 % \usepackage{caption}
 % \DeclareCaptionFormat{myformat}{#1#2#3\hrulefill}
 % \captionsetup[table]{format=myformat}
-
-\forestset{%
-  grdtree/.style={%
-    for tree={%
-      grow'=0,
-      align=left,
-      calign=first,
-      anchor=west,
-      line width=0.2mm,
-      inner sep=2pt,
-      s sep=0pt,
-      delay={edge={line width=0.2mm}}},
-    forked edges,
-    guards/.style={edge={-Bar}},
-    rhs/.style={tier=rhs,edge={->}},
-    for descendants={delay={if n children=0{rhs}{guards}}}}
-}
 
 \begin{document}
 
@@ -191,7 +176,7 @@
 %% comma separated list
 \keywords{Haskell, pattern matching, Generalized Algebraic Data Types, \OutsideIn{X}}  %% \keywords are mandatory in final camera-ready submission
 
-\begin{figure}[t]
+\begin{figure}
 \centering
 \begin{verbatim}
 \end{verbatim}
@@ -221,6 +206,104 @@
 \end{figure}
 
 \section{Our Solution}
+
+\begin{figure}
+\centering
+\[ \textbf{Guard Syntax} \]
+\[
+\begin{array}{cc}
+\begin{array}{rlcl}
+  K           \in &\Con &         & \\
+  x,y,a,b     \in &\Var &         & \\
+  \tau,\sigma \in &\Type&         & \\
+  e \in           &\Expr&\Coloneqq& x \\
+                  &     &\mid     & \expconapp{K}{\tau}{\sigma}{\gamma}{e} \\ % TODO: We should probably have univ tvs split from ex
+                  &     &\mid     & ... \\
+\end{array} &
+\begin{array}{rlcl}
+  n      \in      &\mathbb{N}&    & \\
+
+  \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
+
+  p \in           &\Pat &\Coloneqq& \_ \\
+                  &     &\mid     & K \; \overline{p} \\
+                  &     &\mid     & ... \\
+
+  g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
+                  &     &\mid     & \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \\
+                  &     &\mid     & \grdbang{x} \\
+\end{array}
+\end{array}
+\]
+\[ \textbf{Constraint Formula Syntax} \]
+\[
+\begin{array}{rcll}
+  \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
+  \delta &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Constraint Literals} \\
+  \Delta &\Coloneqq& \delta \mid \Delta \wedge \Delta \mid \Delta \vee \Delta & \text{Formula} \\
+  \varphi   &\Coloneqq& \gamma \mid x \termeq \phiconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Simple constraints without scoping} \\
+  \Phi   &\Coloneqq& \varnothing \mid \Phi,\varphi & \text{Set of simple constraints} \\
+  \nabla &\Coloneqq& \ctxt{\Gamma}{\Phi} \mid \false & \text{Inert Set} \\
+\end{array}
+\]
+
+\[ \textbf{Clause Tree Syntax} \]
+\[
+\begin{array}{rcll}
+  t_G,u_G \in \Gdt &\Coloneqq& \gdtrhs{n} \mid \gdtseq{t_G}{u_G} \mid \gdtguard{g}{t_G}         \\
+  t_A,u_A \in \Ant &\Coloneqq& \antrhs{n} \mid \antred{n} \mid \antseq{t_A}{u_A} \mid \antdiv{t_A} \\
+\end{array}
+\]
+
+\caption{IR Syntax}
+\label{fig:syn}
+\end{figure}
+
+\begin{figure}
+\[
+\begin{array}{cc}
+  \begin{array}{rcll}
+    \vcenter{\hbox{\begin{forest}
+      grdtree,
+      for tree={delay={edge={-Bar}}},
+      [ [{$t_G$}] [{$u_G$}] ]
+    \end{forest}}} & \Coloneqq & \gdtseq{t_G}{u_G} \\
+    \vcenter{\hbox{\begin{forest}
+      grdtree,
+      for tree={delay={edge={-}}},
+      [ {$g_1, ...\;, g_n$} [{$t_G$}] ]
+    \end{forest}}} & \Coloneqq & \gdtguard{g_1}{...\; (\gdtguard{g_n}{t_G})} \\
+    \vcenter{\hbox{\begin{forest}
+      grdtree,
+      [ [{$n$}] ]
+    \end{forest}}} & \Coloneqq & \gdtrhs{n} \\
+  \end{array}&
+  \begin{array}{rcll}
+    \vcenter{\hbox{\begin{forest}
+      anttree,
+      for tree={delay={edge={-}}},
+      [ [{$t_A$}] [{$u_A$}] ]
+    \end{forest}}} & \Coloneqq & \antseq{t_A}{u_A} \\
+    \vcenter{\hbox{\begin{forest}
+      anttree,
+      for tree={delay={edge={-}}},
+      [{\lightning} [{$t_A$}] ]
+    \end{forest}}} & \Coloneqq & \antdiv{t_A} \\
+    \vcenter{\hbox{\begin{forest}
+      anttree,
+      [ [{$n$},acc] ]
+    \end{forest}}} & \Coloneqq & \antrhs{n} \\
+    \vcenter{\hbox{\begin{forest}
+      anttree,
+      [ [{$n$},inacc] ]
+    \end{forest}}} & \Coloneqq & \antred{n} \\
+  \end{array}
+\end{array}
+\]
+
+\caption{Graphical notation}
+\label{fig:grphnot}
+\end{figure}
 
 % TODO:
 % Clarify nomenclature: Clause vs. (guarded) RHS
@@ -281,9 +364,9 @@ left-to-right, we try to match each of the GRHSs in turn, top-to-bottom (and
 their individual guards left-to-right). In fact, it seems rather arbitrary to
 only allow one level of nested guards! Hence our algorithm desugars the source
 syntax to the following \emph{guard tree} (see \cref{fig:syn} for the full
-syntax):
+syntax and \cref{fig:grphnot} the corresponding graphical notation):
 
-\sg{Find shorter aliases for the syntax, maybe make top-to-bottom sequence prefix. Or a more graphic representation, even. Will sketch it out when we have some prose to work on. For now assume that Guard binds stronger than sequence (;)}
+\sg{TODO: Make the connection between textual syntax and graphic representation.}
 \sg{The bangs are distracting. Also the otherwise. Also binding the temporary.}
 
 \begin{forest}   
@@ -310,8 +393,7 @@ in which case the value of the scrutinee was not of the shape of the
 constructor application it was matched against. The $\Gdt$ tree language
 determines how to cope with a failed guard. Left-to-right matching semantics is
 captured by $\gdtguard{}{}$, whereas top-to-bottom backtracking is expressed by
-sequence ($\gdtseq{}{}$). The leaves in this tree, $\gdtrhs{}$, each correspond
-to a GRHS.
+sequence ($\gdtseq{}{}$). The leaves in this tree each correspond to a GRHS.
 \sg{The preceding and following paragraph would benefit from illustrations.
 It's hard to come up with something concrete that doesn't go into too much
 detail. GMTM just shows a top-to-bottom pipeline. But why should we leave out
@@ -321,18 +403,43 @@ instead of a covered set.}
 Pattern match checking works by gradually refining the set of uncovered values
 as they flow through the tree and produces two values: The uncovered set that
 wasn't covered by any clause and an annotated guard tree skeleton $\Ant$ with
-the same shape as the guard tree to check, capturing redundancy ($\antrhs{}$
-\vs $\antred{}$ when the uncovered set that reaches the $\gdtrhs{}$ was empty)
-and divergence (expressed through a $\antdiv{}$ wrapper when a bang pattern
-forces a value that still can diverge) information. 
+the same shape as the guard tree to check, capturing redundancy and divergence
+information. Pattern match checking our guard tree from above should yield 
+an empty uncovered set and an annotated guard tree skeleton like
 
-We can generate missing clauses from the final uncovered set falling out at the 
-bottom, just by generating inhabitants. The annotated tree on the other hand
-can be used to compute inaccessible and redundant GRHSs. \sg{I think this kind
-of detail should be motivated in a prior section and then referenced here for
-its solution.} Why not compute the redundant GRHSs directly? Because
-determining inaccessibility \vs redundancy is a non-local problem. Consider
-this example:
+\begin{forest}
+  anttree
+  [ 
+    [{\lightning}
+      [1,acc]
+      [{\lightning}
+        [2,acc]
+        [3,acc]]]]
+\end{forest}
+
+Where a \lightning{} denotes possible divergence in one of the bang patterns
+and the \checked{} annotation means that the respective GRHS was accessible.
+Since all GRHSs are accessible, there's nothing to report in terms of
+redundancy.
+
+\sg{Actually, very naively we would turn the boolean guards into pattern guards
+on auxiliary variables and would have to insert bang patterns on them, which
+ultimately lead to $\antdiv{s}$ everywhere. In our implementation we see that
+the auxiliary variables can't be bottom (since they bind |True|/|False|), so
+don't generate these $\antdiv{s}$. Not sure if that is detail we should mention
+here.}
+
+Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
+guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
+expressive enough to express all pattern matching in Haskell (cf. fig. TODO)!
+We have yet to find a language extension that doesn't fit into this framework.
+
+\subsection{Why we not report redundant GRHSs directly?}
+
+\sg{I think this kind of detail should be motivated in a prior section and then
+referenced here for its solution.} Why not compute the redundant GRHSs
+directly instead of building up a whole new tree? Because determining
+inaccessibility \vs redundancy is a non-local problem. Consider this example:
 
 \begin{code}
 g :: () -> Int 
@@ -341,93 +448,27 @@ g ()   | False   = 1
 g _              = 3
 \end{code}
 
-Is the first clause inaccessible or even redundant? Although the match on |()| forces
-the argument, we can delete the first clause without
-changing program semantics, so clearly it's redundant.
-But that wouldn't be true if the second clause wasn't there to "keep alive" the
-|()| pattern!
+Is the first clause inaccessible or even redundant? Although the match on |()|
+forces the argument, we can delete the first clause without changing program
+semantics, so clearly it's redundant. But that wouldn't be true if the second
+clause wasn't there to "keep alive" the |()| pattern!
 
 Here is the corresponding annotated tree after checking:
-\sg{Actually, very naively we would turn the boolean guards into pattern guards
-on auxiliary variables and would have to insert bang patterns on them, which
-ultimately lead to $\antdiv{s}$ everywhere. In our implementation we see that
-the auxiliary variables can't be bottom (since they bind |True|/|False|), so
-don't generate these $\antdiv{s}$. Not sure if that is detail we should mention
-here.}
 
-\[
-\antseq{\antdiv{(\antseq{\antred{1}}{\antrhs{2}})}}{\antrhs{3}}
-\]
+\begin{forest}
+  anttree
+  [ 
+    [{\lightning}
+      [1,inacc]
+      [2,acc]]
+    [3,acc]]
+\end{forest}
 
-In general, at least one GRHS under a $\antdiv{}$ may not be flagged as redundant.
-The decision which GRHSs are redundant (\vs just inaccessible) can thus only
-happen in an additional pass over the annotated tree, rather than when the checking
-algorithm reaches a particular $\gdtrhs{}$.
+In general, at least one GRHS under a \lightning{} may not be flagged as redundant.
+Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
+inaccessible) when it reaches a particular $\gdtrhs{}$.
 
-\sg{It's a bit unfortunate to diverge from the running example function |f| here.
-Maybe mention the previous ideas at some later point. Here's |f|'s annotated tree
-for completeness, collapsing multiple nested $\antdiv{}$ into one:}
 
-\[
-\antseq{\antdiv{\antrhs{1}}}{\antdiv{(\antseq{\antdiv{\antrhs{2}}}{\antdiv{\antrhs{3}}})}}
-\]
-
-Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
-guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
-expressive enough to express all pattern matching in Haskell (cf. fig. TODO)!
-We have yet to find a language extension that doesn't fit into this framework.
-
-\begin{figure}[t]
-\centering
-\[ \textbf{Guard Syntax} \]
-\[
-\begin{array}{cc}
-\begin{array}{rlcl}
-  K           \in &\Con &         & \\
-  x,y,a,b     \in &\Var &         & \\
-  \tau,\sigma \in &\Type&         & \\
-  e \in           &\Expr&\Coloneqq& x \\
-                  &     &\mid     & \expconapp{K}{\tau}{\sigma}{\gamma}{e} \\ % TODO: We should probably have univ tvs split from ex
-                  &     &\mid     & ... \\
-\end{array} &
-\begin{array}{rlcl}
-  n      \in      &\mathbb{N}&    & \\
-
-  \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
-
-  p \in           &\Pat &\Coloneqq& \_ \\
-                  &     &\mid     & K \; \overline{p} \\
-                  &     &\mid     & ... \\
-
-  g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
-                  &     &\mid     & \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \\
-                  &     &\mid     & \grdbang{x} \\
-\end{array}
-\end{array}
-\]
-\[ \textbf{Constraint Formula Syntax} \]
-\[
-\begin{array}{rcll}
-  \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
-  \delta &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Constraint Literals} \\
-  \Delta &\Coloneqq& \delta \mid \Delta \wedge \Delta \mid \Delta \vee \Delta & \text{Formula} \\
-  \varphi   &\Coloneqq& \gamma \mid x \termeq \phiconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Simple constraints without scoping} \\
-  \Phi   &\Coloneqq& \varnothing \mid \Phi,\varphi & \text{Set of simple constraints} \\
-  \nabla &\Coloneqq& \ctxt{\Gamma}{\Phi} \mid \false & \text{Inert Set} \\
-\end{array}
-\]
-
-\[ \textbf{Clause Tree Syntax} \]
-\[
-\begin{array}{rcll}
-  t_G,u_G \in \Gdt &\Coloneqq& \gdtrhs{n} \mid \gdtseq{t_G}{u_G} \mid \gdtguard{g}{t_G}         \\
-  t_A,u_A \in \Ant &\Coloneqq& \antrhs{n} \mid \antred{n} \mid \antseq{t_A}{u_A} \mid \antdiv{t_A} \\
-\end{array}
-\]
-
-\caption{IR Syntax}
-\label{fig:syn}
-\end{figure}
 
 \begin{figure}
 \[ \textbf{Checking Guard Trees} \]

@@ -31,8 +31,11 @@
 
 \newcommand{\sg}[1]{\begin{color}{red}{\bf SG:} #1\end{color}}
 \newcommand{\simon}[1]{\begin{color}{purple}{\bf SLPJ:} #1\end{color}}
+\newcommand{\ryan}[1]{\begin{color}{darkgreen}{\bf Ryan:} #1\end{color}}
+
 
 % This is the stuff from 2019
+% Types and Grd syntax
 \newcommand{\ty}[1]{\textsf{#1}\xspace}
 \newcommand{\Pat}{\ty{Pat}}
 \newcommand{\Grd}{\ty{Grd}}
@@ -50,20 +53,55 @@
 \newcommand{\genconapp}[4]{#1\;\overline{#2}\;\overline{#3}\;\overline{#4}}
 \newcommand{\expconapp}[5]{#1\;\overline{#2}\;\overline{#3}\;\overline{#4}\;\overline{#5}}
 \newcommand{\phiconapp}[3]{#1\;\overline{#2}\;\overline{#3}}
+\newcommand{\false}{\times}
+\newcommand{\true}{\checked}
+
 % GrdTree Gdt
 \newcommand{\Gdt}{\ty{Gdt}}
 \newcommand{\gdtrhs}[1]{\texttt{Rhs} \; #1}
 \newcommand{\gdtseq}[2]{#1; #2}
 \newcommand{\gdtguard}[2]{\texttt{Guard} \; #1 \; #2}
+
 % AnnTree Ant
 \newcommand{\Ant}{\ty{Ant}}
 \newcommand{\antred}[1]{\texttt{InaccessibleRhs} \; #1}
 \newcommand{\antrhs}[1]{\texttt{AccessibleRhs} \; #1}
 \newcommand{\antseq}[2]{#1; #2}
 \newcommand{\antdiv}[1]{\texttt{MayDiverge} \; #1}
+
+% Graphc notation for trees
+\forestset{%
+  clausetree/.style={
+    for tree={
+      grow'=0,
+      align=left,
+      calign=first,
+      anchor=west,
+      line width=0.2mm,
+      inner sep=2pt,
+      s sep=0pt,
+      delay={edge={line width=0.2mm}}},
+    forked edges
+  },
+  grdtree/.style={
+    clausetree,
+    guards/.style={edge={-Bar}},
+    %grhs/.style={tier=rhs,edge={->,decorate,decoration={snake,post length=2pt,amplitude=0.8pt}}}, % experimental squiggly arrow
+    grhs/.style={tier=rhs,edge={->}},
+    % Everything except the root and the leaves is guards
+    for descendants={delay={if n children=0{grhs}{guards}}}
+  },
+  anttree/.style={
+    clausetree,
+    acc/.style={tier=rhs,edge={->},edge label={node[above]{$\checked$}}},
+    inacc/.style={tier=rhs,edge={->},edge label={node[above]{$\times$}}},
+  },
+}
+
 % Checking functions
 \newcommand{\unc}[1]{\mathcal{U}(#1)}
 \newcommand{\ann}[2]{\mathcal{A}_\Gamma(#1,#2)}
+
 % Oracle functions
 \newcommand{\generate}[2]{\mathcal{G}(#1,#2)}
 \newcommand{\translate}[2]{\mathcal{T}(#1,#2)}
@@ -76,12 +114,3 @@
 \newcommand{\cons}[2]{\mathsf{Cons}(#1,#2)}
 \newcommand{\inst}[3]{\mathsf{Inst}(#1,#2,#3)}
 \newcommand{\rep}[2]{#1(#2)}
-
-% Different views on "Delta":
-% - The set of values it approximates. Ties to abstract interpretation
-% - A boolean formula, about which you can ask if it's satisfiable (= non-empty)
-% - Refinement type of the value vector/free variables of the pattern 
-% - Syntactically: A disjunction of (possibly empty) constraint lists
-% The latter is what we use for syntax, the interpretation is probably in terms of refinement types or so...
-\newcommand{\false}{\times}
-\newcommand{\true}{\checked}
