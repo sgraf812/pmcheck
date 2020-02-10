@@ -62,6 +62,7 @@
 \usepackage{prooftree} % For derivation trees
 \usepackage{stackengine} % For linebraks in derivation tree premises
 \stackMath
+\usepackage[edges]{forest} % For guard trees
 
 \PassOptionsToPackage{table}{xcolor} % for highlight
 \usepackage{pgf}
@@ -109,6 +110,23 @@
 % \usepackage{caption}
 % \DeclareCaptionFormat{myformat}{#1#2#3\hrulefill}
 % \captionsetup[table]{format=myformat}
+
+\forestset{%
+  grdtree/.style={%
+    for tree={%
+      grow'=0,
+      align=left,
+      calign=first,
+      anchor=west,
+      line width=0.2mm,
+      inner sep=2pt,
+      s sep=0pt,
+      delay={edge={line width=0.2mm}}},
+    forked edges,
+    guards/.style={edge={-Bar}},
+    rhs/.style={tier=rhs,edge={->}},
+    for descendants={delay={if n children=0{rhs}{guards}}}}
+}
 
 \begin{document}
 
@@ -268,13 +286,14 @@ syntax):
 \sg{Find shorter aliases for the syntax, maybe make top-to-bottom sequence prefix. Or a more graphic representation, even. Will sketch it out when we have some prose to work on. For now assume that Guard binds stronger than sequence (;)}
 \sg{The bangs are distracting. Also the otherwise. Also binding the temporary.}
 
-\[
-\begin{array}{l}
-  \gdtseq{\gdtguard{(\grdbang{mx})}{\gdtguard{(\grdcon{\mathtt{Nothing}}{mx})}{\gdtguard{(\grdbang{my})}{\gdtguard{(\grdcon{\mathtt{Nothing}}{my})}{\gdtrhs{1}}}}}}{}\\
-  \gdtguard{(\grdbang{mx})}{\gdtguard{(\grdcon{\mathtt{Just}\;x}{mx})}{\gdtguard{(\grdbang{my})}{\gdtguard{(\grdcon{\mathtt{Just}\;y}{my})}{\\ (\gdtseq{\gdtguard{(\grdlet{t}{|x == y|})}{\gdtguard{(\grdbang{t})}{\gdtguard{(\grdcon{\mathtt{True}}{t})}{\gdtrhs{2}}}}}{\\ \gdtguard{(\grdbang{otherwise})}{\gdtguard{(\grdcon{\mathtt{True}}{otherwise})}{\gdtrhs{3}}}})}}}}\\
-  
-\end{array}
-\]
+\begin{forest}   
+  grdtree
+  [
+    [{$\grdbang{mx}, \grdcon{\mathtt{Nothing}}{mx}, \grdbang{my}, \grdcon{\mathtt{Nothing}}{my}$} [1]]
+    [{$\grdbang{mx}, \grdcon{\mathtt{Just}\;x}{mx}, \grdbang{my}, \grdcon{\mathtt{Just}\;y}{my}$}
+      [{$\grdlet{t}{|x == y|}, \grdbang{t}, \grdcon{\mathtt{True}}{t}$} [2]]
+      [{$\grdbang{otherwise}, \grdcon{\mathtt{True}}{otherwise}$} [3]]]]
+\end{forest}
 
 This representation is quite a bit more explicit than the original program. For
 one thing, every source-level pattern guard is strict in its scrutinee, whereas
