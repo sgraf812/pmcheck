@@ -50,14 +50,10 @@
 \citestyle{acmauthoryear}   %% For author/year citations
 
 %%%%%%%
-%\usepackage{graphicx}
 \usepackage{todonotes}
-\usepackage{mathtools} % loads amsmath too  % for matrices
-\usepackage{hhline}    % for custom lines in matrices
 \usepackage{verbatim}  % for multiline comments
 \usepackage{wasysym}   % for \checked
 \usepackage{amssymb}   % for beautiful empty set
-\usepackage{paralist}  % For inlined lists
 
 \usepackage{prooftree} % For derivation trees
 \usepackage{stackengine} % For linebraks in derivation tree premises
@@ -75,20 +71,11 @@
 \usepackage{multirow}
 \usepackage{multicol}
 
-\usepackage{xspace} % We need this for OutsideIn(X)X
-%%%%%%%
+\usepackage{xspace}
 
 \usepackage{float}
 \floatstyle{boxed}
 \restylefloat{figure}
-\usepackage[all,cmtip]{xy}
-
-% To balance the last page
-\usepackage{flushend}
-
-% Theorems
-\usepackage{amsthm}
-\newtheorem{theorem}{Theorem}
 
 \usepackage{hyperref}
 \usepackage{cleveref}
@@ -100,8 +87,6 @@
 
 \usepackage[labelfont=bf]{caption}
 
-\usepackage{mathrsfs}
-
 \clubpenalty = 10000
 \widowpenalty = 10000
 \displaywidowpenalty = 10000
@@ -109,9 +94,6 @@
 % Tables should have the caption above
 \floatstyle{plaintop}
 \restylefloat{table}
-% \usepackage{caption}
-% \DeclareCaptionFormat{myformat}{#1#2#3\hrulefill}
-% \captionsetup[table]{format=myformat}
 
 \begin{document}
 
@@ -305,13 +287,8 @@
 \label{fig:grphnot}
 \end{figure}
 
-% TODO:
-% Clarify nomenclature: Clause vs. (guarded) RHS
-% syntax from language report:
-%   f p11 … p1k match1
-% and each match has multiple guarded RHSs. The report seems to call the above a clause:
-%   "Note that all clauses defining a function must be contiguous, and the number of patterns in each clause must be the same."
-% We *could* treat multiple GRHSs as a language extension, but I don't see the point.
+\subsection{Desugaring to clause trees}
+
 % TODO: better words
 It is customary to define Haskell functions using pattern-matching, possibly
 with one or more \emph{guarded right-hand sides} (GRHS) per \emph{clause} (see
@@ -320,19 +297,19 @@ over \hs{Maybe}:
 
 % TODO: better code style
 \begin{code}
-f Nothing  Nothing  = True
-f (Just x) (Just y)
+liftEq Nothing  Nothing  = True
+liftEq (Just x) (Just y)
   | x == y          = True
   | otherwise       = False
 \end{code}
 
-This function will crash for the call site |f (Just 1) Nothing|. To see that,
-we can follow Haskell's top-to-bottom, left-to-right pattern match semantics.
-The first clause already fails to match |Nothing| against |Just 1|, while the
-second clause successfully matches |x| with |1|, but then fails trying to
-match |Just y| against |Nothing|. There is no third clause, and an
-\emph{uncovered} value vector that falls out at the bottom of this process will
-lead to a crash.
+This function will crash for the call site |liftEq (Just 1) Nothing|. To see
+that, we can follow Haskell's top-to-bottom, left-to-right pattern match
+semantics. The first clause already fails to match |Just 1| against |Nothing|,
+while the second clause successfully matches |1| with |x|, but then fails
+trying to match |Nothing| against |Just y|. There is no third clause, and an
+\emph{uncovered} value vector that falls out at the bottom of this process
+will lead to a crash.
 
 Compare that to matching on |(Just 1) (Just 2)|: While matching against the first 
 clause fails, the second matches |x| to |1| and |y| to |2|. Since there are
@@ -350,7 +327,7 @@ Why can't we just express all pattern matching simply by pattern guards on an
 auxiliary variable match? See for yourself:
 
 \begin{code}
-f mx my
+liftEq mx my
   | Nothing <- mx, Nothing <- my              = True
   | Just x <- mx,  Just y <- my  | x == y     = True
                                  | otherwise  = False
@@ -400,6 +377,8 @@ detail. GMTM just shows a top-to-bottom pipeline. But why should we leave out
 left-to-right composition? Also we produce an annotated syntax tree $\Ant$
 instead of a covered set.}
 
+\subsection{Checking guard trees}
+
 Pattern match checking works by gradually refining the set of uncovered values
 as they flow through the tree and produces two values: The uncovered set that
 wasn't covered by any clause and an annotated guard tree skeleton $\Ant$ with
@@ -413,33 +392,36 @@ an empty uncovered set and an annotated guard tree skeleton like
     [{\lightning}
       [1,acc]
       [{\lightning}
-        [2,acc]
+        [{\lightning} [2,acc]]
         [3,acc]]]]
 \end{forest}
 
-Where a \lightning{} denotes possible divergence in one of the bang patterns
-and the \checked{} annotation means that the respective GRHS was accessible.
-Since all GRHSs are accessible, there's nothing to report in terms of
-redundancy.
+A GRHS is deemed accessible (\checked{}) whenever there's a non-empty set of
+values reaching it. For the first GRHS, the set that reaches it looks
+like $\{ (mx, my) \mid mx \ntermeq \bot, \grdcon{\mathtt{Nothing}}{mx}, my
+\ntermeq \bot, \grdcon{\mathtt{Nothing}}{my} \}$, which is inhabited by
+$(\mathtt{Nothing}, \mathtt{Nothing})$. Similarly, we can find inhabitants for
+the other two clauses.
 
-\sg{Actually, very naively we would turn the boolean guards into pattern guards
-on auxiliary variables and would have to insert bang patterns on them, which
-ultimately lead to $\antdiv{s}$ everywhere. In our implementation we see that
-the auxiliary variables can't be bottom (since they bind |True|/|False|), so
-don't generate these $\antdiv{s}$. Not sure if that is detail we should mention
-here.}
+A \lightning{} denotes possible divergence in one of the bang patterns and
+involves testing the set of reaching values for compatibility with \ie $mx
+\termeq \bot$. We don't know for $mx$, $my$ and $t$ (hence insert a
+\lightning{}), but can certainly rule out $otherwise \termeq \bot$ simply by
+knowing that it is defined as |True|. But since all GRHSs are accessible,
+there's nothing to report in terms of redundancy and the \lightning{}
+decorators are irrelevant.
 
 Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
 guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
 expressive enough to express all pattern matching in Haskell (cf. fig. TODO)!
 We have yet to find a language extension that doesn't fit into this framework.
 
-\subsection{Why we not report redundant GRHSs directly?}
+\subsubsection{Why do we not report redundant GRHSs directly?}
 
-\sg{I think this kind of detail should be motivated in a prior section and then
-referenced here for its solution.} Why not compute the redundant GRHSs
-directly instead of building up a whole new tree? Because determining
-inaccessibility \vs redundancy is a non-local problem. Consider this example:
+Why not compute the redundant GRHSs directly instead of building up a whole new
+tree? Because determining inaccessibility \vs redundancy is a non-local
+problem. Consider this example: \sg{I think this kind of detail should be
+motivated in a prior section and then referenced here for its solution.} 
 
 \begin{code}
 g :: () -> Int 
@@ -466,9 +448,71 @@ Here is the corresponding annotated tree after checking:
 
 In general, at least one GRHS under a \lightning{} may not be flagged as redundant.
 Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
-inaccessible) when it reaches a particular $\gdtrhs{}$.
+inaccessible) when it reaches a particular GRHS.
 
+\subsection{Testing for emptiness}
 
+The informal style of pattern match checking above represents the set of values
+reaching a particular node of the guard tree as a \emph{refinement type}. Each
+guard encountered in the tree traversal refines this set with its own
+constraints.
+
+Apart from generating inhabitants of the final uncovered set for missing
+equation warnings, there are two points at which we have to check whether such
+a refinement type has become empty: To determine whether a right-hand side is
+inaccessible and whether a particular bang pattern may lead to divergence and
+requires us to wrap a \lightning{}.
+
+Take the constraints of the final uncovered set after checking |liftEq| above
+as an example:
+\sg{This doesn't even pick up the trivially empty clauses ending in $\false$,
+but is already too complex. Also this is just a $\Delta$, not a full refinement
+type.}
+\[
+\begin{array}{cl}
+       & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Nothing} \vee (\ctcon{\mathtt{Nothing}}{mx} \wedge my \ntermeq \bot \wedge my \ntermeq \mathtt{Nothing}))) \\
+  \wedge & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Just} \vee (\ctcon{\mathtt{Just}\;x}{mx} \wedge my \ntermeq \bot \wedge (my \ntermeq \mathtt{Just})))) \\
+\end{array}
+\]
+
+A bit of eyeballing |liftEq|'s definition finds |Nothing (Just _)| as an
+uncovered pattern, but eyeballing the constraint formula above seems impossible
+in comparison. A more systematic approach is to adopt a generate-and-test
+scheme: Enumerate possible values of the data types for each variable involved
+(the pattern variables |mx| and |my|, but also possibly the guard-bound |x|,
+|y| and |t|) and test them for compatibility with the recorded constraints.
+
+Starting from |mx my|, we enumerate all possibilities for the shape of |mx|,
+and similarly for |my|. The obvious first candidate in a lazy language is
+$\bot$! But that is a contradicting assignment for both |mx| and |my|
+indepedently. Refining to |Nothing Nothing| contradicts with the left part
+of the top-level $\wedge$. Trying |Just y| (|y| fresh) instead as the shape for
+|my| yields our first inhabitant! Note that |y| is unconstrained, so $\bot$ is
+a trivial inhabitant. Similarly for |(Just _) Nothing| and |(Just _) (Just _)|.
+
+Why do we have to test guard-bound variables in addition to the pattern
+variables? It's because of empty data types and strict fields:
+\sg{This definition will probably move to an earlier section}
+
+\begin{code}
+data Void -- No data constructors
+data SMaybe a = SJust !a | SNothing
+f :: SMaybe Void -> Int
+f x@SNothing = 0
+\end{code}
+
+|f| does not have any uncovered patterns. And our approach better should see that
+by looking at the constraints of its uncovered set:
+\[
+x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}
+\]
+
+Specifically, the candidate |SJust y| (for fresh |y|) for |x| should be rejected,
+because there is no inhabitant for |y|! $\bot$ is ruled out by the strict field
+and |Void| means there is no data constructor to instantiate. Hence it is
+important to test guard-bound variables for inhabitants, too.
+
+\sg{GMTM goes into detail about type constraints, term constraints and worst-case complexity here. That feels a bit out of place.}
 
 \begin{figure}
 \[ \textbf{Checking Guard Trees} \]
