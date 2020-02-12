@@ -221,11 +221,12 @@
 \[
 \begin{array}{rcll}
   \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
-  \delta &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Constraint Literals} \\
-  \Delta &\Coloneqq& \delta \mid \Delta \wedge \Delta \mid \Delta \vee \Delta & \text{Formula} \\
-  \varphi   &\Coloneqq& \gamma \mid x \termeq \phiconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Simple constraints without scoping} \\
-  \Phi   &\Coloneqq& \varnothing \mid \Phi,\varphi & \text{Set of simple constraints} \\
-  \nabla &\Coloneqq& \ctxt{\Gamma}{\Phi} \mid \false & \text{Inert Set} \\
+  \varphi &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Literals} \\
+  \Phi &\Coloneqq& \varphi \mid \Phi \wedge \Phi \mid \Phi \vee \Phi & \text{Formula} \\
+  \Theta &\Coloneqq& \reft{\Gamma}{\Phi} & \text{Refinement Type} \\
+  \delta &\Coloneqq& \gamma \mid x \termeq \phiconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Constraints without scoping} \\
+  \Delta &\Coloneqq& \varnothing \mid \Delta,\delta & \text{Set of constraints} \\
+  \nabla &\Coloneqq& \false \mid \ctxt{\Gamma}{\Delta} & \text{Inert Set} \\
 \end{array}
 \]
 
@@ -413,8 +414,9 @@ decorators are irrelevant.
 
 Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
 guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
-expressive enough to express all pattern matching in Haskell (cf. fig. TODO)!
-We have yet to find a language extension that doesn't fit into this framework.
+expressive enough to express all pattern matching in Haskell (cf. fig.
+\sg{TODO: desugaring function})! We have yet to find a language extension that
+doesn't fit into this framework.
 
 \subsubsection{Why do we not report redundant GRHSs directly?}
 
@@ -453,9 +455,9 @@ inaccessible) when it reaches a particular GRHS.
 \subsection{Testing for Emptiness}
 
 The informal style of pattern match checking above represents the set of values
-reaching a particular node of the guard tree as a \emph{refinement type}. Each
-guard encountered in the tree traversal refines this set with its own
-constraints.
+reaching a particular node of the guard tree as a \emph{refinement type} (which
+is the $\Theta$ from \cref{fig:syn}). Each guard encountered in the tree
+traversal refines this set with its own constraints.
 
 Apart from generating inhabitants of the final uncovered set for missing
 equation warnings, there are two points at which we have to check whether such
@@ -463,14 +465,13 @@ a refinement type has become empty: To determine whether a right-hand side is
 inaccessible and whether a particular bang pattern may lead to divergence and
 requires us to wrap a \lightning{}.
 
-Take the constraints of the final uncovered set after checking |liftEq| above
+Take the predicate of the final uncovered set after checking |liftEq| above
 as an example:
 \sg{This doesn't even pick up the trivially empty clauses ending in $\false$,
-but is already too complex. Also this is just a $\Delta$, not a full refinement
-type.}
+but is already qutie complex.}
 \[
 \begin{array}{cl}
-       & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Nothing} \vee (\ctcon{\mathtt{Nothing}}{mx} \wedge my \ntermeq \bot \wedge my \ntermeq \mathtt{Nothing}))) \\
+         & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Nothing} \vee (\ctcon{\mathtt{Nothing}}{mx} \wedge my \ntermeq \bot \wedge my \ntermeq \mathtt{Nothing}))) \\
   \wedge & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Just} \vee (\ctcon{\mathtt{Just}\;x}{mx} \wedge my \ntermeq \bot \wedge (my \ntermeq \mathtt{Just})))) \\
 \end{array}
 \]
@@ -492,7 +493,7 @@ a trivial inhabitant. Similarly for |(Just _) Nothing| and |(Just _) (Just _)|.
 
 Why do we have to test guard-bound variables in addition to the pattern
 variables? It's because of empty data types and strict fields:
-\sg{This definition will probably move to an earlier section}
+\sg{This example will probably move to an earlier section}
 
 \begin{code}
 data Void -- No data constructors
@@ -502,10 +503,8 @@ v x@SNothing = 0
 \end{code}
 
 |v| does not have any uncovered patterns. And our approach better should see that
-by looking at the constraints of its uncovered set:
-\[
-x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}
-\]
+by looking at its uncovered set
+$\reft{x : |Maybe Void|}{x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}}$.
 
 Specifically, the candidate |SJust y| (for fresh |y|) for |x| should be rejected,
 because there is no inhabitant for |y|! $\bot$ is ruled out by the strict field
@@ -515,39 +514,48 @@ important to test guard-bound variables for inhabitants, too.
 \sg{GMTM goes into detail about type constraints, term constraints and worst-case complexity here. That feels a bit out of place.}
 
 \begin{figure}
-\[ \textbf{Checking Guard Trees} \]
-\[ \ruleform{ \unc(t_G) = \Delta } \]
+\[ \textbf{Operations on $\Theta$} \]
+% TODO: Figure out where to move these
 \[
 \begin{array}{lcl}
-\unc(\gdtrhs{n}) &=& \false \\
-\unc(\gdtseq{t}{u}) &=& \unc(t) \wedge \unc(u) \\
-\unc(\gdtguard{(\grdbang{x})}{t}) &=& (x \ntermeq \bot) \wedge \unc(t) \\
-\unc(\gdtguard{(\grdlet{x}{e})}{t}) &=& (x \termeq e) \wedge \unc(t) \\
-\unc(\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& (x \ntermeq K) \vee ((\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}) \wedge \unc(t)) \\
+\reft{\Gamma}{\Phi} \andtheta \varphi &\Coloneqq& \reft{\Gamma}{\Phi \wedge \varphi} \\
+\reft{\Gamma}{\Phi_1} \uniontheta \reft{\Gamma}{\Phi_2} &\Coloneqq& \reft{\Gamma}{\Phi_1 \vee \Phi_2} \\
+\end{array}
+\]
+\[ \ruleform{ \unc(\Theta, t_G) = \Theta } \]
+\[ \textbf{Checking Guard Trees} \]
+\[ \ruleform{ \unc(\Theta, t_G) = \Theta } \]
+\[
+\begin{array}{lcl}
+\unc(\reft{\Gamma}{\Phi}, \gdtrhs{n}) &=& \reft{\Gamma}{\false} \\
+\unc(\Theta, \gdtseq{t}{u}) &=& \unc(\unc(\Theta, t), u) \\
+\unc(\Theta, \gdtguard{(\grdbang{x})}{t}) &=& \unc(\Theta \andtheta (x \ntermeq \bot), t) \\
+\unc(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \unc(\Theta \andtheta (x \termeq e), t) \\
+\unc(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& (\Theta \andtheta (x \ntermeq K)) \uniontheta \unc(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
 \[ \ruleform{ \ann(\Delta, t_G) = t_A } \]
 \[
 \begin{array}{lcl}
-\ann(\Delta,\gdtrhs{n}) &=& \begin{cases}
-    \antred{n}, & \generate{\Gamma}{\Delta} = \emptyset \\
+\ann(\Theta,\gdtrhs{n}) &=& \begin{cases}
+    \antred{n}, & \generate(\Theta) = \emptyset \\
     \antrhs{n}, & \text{otherwise} \\
   \end{cases} \\
-\ann(\Delta, (\gdtseq{t}{u})) &=& \antseq{\ann(\Delta, t)}{\ann(\Delta \wedge \unc(t), u)} \\
-\ann(\Delta, \gdtguard{(\grdbang{x})}{t}) &=& \begin{cases}
-    \ann(\Delta \wedge (x \ntermeq \bot), t), & \generate{\Gamma}{\Delta \wedge (x \termeq \bot)} = \emptyset \\
-    \antdiv{\ann(\Delta \wedge (x \ntermeq \bot), t)} & \text{otherwise} \\
+\ann(\Theta, (\gdtseq{t}{u})) &=& \antseq{\ann(\Theta, t)}{\ann(\unc(\Theta, t), u)} \\
+\ann(\Theta, \gdtguard{(\grdbang{x})}{t}) &=& \begin{cases}
+    \ann(\Theta \andtheta (x \ntermeq \bot), t), & \generate(\Theta \andtheta (x \termeq \bot)) = \emptyset \\
+    \antdiv{\ann(\Theta \andtheta (x \ntermeq \bot), t)} & \text{otherwise} \\
   \end{cases} \\
-\ann(\Delta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \ann(\Delta \wedge (x \termeq e), t) \\
-\ann(\Delta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& \ann(\Delta \wedge (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
+\ann(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \ann(\Theta \andtheta (x \termeq e), t) \\
+\ann(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& \ann(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
 
 \[ \textbf{Putting it all together} \]
   \begin{enumerate}
     \item[(0)] Input: Context with match vars $\Gamma$ and desugared $\Gdt$ $t$
-    \item Report $n$ pattern vectors of $\generate{\Gamma}{\unc(t)}$ as uncovered
-    \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann(\true, t)$ (TODO: Write a function that collects the RHSs).
+    \item Report $n$ pattern vectors of $\generate(\unc(\reft{\Gamma}{\true}, t))$ as uncovered
+    \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann(\reft{\Gamma}{\true}, t)$ (TODO: Write a function that collects the RHSs).
   \end{enumerate}
 
 \caption{Pattern-match checking}
@@ -563,6 +571,8 @@ terms of the syntax (\cf \cref{fig:syn}) we introduced earlier.
 
 As in the previous section, this comes in two main parts: Pattern match
 checking and finding inhabitants of the arising refinement types.
+\sg{Maybe we'll split that last part in two: 1. Converting $\Theta$ into a
+bunch of inhabited $\nabla$s 2. Make sure that each $\nabla$ is inhabited.}
 
 \subsection{Checking Clause Trees}
 
@@ -574,56 +584,56 @@ annotated tree, capturing redundancy information.
 
 \begin{figure}[t]
 \centering
-\[ \textbf{Generate inhabitants of $\Delta$} \]
-\[ \ruleform{ \generate{\Gamma}{\Delta} = \mathcal{P}(\PS) } \]
+\[ \textbf{Generate inhabitants of $\Theta$} \]
+\[ \ruleform{ \generate(\Theta) = \mathcal{P}(\PS) } \]
 \[
 \begin{array}{c}
-   \generate{\Gamma}{\Delta} = \bigcup \left\{ \expand{\nabla}{\mathsf{dom}(\Gamma)} \mid \nabla \in \construct{\ctxt{\Gamma}{\varnothing}}{\Delta} \right\}
+   \generate(\reft{\Gamma}{\Phi}) = \bigcup \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \construct(\ctxt{\Gamma}{\varnothing}, \Phi) \right\}
 \end{array}
 \]
 
-\[ \textbf{Construct inhabited $\nabla$s from $\Delta$} \]
-\[ \ruleform{ \construct{\nabla}{\Delta} = \mathcal{P}(\nabla) } \]
+\[ \textbf{Construct inhabited $\nabla$s from $\Phi$} \]
+\[ \ruleform{ \construct(\nabla, \Phi) = \mathcal{P}(\nabla) } \]
 \[
 \begin{array}{lcl}
 
-  \construct{\nabla}{\delta} &=& \begin{cases}
-    \left\{ \ctxt{\Gamma'}{\Phi'} \right\} & \text{where $\ctxt{\Gamma'}{\Phi'} = \adddelta{\nabla}{\delta}$} \\
+  \construct(\nabla, \varphi) &=& \begin{cases}
+    \left\{ \ctxt{\Gamma'}{\Phi'} \right\} & \text{where $\ctxt{\Gamma'}{\Phi'} = \nabla \addphi \varphi$} \\
     \emptyset & \text{otherwise} \\
   \end{cases} \\
-  \construct{\nabla}{\Delta_1 \wedge \Delta_2} &=& \bigcup \left\{ \construct{\nabla'}{\Delta_2} \mid \nabla' \in \construct{\nabla}{\Delta_1} \right\} \\
-  \construct{\nabla}{\Delta_1 \vee \Delta_2} &=& \construct{\nabla}{\Delta_1} \cup \construct{\nabla}{\Delta_2}
+  \construct(\nabla, \Phi_1 \wedge \Phi_2) &=& \bigcup \left\{ \construct(\nabla', \Phi_2) \mid \nabla' \in \construct(\nabla, \Phi_1) \right\} \\
+  \construct(\nabla, \Phi_1 \vee \Phi_2) &=& \construct(\nabla, \Phi_1) \cup \construct(\nabla, \Phi_2)
 
 \end{array}
 \]
 
 \[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
-\[ \ruleform{ \expand{\nabla}{\overline{x}} = \mathcal{P}(\PS) } \]
+\[ \ruleform{ \expand(\nabla, \overline{x}) = \mathcal{P}(\PS) } \]
 \[
 \begin{array}{lcl}
 
-  \expand{\nabla}{\epsilon} &=& \{ \epsilon \} \\
-  \expand{\ctxt{\Gamma}{\Phi}}{x_1 ... x_n} &=& \begin{cases}
-    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid (q_1 ... q_m \, p_2 ... p_n) \in \expand{\ctxt{\Gamma}{\Phi}}{y_1 ... y_m x_2 ... x_n} \right\} & \text{if $\rep{\Phi}{x} \termeq \phiconapp{K}{a}{y} \in \Phi$} \\
-    \left\{ \_ \; p_2 ... p_n \mid (p_2 ... p_n) \in \expand{\ctxt{\Gamma}{\Phi}}{x_2 ... x_n} \right\} & \text{otherwise} \\
+  \expand(\nabla, \epsilon) &=& \{ \epsilon \} \\
+  \expand(\ctxt{\Gamma}{\Phi}, x_1 ... x_n) &=& \begin{cases}
+    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid (q_1 ... q_m \, p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Phi}, y_1 ... y_m x_2 ... x_n) \right\} & \text{if $\rep{\Phi}{x} \termeq \phiconapp{K}{a}{y} \in \Phi$} \\
+    \left\{ \_ \; p_2 ... p_n \mid (p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Phi}, x_2 ... x_n) \right\} & \text{otherwise} \\
   \end{cases} \\
 
 \end{array}
 \]
 
-\[ \textbf{Finding the representative of a variable in $\Phi$} \]
-\[ \ruleform{ \rep{\Phi}{x} = y } \]
+\[ \textbf{Finding the representative of a variable in $\Delta$} \]
+\[ \ruleform{ \rep{\Delta}{x} = y } \]
 \[
 \begin{array}{lcl}
-  \rep{\Phi}{x} &=& \begin{cases}
-    \rep{\Phi}{y} & x \termeq y \in \Phi \\
+  \rep{\Delta}{x} &=& \begin{cases}
+    \rep{\Delta}{y} & x \termeq y \in \Delta \\
     x & \text{otherwise} \\
   \end{cases} \\
 \end{array}
 \]
 
 
-\caption{Bridging between the facade $\Delta$ and $\nabla$}
+\caption{Generating inhabitants of $\Theta$ via $\nabla$}
 \end{figure}
 
 
@@ -637,78 +647,78 @@ annotated tree, capturing redundancy information.
 
 \begin{figure}[t]
 \centering
-\[ \textbf{Add a constraint to the inert set} \]
-\[ \ruleform{ \adddelta{\nabla}{\delta} = \nabla } \]
+\[ \textbf{Add a formula literal to the inert set} \]
+\[ \ruleform{ \nabla \addphi \varphi = \nabla } \]
 \[
-\begin{array}{lcl}
+\begin{array}{r@@{\,}c@@{\,}lcl}
 
-  \adddelta{\nabla}{\false} &=& \false \\
-  \adddelta{\nabla}{\true} &=& \nabla \\
-  \adddelta{\ctxt{\Gamma}{\Phi}}{\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}} &=&
-    \addphi{\addphi{\ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Phi}}{\overline{\gamma}}}{x \termeq \phiconapp{K}{a}{y}} \\
+  \nabla &\addphi& \false &=& \false \\
+  \nabla &\addphi& \true &=& \nabla \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
+    \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta x \termeq \phiconapp{K}{a}{y} \\
   % TODO: Really ugly to mix between adding a delta, a phi and then a delta again. But whatever
-  \adddelta{\ctxt{\Gamma}{\Phi}}{\ctlet{x}{\expconapp{K}{\tau'}{\tau}{\gamma}{e}}} &=& \adddelta{\addphi{\adddelta{\ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Phi}}{\ctcon{\genconapp{K}{a}{\gamma}{y}}{x}}}{\overline{a \typeeq \tau}}}{\overline{\ctlet{y}{e}}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\sigma}$} \\ 
-  \adddelta{\nabla}{\ctlet{x}{e}} &=& \nabla \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x}{\expconapp{K}{\tau'}{\tau}{\gamma}{e}} &=& \ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta} \addphi \ctcon{\genconapp{K}{a}{\gamma}{y}}{x} \adddelta \overline{a \typeeq \tau} \addphi \overline{\ctlet{y}{e}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\sigma}$} \\ 
+  \nabla &\addphi& \ctlet{x}{e} &=& \nabla \\
   % TODO: Somehow make the coercion from delta to phi less ambiguous
-  \adddelta{\ctxt{\Gamma}{\Phi}}{\delta} &=& \addphi{\ctxt{\Gamma}{\Phi}}{\delta}
+  \ctxt{\Gamma}{\Delta} &\addphi& \varphi &=& \ctxt{\Gamma}{\Delta} \adddelta \varphi
 
 \end{array}
 \]
 
-\[ \textbf{Add a simple constraint to the inert set} \]
-\[ \ruleform{ \addphi{\nabla}{\varphi} = \nabla } \]
+\[ \textbf{Add a constraint to the inert set} \]
+\[ \ruleform{ \nabla \adddelta \delta = \nabla } \]
 \[
-\begin{array}{lcl}
+\begin{array}{r@@{\,}c@@{\,}lcl}
 
-  \addphi{\false}{\varphi} &=& \false \\
-  \addphi{\ctxt{\Gamma}{\Phi}}{\gamma} &=& \begin{cases}
+  \false &\adddelta& \delta &=& \false \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& \gamma &=& \begin{cases}
     % TODO: This rule can loop indefinitely for GADTs... I believe we do this
     % only one level deep in the implementation and assume that it's inhabited otherwise
-    \ctxt{\Gamma}{(\Phi,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Phi$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\Phi,\gamma)}}{\rep{\Phi}{x}}$} \\
+    \ctxt{\Gamma}{(\Delta,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\Delta,\gamma)}}{\rep{\Delta}{x}}$} \\
     \false & \text{otherwise} \\
   \end{cases} \\
-  \addphi{\ctxt{\Gamma}{\Phi}}{x \termeq \phiconapp{K}{a}{y}} &=& \begin{cases}
-    \addphi{\addphi{\ctxt{\Gamma}{\Phi}}{\overline{a \typeeq b}}}{\overline{y \termeq z}} & \text{if $\rep{\Phi}{x} \termeq \phiconapp{K}{b}{z} \in \Phi$ } \\
-    \ctxt{\Gamma'}{(\Phi',\rep{\Phi}{x} \termeq \phiconapp{K}{a}{y})} & \parbox[t]{0.6\textwidth}{where $\ctxt{\Gamma'}{\Phi'} = \addphi{\ctxt{\Gamma}{\Phi}}{\overline{\gamma}}$ \\ and $\rep{\Phi'}{x} \ntermeq K \not\in \Phi'$ and $\overline{\inhabited{\ctxt{\Gamma'}{\Phi'}}{y}}$} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \phiconapp{K}{a}{y} &=& \begin{cases}
+    \ctxt{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \phiconapp{K}{b}{z} \in \Delta$ } \\
+    \ctxt{\Gamma'}{(\Delta',\rep{\Delta}{x} \termeq \phiconapp{K}{a}{y})} & \parbox[t]{0.6\textwidth}{where $\ctxt{\Gamma'}{\Delta'} = \ctxt{\Gamma}{\Delta} \adddelta \overline{\gamma} $ \\ and $\rep{\Delta'}{x} \ntermeq K \not\in \Delta'$ and $\overline{\inhabited{\ctxt{\Gamma'}{\Delta'}}{y}}$} \\
     \false & \text{otherwise} \\
   \end{cases} \\
-  \addphi{\ctxt{\Gamma}{\Phi}}{x \ntermeq K} &=& \begin{cases}
-    \false & \text{if $\rep{\Phi}{x} \termeq \phiconapp{K}{a}{y} \in \Phi$} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
+    \false & \text{if $\rep{\Delta}{x} \termeq \phiconapp{K}{a}{y} \in \Delta$} \\
     % TODO: I'm not sure if we really need the next line. It should be covered
     % by the following case, which will try to instantiate all constructors and
     % see if any is still possible by the x ~ K as gammas ys case
-    % \bot & \parbox[t]{0.6\textwidth}{if $\rep{\Phi}{x}:\tau \in \Gamma$ \\ and $\forall K' \in \cons{\ctxt{\Gamma}{\Phi}}{\tau}: \rep{\Phi}{x} \ntermeq K' \in (\Phi,\rep{\Phi}{x} \ntermeq K)$} \\
-    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Phi,\rep{\Phi}{x} \ntermeq K)}}{\rep{\Phi}{x}}$} \\
-    \ctxt{\Gamma}{(\Phi,\rep{\Phi}{x}\ntermeq K)} & \text{otherwise} \\
+    % \bot & \parbox[t]{0.6\textwidth}{if $\rep{\Delta}{x}:\tau \in \Gamma$ \\ and $\forall K' \in \cons{\ctxt{\Gamma}{\Delta}}{\tau}: \rep{\Delta}{x} \ntermeq K' \in (\Delta,\rep{\Delta}{x} \ntermeq K)$} \\
+    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{\rep{\Delta}{x}}$} \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{otherwise} \\
   \end{cases} \\
-  \addphi{\ctxt{\Gamma}{\Phi}}{x \termeq \bot} &=& \begin{cases}
-    \bot & \text{if $\rep{\Phi}{x} \ntermeq \bot \in \Phi$} \\
-    \ctxt{\Gamma}{(\Phi,\rep{\Phi}{x}\termeq \bot)} & \text{otherwise} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
+    \bot & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
   \end{cases} \\
-  \addphi{\ctxt{\Gamma}{\Phi}}{x \ntermeq \bot} &=& \begin{cases}
-    \false & \text{if $\rep{\Phi}{x} \termeq \bot \in \Phi$} \\
-    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Phi,\rep{\Phi}{x}\ntermeq\bot)}}{\rep{\Phi}{x}}$} \\
-    \ctxt{\Gamma}{(\Phi,\rep{\Phi}{x} \ntermeq \bot)} & \text{otherwise} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
+    \false & \text{if $\rep{\Delta}{x} \termeq \bot \in \Delta$} \\
+    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
   \end{cases} \\
-  \addphi{\ctxt{\Gamma}{\Phi}}{x \termeq y} &=& \begin{cases}
-    \ctxt{\Gamma}{\Phi} & \text{if $\rep{\Phi}{x} = \rep{\Phi}{y}$} \\
-    % TODO: Write the function that adds a Phi to a nabla
-    \addphi{\ctxt{\Gamma}{(\Phi, \rep{\Phi}{x} \termeq \rep{\Phi}{y})}}{((\Phi \cap \rep{\Phi}{x})[\rep{\Phi}{y} / \rep{\Phi}{x}])} & \text{otherwise} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq y &=& \begin{cases}
+    \ctxt{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
+    % TODO: Write the function that adds a Delta to a nabla
+    \ctxt{\Gamma}{(\Delta, \rep{\Delta}{x} \termeq \rep{\Delta}{y})} \adddelta ((\Delta \cap \rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
   \end{cases} \\
 
 \end{array}
 \]
 
 
-\[ \ruleform{ \Phi \cap x = \Phi } \]
+\[ \ruleform{ \Delta \cap x = \Delta } \]
 \[
 \begin{array}{lcl}
   \varnothing \cap x &=& \varnothing \\
-  (\Phi,x \termeq \phiconapp{K}{a}{y}) \cap x &=& (\Phi \cap x), x \termeq \phiconapp{K}{a}{y} \\
-  (\Phi,x \ntermeq K) \cap x &=& (\Phi \cap x), x \ntermeq K \\
-  (\Phi,x \termeq \bot) \cap x &=& (\Phi \cap x), x \termeq \bot \\
-  (\Phi,x \ntermeq \bot) \cap x &=& (\Phi \cap x), x \ntermeq \bot \\
-  (\Phi,\varphi) \cap x &=& \Phi \cap x \\
+  (\Delta,x \termeq \phiconapp{K}{a}{y}) \cap x &=& (\Delta \cap x), x \termeq \phiconapp{K}{a}{y} \\
+  (\Delta,x \ntermeq K) \cap x &=& (\Delta \cap x), x \ntermeq K \\
+  (\Delta,x \termeq \bot) \cap x &=& (\Delta \cap x), x \termeq \bot \\
+  (\Delta,x \ntermeq \bot) \cap x &=& (\Delta \cap x), x \ntermeq \bot \\
+  (\Delta,\varphi) \cap x &=& \Delta \cap x \\
 \end{array}
 \]
 
@@ -723,7 +733,7 @@ annotated tree, capturing redundancy information.
 \begin{array}{c}
 
   \prooftree
-    (\addphi{\ctxt{\Gamma}{\Phi}}{x \termeq \bot}) \not= \false
+    (\ctxt{\Gamma}{\Phi} \adddelta x \termeq \bot) \not= \false
   \justifies
     \inhabited{\ctxt{\Gamma}{\Phi}}{x}
   \endprooftree
@@ -733,7 +743,7 @@ annotated tree, capturing redundancy information.
   \prooftree
     \Shortstack{{x:\tau \in \Gamma \quad K \in \cons{\ctxt{\Gamma}{\Phi}}{\tau}}
                 {\inst{\Gamma}{x}{K} = \overline{\varphi}}
-               {(\addphi{\ctxt{\Gamma,\overline{y:\tau'}}{\Phi}}{\overline{\varphi}}) \not= \false}}
+               {(\ctxt{\Gamma,\overline{y:\tau'}}{\Phi} \adddelta \overline{\varphi}) \not= \false}}
   \justifies
     \inhabited{\ctxt{\Gamma}{\Phi}}{x}
   \endprooftree
@@ -797,6 +807,10 @@ annotated tree, capturing redundancy information.
 
 
 \section{End to end example}
+
+\sg{This sectionis completely out of date and goes into so much detail that it
+is barely comprehensible. I think we might be able to recycle some of the
+examples later on.}
 
 We'll start from the following source Haskell program and see how each of the steps (translation to guard trees, checking guard trees and ultimately generating inhabitants of the occurring $\Delta$s) work.
 
@@ -868,20 +882,20 @@ Thus, we will get the following annotated tree:
 
 \subsection{Generating inhabitants}
 
-The last section left open how $\generate{}{}$ works, which was used to
+The last section left open how $\generate$ works, which was used to
 establish or refute vacuosity of a $\Delta$.
 
-$\generate{}{}$ proceeds in two steps: First it constructs zero, one or many
-\emph{inert sets} $\nabla$ with $\construct{}{}$ (each of them representing a
+$\generate$ proceeds in two steps: First it constructs zero, one or many
+\emph{inert sets} $\nabla$ with $\construct$ (each of them representing a
 set of mutually compatible constraints) and then expands each of the returned
-inert sets into one or more pattern vectors $\overline{p}$ with $\expand{}{}$,
+inert sets into one or more pattern vectors $\overline{p}$ with $\expand$,
 which is the preferred representation to show to the user.
 
-The interesting bit happens in $\construct{}{}$, where a $\Delta$ is basically
+The interesting bit happens in $\construct$, where a $\Delta$ is basically
 transformed into disjunctive normal form, represented by a set of independently
 inhabited $\nabla$. This ultimately happens in the base case of
-$\construct{}{}$, by gradually adding individual constraints to the incoming
-inert set with $\addphi{}{}$, which starts out empty in $\generate{}{}$.
+$\construct$, by gradually adding individual constraints to the incoming
+inert set with $\adddelta{}{}$, which starts out empty in $\generate$.
 Conjunction is handled by performing the equivalent of a \hs{concatMap},
 whereas disjunction simply translates to set union.
 
@@ -890,22 +904,22 @@ $\Gamma = x:\texttt{Maybe Int}$ and $\Delta_3 = \true \wedge x \termeq \bot$:
 
 \[
   \begin{array}{ll}
-    & \construct{\Gamma}{\true \wedge x \termeq \bot} \\
+    & \construct(\Gamma, \true \wedge x \termeq \bot) \\
   = & \quad \{ \text{ Conjunction } \} \\
-    & \bigcup \left\{ \construct{\ctxt{\Gamma'}{\nabla'}}{x \termeq \bot} \mid \ctxt{\Gamma'}{\nabla'} \in \construct{\ctxt{\Gamma}{\varnothing}}{\true} \right\} \\
+    & \bigcup \left\{ \construct(\ctxt{\Gamma'}{\nabla'}, x \termeq \bot) \mid \ctxt{\Gamma'}{\nabla'} \in \construct(\ctxt{\Gamma}{\varnothing}, \true) \right\} \\
   = & \quad \{ \text{ Single constraint } \} \\
     & \begin{cases}
-        \construct{\ctxt{\Gamma'}{\nabla'}}{x \termeq \bot} & \text{where $\ctxt{\Gamma'}{\nabla'} = \addphi{\ctxt{\Gamma}{\varnothing}}{\true}$} \\
+        \construct(\ctxt{\Gamma'}{\nabla'}, x \termeq \bot) & \text{where $\ctxt{\Gamma'}{\nabla'} = \adddelta{\ctxt{\Gamma}{\varnothing}}{\true}$} \\
         \emptyset & \text{otherwise} \\
     \end{cases} \\
-  = & \quad \{ \text{ $\true$ case of $\addphi{}{}$ } \} \\
-    & \construct{\ctxt{\Gamma}{\varnothing}}{x \termeq \bot} \\
+  = & \quad \{ \text{ $\true$ case of $\adddelta{}{}$ } \} \\
+    & \construct(\ctxt{\Gamma}{\varnothing}, x \termeq \bot) \\
   = & \quad \{ \text{ Single constraint } \} \\
     & \begin{cases}
-        \{ \ctxt{\Gamma'}{\nabla'} \} & \text{where $\ctxt{\Gamma'}{\nabla'} = \addphi{\ctxt{\Gamma}{\varnothing}}{x \termeq \bot}$} \\
+        \{ \ctxt{\Gamma'}{\nabla'} \} & \text{where $\ctxt{\Gamma'}{\nabla'} = \adddelta{\ctxt{\Gamma}{\varnothing}}{x \termeq \bot}$} \\
         \emptyset & \text{otherwise} \\
     \end{cases} \\
-  = & \quad \{ \text{ $x \termeq \bot$ case of $\addphi{}{}$ } \} \\
+  = & \quad \{ \text{ $x \termeq \bot$ case of $\adddelta{}{}$ } \} \\
     & \{ \ctxt{\Gamma}{x \termeq \bot} \}
   \end{array}
 \]
@@ -917,14 +931,14 @@ very easily to the initial nabla by discarding it, the second one ($x
 \termeq \bot$) is not conflicting with any $x \ntermeq \bot$ constraint in the
 incoming, still empty ($\varnothing$) nabla, so we end up with
 $\ctxt{\Gamma}{x \termeq \bot}$ as proof that $\Delta_3$ is in fact inhabited.
-Indeed, $\expand{\ctxt{\Gamma}{x \termeq \bot}}{x}$ generate $\_$ as the
+Indeed, $\expand(\ctxt{\Gamma}{x \termeq \bot}, x)$ generate $\_$ as the
 inhabitant (which is rather unhelpful, but correct).
 
 The result of $\generate{\Gamma}{\Delta_3}$ is thus $\{\_\}$, which is not
 empty. Thus, $\ann{\Delta}{t}$ will wrap a $\antdiv{}$ around the first RHS.
 
 Similarly, $\generate{\Gamma}{\Delta_4}$ needs
-$\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_4}$, which in turn will add $x
+$\construct(\ctxt{\Gamma}{\varnothing}, \Delta_4)$, which in turn will add $x
 \ntermeq \bot$ to an initially empty $\nabla$. That entails an inhabitance
 check to see if $x$ might take on any values besides $\bot$.
 
@@ -935,7 +949,7 @@ This is one possible derivation of the $\inhabited{\ctxt{\Gamma}{x \ntermeq \bot
   \prooftree
     \Shortstack{{x:\texttt{Maybe Int} \in \Gamma \quad \mathtt{Nothing} \in \cons{\ctxt{\Gamma}{x \ntermeq \bot}}{\texttt{Maybe Int}}}
                 {\inst{\Gamma}{x}{\mathtt{Nothing}} = \ctcon{\mathtt{Nothing}}{x}}
-               {(\addphi{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}) \not= \bot}}
+               {(\adddelta{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}) \not= \bot}}
   \justifies
     \inhabited{\ctxt{\Gamma}{x \ntermeq \bot}}{x}
   \endprooftree
@@ -943,7 +957,7 @@ This is one possible derivation of the $\inhabited{\ctxt{\Gamma}{x \ntermeq \bot
   \end{array}
 \]
 
-The subgoal $\addphi{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}$
+The subgoal $\adddelta{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}$
 is handled by the second case of the match on constructor pattern constraints,
 because there are no other constructor pattern constraints yet in the incoming
 $\nabla$. Since there are no type constraints carried by \texttt{Nothing}, no
@@ -954,21 +968,21 @@ $\inhabited{\ctxt{\Gamma}{x \ntermeq \bot}}{x}$.
 
 Next, we have to add $\ctcon{\mathtt{Nothing}}{x}$ to our $\nabla = x \ntermeq \bot$,
 which amounts to computing
-$\addphi{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}$.
+$\adddelta{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}$.
 Conveniently, we just did that! So the result of
-$\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_4}$ is
+$\construct(\ctxt{\Gamma}{\varnothing}, \Delta_4)$ is
 $\ctxt{\Gamma}{x \ntermeq \bot, \ctcon{\mathtt{Nothing}}{x}}$.
 
 Now, we see that
-$\expand{\ctxt{\Gamma}{(x \ntermeq \bot, \ctcon{\mathtt{Nothing}}{x})}}{x} = \{\mathtt{Nothing}\}$,
+$\expand(\ctxt{\Gamma}{(x \ntermeq \bot, \ctcon{\mathtt{Nothing}}{x})}, x) = \{\mathtt{Nothing}\}$,
 which is also the result of $\generate{\Gamma}{\Delta_4}$.
 
 The checks for $\Delta_5$ and $\Delta_6$ are quite similar, only that we start
-from $\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_1}$ (which occur
+from $\construct(\ctxt{\Gamma}{\varnothing}, \Delta_1)$ (which occur
 syntactically in $\Delta_5$ and $\Delta_6$) as the initial $\nabla$. So, we
 first compute that.
 
-Fast forward to computing $\addphi{\ctxt{\Gamma}{x \ntermeq \bot}}{x \ntermeq \mathtt{Nothing}}$.
+Fast forward to computing $\adddelta{\ctxt{\Gamma}{x \ntermeq \bot}}{x \ntermeq \mathtt{Nothing}}$.
 Ultimately, this entails a proof of
 $\inhabited{\ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}}{x}$, for which we need to instantiate the \texttt{Just} constructor:
 \[
@@ -977,7 +991,7 @@ $\inhabited{\ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}}{x}$, fo
   \prooftree
     \Shortstack{{x:\texttt{Maybe Int} \in \Gamma \quad \mathtt{Just} \in \cons{\ctxt{\Gamma}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})}}{\texttt{Maybe Int}}}
                 {\inst{\Gamma}{x}{\mathtt{Just}} = \ctcon{\mathtt{Just} \; y}{x}}
-               {(\addphi{\ctxt{\Gamma,y:\mathtt{Int}}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})}}{\ctcon{\mathtt{Just} \; y}{x}}) \not= \bot}}
+               {(\adddelta{\ctxt{\Gamma,y:\mathtt{Int}}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})}}{\ctcon{\mathtt{Just} \; y}{x}}) \not= \bot}}
   \justifies
     \inhabited{\ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}}{x}
   \endprooftree
@@ -985,19 +999,19 @@ $\inhabited{\ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}}{x}$, fo
   \end{array}
 \]
 
-$\addphi{\ctxt{\Gamma,y:\mathtt{Int}}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})}}{\ctcon{\mathtt{Just} \; y}{x}})$
+$\adddelta{\ctxt{\Gamma,y:\mathtt{Int}}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})}}{\ctcon{\mathtt{Just} \; y}{x}})$
 is in fact not $\bot$, which is enough to conclude
 $\inhabited{\ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}}{x}$.
 
 The second operand of $\vee$ in $\Delta_1$ is similar, but ultimately ends in
 $\false$, so will never produce a $\nabla$, so
-$\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_1} = \ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}$.
+$\construct(\ctxt{\Gamma}{\varnothing}, \Delta_1) = \ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}$.
 
 $\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_5}$ will then just add
 $x \termeq \bot$ to that $\nabla$, which immediately refutes with
 $x \ntermeq \bot$. So no $\antdiv{}$ around the second RHS.
 
-$\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_6}$ is very similar to the
+$\construct(\ctxt{\Gamma}{\varnothing}, \Delta_6)$ is very similar to the
 situation with $\Delta_4$, just with more (non-conflicting) constraints in the
 incoming $\nabla$ and with $\ctcon{\mathtt{Just}\;y}{x}$ instead of
 $\ctcon{\mathtt{Nothing}}{x}$. Thus, $\generate{\Gamma}{\Delta_6} = \{\mathtt{Just}\; \_\}$.
@@ -1005,7 +1019,7 @@ $\ctcon{\mathtt{Nothing}}{x}$. Thus, $\generate{\Gamma}{\Delta_6} = \{\mathtt{Ju
 The last bit concerns $\generate{\Gamma}{\Delta_2}$, which is empty because we
 ultimately would add $x \ntermeq \mathtt{Just}$ to the inert set
 $x \ntermeq \bot, x \ntermeq \mathtt{Nothing}$, which refutes by the second
-case of $\addphi{\_}{\_}$. (The $\vee$ operand with $\false$ in it is empty,
+case of $\adddelta{\_}{\_}$. (The $\vee$ operand with $\false$ in it is empty,
 as usual).
 
 So we have $\generate{\Gamma}{\Delta_2} = \emptyset$ and the pattern-match is
