@@ -187,7 +187,7 @@
 \label{fig:srcsyn}
 \end{figure}
 
-\section{Our Solution}
+\section{Overview over Our Solution}
 
 \begin{figure}
 \centering
@@ -377,7 +377,7 @@ detail. GMTM just shows a top-to-bottom pipeline. But why should we leave out
 left-to-right composition? Also we produce an annotated syntax tree $\Ant$
 instead of a covered set.}
 
-\subsection{Checking guard trees}
+\subsection{Checking Guard Trees}
 
 Pattern match checking works by gradually refining the set of uncovered values
 as they flow through the tree and produces two values: The uncovered set that
@@ -450,7 +450,7 @@ In general, at least one GRHS under a \lightning{} may not be flagged as redunda
 Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
 inaccessible) when it reaches a particular GRHS.
 
-\subsection{Testing for emptiness}
+\subsection{Testing for Emptiness}
 
 The informal style of pattern match checking above represents the set of values
 reaching a particular node of the guard tree as a \emph{refinement type}. Each
@@ -497,11 +497,11 @@ variables? It's because of empty data types and strict fields:
 \begin{code}
 data Void -- No data constructors
 data SMaybe a = SJust !a | SNothing
-f :: SMaybe Void -> Int
-f x@SNothing = 0
+v :: SMaybe Void -> Int
+v x@SNothing = 0
 \end{code}
 
-|f| does not have any uncovered patterns. And our approach better should see that
+|v| does not have any uncovered patterns. And our approach better should see that
 by looking at the constraints of its uncovered set:
 \[
 x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}
@@ -516,47 +516,60 @@ important to test guard-bound variables for inhabitants, too.
 
 \begin{figure}
 \[ \textbf{Checking Guard Trees} \]
-\[ \ruleform{ \unc{t_G} = \Delta } \]
+\[ \ruleform{ \unc(t_G) = \Delta } \]
 \[
 \begin{array}{lcl}
-\unc{\gdtrhs{n}} &=& \false \\
-\unc{\gdtseq{t}{u}} &=& \unc{t} \wedge \unc{u} \\
-\unc{\gdtguard{(\grdbang{x})}{t}} &=& (x \ntermeq \bot) \wedge \unc{t} \\
-\unc{\gdtguard{(\grdlet{x}{e})}{t}} &=& (x \termeq e) \wedge \unc{t} \\
-\unc{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& (x \ntermeq K) \vee ((\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}) \wedge \unc{t}) \\
+\unc(\gdtrhs{n}) &=& \false \\
+\unc(\gdtseq{t}{u}) &=& \unc(t) \wedge \unc(u) \\
+\unc(\gdtguard{(\grdbang{x})}{t}) &=& (x \ntermeq \bot) \wedge \unc(t) \\
+\unc(\gdtguard{(\grdlet{x}{e})}{t}) &=& (x \termeq e) \wedge \unc(t) \\
+\unc(\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& (x \ntermeq K) \vee ((\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}) \wedge \unc(t)) \\
 \end{array}
 \]
-\[ \ruleform{ \ann{\Delta}{t_G} = t_A } \]
+\[ \ruleform{ \ann(\Delta, t_G) = t_A } \]
 \[
 \begin{array}{lcl}
-\ann{\Delta}{\gdtrhs{n}} &=& \begin{cases}
+\ann(\Delta,\gdtrhs{n}) &=& \begin{cases}
     \antred{n}, & \generate{\Gamma}{\Delta} = \emptyset \\
     \antrhs{n}, & \text{otherwise} \\
   \end{cases} \\
-\ann{\Delta}{(\gdtseq{t}{u})} &=& \antseq{\ann{\Delta}{t}}{\ann{\Delta \wedge \unc{t}}{u}} \\
-\ann{\Delta}{\gdtguard{(\grdbang{x})}{t}} &=& \begin{cases}
-    \ann{\Delta \wedge (x \ntermeq \bot)}{t}, & \generate{\Gamma}{\Delta \wedge (x \termeq \bot)} = \emptyset \\
-    \antdiv{\ann{\Delta \wedge (x \ntermeq \bot)}{t}} & \text{otherwise} \\
+\ann(\Delta, (\gdtseq{t}{u})) &=& \antseq{\ann(\Delta, t)}{\ann(\Delta \wedge \unc(t), u)} \\
+\ann(\Delta, \gdtguard{(\grdbang{x})}{t}) &=& \begin{cases}
+    \ann(\Delta \wedge (x \ntermeq \bot), t), & \generate{\Gamma}{\Delta \wedge (x \termeq \bot)} = \emptyset \\
+    \antdiv{\ann(\Delta \wedge (x \ntermeq \bot), t)} & \text{otherwise} \\
   \end{cases} \\
-\ann{\Delta}{\gdtguard{(\grdlet{x}{e})}{t}} &=& \ann{\Delta \wedge (x \termeq e)}{t} \\
-\ann{\Delta}{\gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}} &=& \ann{\Delta \wedge (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t} \\
+\ann(\Delta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \ann(\Delta \wedge (x \termeq e), t) \\
+\ann(\Delta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& \ann(\Delta \wedge (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
 
 \[ \textbf{Putting it all together} \]
   \begin{enumerate}
     \item[(0)] Input: Context with match vars $\Gamma$ and desugared $\Gdt$ $t$
-    \item Report $n$ pattern vectors of $\generate{\Gamma}{\unc{t}}$ as uncovered
-    \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann{\true}{t}$ (TODO: Write a function that collects the RHSs).
+    \item Report $n$ pattern vectors of $\generate{\Gamma}{\unc(t)}$ as uncovered
+    \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann(\true, t)$ (TODO: Write a function that collects the RHSs).
   \end{enumerate}
 
 \caption{Pattern-match checking}
+\label{fig:check}
 \end{figure}
 
+\section{Formalism}
 
+The previous section gave insights into how we represent pattern match checking
+problems as clause trees and provided an intuition for how to check them for
+exhaustiveness and redundancy. This section formalises these intuitions in
+terms of the syntax (\cf \cref{fig:syn}) we introduced earlier.
 
+As in the previous section, this comes in two main parts: Pattern match
+checking and finding inhabitants of the arising refinement types.
 
+\subsection{Checking Clause Trees}
 
+\Cref{fig:check} shows the two main functions for checking guard trees. $\unc$
+carries out exhaustiveness checking by computing the set of uncovered values
+for a particular guard tree, whereas $\ann$ computes the corresponding
+annotated tree, capturing redundancy information.
 
 
 \begin{figure}[t]
