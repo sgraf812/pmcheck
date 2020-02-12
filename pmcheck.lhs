@@ -465,8 +465,8 @@ a refinement type has become empty: To determine whether a right-hand side is
 inaccessible and whether a particular bang pattern may lead to divergence and
 requires us to wrap a \lightning{}.
 
-Take the predicate of the final uncovered set after checking |liftEq| above
-as an example:
+Take the the final uncovered set $\reft{(mx : |Maybe a|, my : |Maybe a|)}{\Phi}$ after checking |liftEq| above
+as an example, where the predicate $\Phi$ is:
 \sg{This doesn't even pick up the trivially empty clauses ending in $\false$,
 but is already qutie complex.}
 \[
@@ -511,18 +511,19 @@ because there is no inhabitant for |y|! $\bot$ is ruled out by the strict field
 and |Void| means there is no data constructor to instantiate. Hence it is
 important to test guard-bound variables for inhabitants, too.
 
-\sg{GMTM goes into detail about type constraints, term constraints and worst-case complexity here. That feels a bit out of place.}
+\sg{GMTM goes into detail about type constraints, term constraints and
+worst-case complexity here. That feels a bit out of place.}
 
 \begin{figure}
 \[ \textbf{Operations on $\Theta$} \]
 % TODO: Figure out where to move these
 \[
 \begin{array}{lcl}
-\reft{\Gamma}{\Phi} \andtheta \varphi &\Coloneqq& \reft{\Gamma}{\Phi \wedge \varphi} \\
-\reft{\Gamma}{\Phi_1} \uniontheta \reft{\Gamma}{\Phi_2} &\Coloneqq& \reft{\Gamma}{\Phi_1 \vee \Phi_2} \\
+\reft{\Gamma}{\Phi} \andtheta \varphi &=& \reft{\Gamma}{\Phi \wedge \varphi} \\
+\reft{\Gamma}{\Phi_1} \uniontheta \reft{\Gamma}{\Phi_2} &=& \reft{\Gamma}{\Phi_1 \vee \Phi_2} \\
 \end{array}
 \]
-\[ \ruleform{ \unc(\Theta, t_G) = \Theta } \]
+
 \[ \textbf{Checking Guard Trees} \]
 \[ \ruleform{ \unc(\Theta, t_G) = \Theta } \]
 \[
@@ -574,13 +575,44 @@ checking and finding inhabitants of the arising refinement types.
 \sg{Maybe we'll split that last part in two: 1. Converting $\Theta$ into a
 bunch of inhabited $\nabla$s 2. Make sure that each $\nabla$ is inhabited.}
 
-\subsection{Checking Clause Trees}
+\subsection{Checking Guard Trees}
 
 \Cref{fig:check} shows the two main functions for checking guard trees. $\unc$
 carries out exhaustiveness checking by computing the set of uncovered values
 for a particular guard tree, whereas $\ann$ computes the corresponding
 annotated tree, capturing redundancy information.
 
+Both functions take as input the set of values reaching the particular guard
+tree node passed in as second parameter. The definition of $\unc$ follows the intuition we built up earlier: It refines
+the set of reaching values as a subset of it falls through from one clause to
+the next. This is most visible in the $\gdtseq{}{}$ case (top-to-bottom
+composition), where the set of values reaching the right (or bottom) child is
+exactly the set of values that were uncovered by the left (or top) child on the
+set of values reaching the whole node. A GRHS covers every reaching value. The
+left-to-right semantics of $\gdtguard{}{}$ are respected by refining the set of
+values reaching the wrapped subtree, depending on the particular guard. Bang
+patterns and let bindings don't do anything beyond that refinement, whereas
+pattern guards additionally account for the possibility of a failed pattern
+match. Note that ultimately, a failing pattern guard is the only way in which
+the uncovered set can become non-empty!
+
+When $\ann$ hits a GRHS, it asks $\generate$ for inhabitants of $\Theta$
+to decide whether the GRHS is accessible or not. Since $\ann$ needs to compute
+and maintain the set of reaching values just the same as $\unc$, it has to call
+out to $\unc$ for the $\gdtseq{}{}$ case. Out of the three guard cases, the one
+handling bang patterns is the only one doing more than just refining the set of
+reaching values for the subtree (thus respecting left-to-right semantics). A
+bang pattern $\grdbang{x}$ is handled by testing whether the set of reaching
+values $\Theta$ is compatible with the assignment $x \termeq \bot$, which again
+is done by asking $\generate$ for concrete inhabitants of the resulting
+refinement type. If it \emph{is} inhabited, then the bang pattern might diverge
+and we need to wrap the annotated subtree in a \lightning{}.
+
+Pattern guard semantics are important for $\unc$ and bang pattern semantics are
+important for $\ann$. But what about let bindings? They are in fact completely
+uninteresting to the checking process, but making sense of them is important
+for the emptiness check involving $\generate$, as we'll see later on
+\sg{TODO: cref}.
 
 \begin{figure}[t]
 \centering
@@ -808,7 +840,7 @@ annotated tree, capturing redundancy information.
 
 \section{End to end example}
 
-\sg{This sectionis completely out of date and goes into so much detail that it
+\sg{This section is completely out of date and goes into so much detail that it
 is barely comprehensible. I think we might be able to recycle some of the
 examples later on.}
 
