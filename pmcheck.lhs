@@ -172,7 +172,7 @@
 
 Contributions from our call:
 \begin{itemize}
-\item Things we do that weren’t done in GADTs meet their match
+\item Things we do that weren't done in GADTs meet their match
   \begin{itemize}
     \item Strictness, including bang patterns, data structures with strict fields.
 \item 	COMPLETE pragmas
@@ -182,8 +182,8 @@ Contributions from our call:
 \end{itemize}
 
   \item
-Much simpler and more modular formalism (evidence: compare the Figures; separation of desugaring and clause-tree processing, so that it’s easy to add new source-language forms)
-\item 	Leading to a simpler, more correct, and much more performant implementation.  (Evidence: GHC’s bug tracker, perf numbers)
+Much simpler and more modular formalism (evidence: compare the Figures; separation of desugaring and clause-tree processing, so that it's easy to add new source-language forms)
+\item 	Leading to a simpler, more correct, and much more performant implementation.  (Evidence: GHC's bug tracker, perf numbers)
 \item 	Maybe the first to handle both strict and lazy languages.
 
 \end{itemize}
