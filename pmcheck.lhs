@@ -120,6 +120,14 @@
 }
 \email{simonpj@@microsoft.com}
 
+\author{Ryan G. Scott}
+\affiliation{%
+  \institution{Indiana University}
+  \city{Bloomington, Indiana}
+  \country{USA}
+}
+\email{rgscott@@indiana.edu}
+
 \maketitle
 
 \begin{abstract}
@@ -173,7 +181,7 @@ Contributions from our call:
 \item	Less syntactic; robust to mixing pattern guards and syntax pattern matching and view patterns
 \end{itemize}
 
-  \item 
+  \item
 Much simpler and more modular formalism (evidence: compare the Figures; separation of desugaring and clause-tree processing, so that it’s easy to add new source-language forms)
 \item 	Leading to a simpler, more correct, and much more performant implementation.  (Evidence: GHC’s bug tracker, perf numbers)
 \item 	Maybe the first to handle both strict and lazy languages.
@@ -344,7 +352,7 @@ trying to match |Nothing| against |Just y|. There is no third clause, and an
 \emph{uncovered} value vector that falls out at the bottom of this process
 will lead to a crash. \simon{We have not talked about value vectors yet!  Rephrase}
 
-Compare that to matching on |(Just 1) (Just 2)|: While matching against the first 
+Compare that to matching on |(Just 1) (Just 2)|: While matching against the first
 clause fails, the second matches |x| to |1| and |y| to |2|. Since there are
 multiple guarded right-hand sides (GRHSs), each of them in turn has to be tried in
 a top-to-bottom fashion. The first GRHS consists of a single
@@ -380,7 +388,7 @@ syntax and \cref{fig:grphnot} the corresponding graphical notation):
 \sg{TODO: Make the connection between textual syntax and graphic representation.}
 \sg{The bangs are distracting. Also the otherwise. Also binding the temporary.}
 
-\begin{forest}   
+\begin{forest}
   grdtree
   [
     [{$\grdbang{mx}, \grdcon{\mathtt{Nothing}}{mx}, \grdbang{my}, \grdcon{\mathtt{Nothing}}{my}$} [1]]
@@ -417,12 +425,12 @@ Pattern match checking works by gradually refining the set of uncovered values
 as they flow through the tree and produces two values: The uncovered set that
 wasn't covered by any clause and an annotated guard tree skeleton $\Ant$ with
 the same shape as the guard tree to check, capturing redundancy and divergence
-information. Pattern match checking our guard tree from above should yield 
+information. Pattern match checking our guard tree from above should yield
 an empty uncovered set and an annotated guard tree skeleton like
 
 \begin{forest}
   anttree
-  [ 
+  [
     [{\lightning}
       [1,acc]
       [{\lightning}
@@ -456,10 +464,10 @@ doesn't fit into this framework.
 Why not compute the redundant GRHSs directly instead of building up a whole new
 tree? Because determining inaccessibility \vs redundancy is a non-local
 problem. Consider this example: \sg{I think this kind of detail should be
-motivated in a prior section and then referenced here for its solution.} 
+motivated in a prior section and then referenced here for its solution.}
 
 \begin{code}
-g :: () -> Int 
+g :: () -> Int
 g ()   | False   = 1
        | True    = 2
 g _              = 3
@@ -474,7 +482,7 @@ Here is the corresponding annotated tree after checking:
 
 \begin{forest}
   anttree
-  [ 
+  [
     [{\lightning}
       [1,inacc]
       [2,acc]]
@@ -694,7 +702,7 @@ under construction via $\!\addphi\!$ and filtering out any unsuccessful attempts
 |concatMap|, whereas a disjunction corresponds to a plain union.
 
 Expanding a $\nabla$ to a pattern vector in $\expand$ is syntactically heavy, but
-straightforward: When there is a positive constraint like 
+straightforward: When there is a positive constraint like
 $x \termeq |Just y|$ in $\Delta$ for the head $x$ of the variable vector of
 interest, expand $y$ in addition to the other variables and wrap it in a |Just|.
 Only that it's not plain $x \termeq |Just y|$, but $\Delta(x) \termeq |Just
@@ -747,7 +755,7 @@ implementation \sg{Feel free to flesh out or correct this analogy}.
 
 % TODO: Expand currently assumes that there are only positive assignments in
 % nabla. But that's not the case! E.g. for
-%   data T = A | B | C 
+%   data T = A | B | C
 %   f A = ()
 % The nabla representing the uncovered set will only have the constraint x /~ A.
 % Currently, we will print this as _, but we want the two patterns B and C.
@@ -804,7 +812,7 @@ implementation \sg{Feel free to flesh out or correct this analogy}.
   \ctxt{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
     \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
   % TODO: Really ugly to mix between adding a delta, a phi and then a delta again. But whatever
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x}{\expconapp{K}{\tau'}{\tau}{\gamma}{e}} &=& \ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta} \addphi \ctcon{\genconapp{K}{a}{\gamma}{y}}{x} \adddelta \overline{a \typeeq \tau} \addphi \overline{\ctlet{y}{e}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\sigma}$} \\ 
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x}{\expconapp{K}{\tau'}{\tau}{\gamma}{e}} &=& \ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta} \addphi \ctcon{\genconapp{K}{a}{\gamma}{y}}{x} \adddelta \overline{a \typeeq \tau} \addphi \overline{\ctlet{y}{e}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\sigma}$} \\
   \nabla &\addphi& \ctlet{x}{e} &=& \nabla \\
   % TODO: Somehow make the coercion from delta to phi less ambiguous
   \ctxt{\Gamma}{\Delta} &\addphi& \varphi &=& \ctxt{\Gamma}{\Delta} \adddelta \varphi
@@ -966,7 +974,7 @@ We'll start from the following source Haskell program and see how each of the st
 f :: Maybe Int -> Int
 f Nothing          = 0  -- RHS 1
 f x | Just y <- x  = y  -- RHS 2
-\end{code} 
+\end{code}
 
 \subsection{Translation to guard trees}
 
@@ -999,7 +1007,7 @@ First compute the uncovered $\Delta$s, after the first and the second clause res
     \]
 \end{enumerate}
 
-The right operands of $\vee$ are vacuous, but the purely syntactical transformation doesn't see that. 
+The right operands of $\vee$ are vacuous, but the purely syntactical transformation doesn't see that.
 
 We can see that $\Delta_2$ is in fact uninhabited, because the three
 constraints $x \ntermeq \bot$, $x \ntermeq \mathtt{Nothing}$ and $x \ntermeq
@@ -1047,7 +1055,7 @@ inert set with $\adddelta{}{}$, which starts out empty in $\generate$.
 Conjunction is handled by performing the equivalent of a \hs{concatMap},
 whereas disjunction simply translates to set union.
 
-Let's see how that works for $\Delta_3$ above. Recall that 
+Let's see how that works for $\Delta_3$ above. Recall that
 $\Gamma = x:\texttt{Maybe Int}$ and $\Delta_3 = \true \wedge x \termeq \bot$:
 
 \[
