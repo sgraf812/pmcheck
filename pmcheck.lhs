@@ -224,7 +224,7 @@
   \varphi &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Literals} \\
   \Phi &\Coloneqq& \varphi \mid \Phi \wedge \Phi \mid \Phi \vee \Phi & \text{Formula} \\
   \Theta &\Coloneqq& \reft{\Gamma}{\Phi} & \text{Refinement Type} \\
-  \delta &\Coloneqq& \gamma \mid x \termeq \phiconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Constraints without scoping} \\
+  \delta &\Coloneqq& \gamma \mid x \termeq \deltaconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Constraints without scoping} \\
   \Delta &\Coloneqq& \varnothing \mid \Delta,\delta & \text{Set of constraints} \\
   \nabla &\Coloneqq& \false \mid \ctxt{\Gamma}{\Delta} & \text{Inert Set} \\
 \end{array}
@@ -582,19 +582,20 @@ carries out exhaustiveness checking by computing the set of uncovered values
 for a particular guard tree, whereas $\ann$ computes the corresponding
 annotated tree, capturing redundancy information.
 
-Both functions take as input the set of values reaching the particular guard
-tree node passed in as second parameter. The definition of $\unc$ follows the intuition we built up earlier: It refines
-the set of reaching values as a subset of it falls through from one clause to
-the next. This is most visible in the $\gdtseq{}{}$ case (top-to-bottom
-composition), where the set of values reaching the right (or bottom) child is
-exactly the set of values that were uncovered by the left (or top) child on the
-set of values reaching the whole node. A GRHS covers every reaching value. The
-left-to-right semantics of $\gdtguard{}{}$ are respected by refining the set of
-values reaching the wrapped subtree, depending on the particular guard. Bang
-patterns and let bindings don't do anything beyond that refinement, whereas
-pattern guards additionally account for the possibility of a failed pattern
-match. Note that ultimately, a failing pattern guard is the only way in which
-the uncovered set can become non-empty!
+Both functions take as input the set of values \emph{reaching} the particular
+guard tree node passed in as second parameter. The definition of $\unc$ follows
+the intuition we built up earlier: It refines the set of reaching values as a
+subset of it falls through from one clause to the next. This is most visible in
+the $\gdtseq{}{}$ case (top-to-bottom composition), where the set of values
+reaching the right (or bottom) child is exactly the set of values that were
+uncovered by the left (or top) child on the set of values reaching the whole
+node. A GRHS covers every reaching value. The left-to-right semantics of
+$\gdtguard{}{}$ are respected by refining the set of values reaching the
+wrapped subtree, depending on the particular guard. Bang patterns and let
+bindings don't do anything beyond that refinement, whereas pattern guards
+additionally account for the possibility of a failed pattern match. Note that
+ultimately, a failing pattern guard is the only way in which the uncovered set
+can become non-empty!
 
 When $\ann$ hits a GRHS, it asks $\generate$ for inhabitants of $\Theta$
 to decide whether the GRHS is accessible or not. Since $\ann$ needs to compute
@@ -611,8 +612,75 @@ and we need to wrap the annotated subtree in a \lightning{}.
 Pattern guard semantics are important for $\unc$ and bang pattern semantics are
 important for $\ann$. But what about let bindings? They are in fact completely
 uninteresting to the checking process, but making sense of them is important
-for the emptiness check involving $\generate$, as we'll see later on
-\sg{TODO: cref}.
+for the precision of the emptiness check involving $\generate$, as we'll see
+later on \sg{TODO: cref}.
+
+\subsection{Testing for Emptiness}
+
+\sg{Maybe the this paragraph should somewhere else, possibly earlier.}
+The predicate literals $\varphi$ of refinement types looks quite similar to the
+original $\Grd$ language, so how is checking them for emptiness an improvement
+over reasoning about about guard trees directly? To appreciate the translation
+step we just described, it is important to realise that semantics of $\Grd$s
+are \emph{highly non-local}! Left-to-right and top-to-bottom match semantics
+means that it's hard to view $\Grd$s in isolation, we always have to reason
+about whole $\Gdt$s. By contrast, refinement types are self-contained, which
+means the emptiness test can be treated in separation from the whole pattern
+match checking problem.
+
+The key function for the emptiness test is $\generate$ in \cref{fig:gen}, which
+generates a set of patterns which inhabit a given refinement type $\Theta$.
+There might be multiple inhabitants, and $\construct$ will construct multiple
+$\nabla$s, each representing at least one inhabiting assignment of the
+refinement predicate $\Phi$. Each such assignment corresponds to a pattern
+vector, so $\expand$ expands the assignments in a $\nabla$ into multiple
+pattern vectors. \sg{Currently, $\expand$ will only expand positive constraints
+and not produce multiple pattern vectors for a $\nabla$ with negative info (see
+the TODO comment attached to $\expand$'s definition)}
+
+But what \emph{is} $\nabla$? To a first approximation, it is a set of mutually
+compatible constraints $\delta$ (or a proven incomatibility $\false$ between
+them). It is also a unifier to the particular $\Phi$ it is constructed for, in
+that the recorded constraints are valid assignments for the variables occuring
+in the orginal predicate \sg{This is not true of $\false$}. Each $\nabla$ is
+the trace of commitments to a left or right disjunct in a $\Phi$ \sg{Not sure
+how to say this more accurately}, which are checked in isolation. So in
+contrast to $\Phi$, there is no disjunction in $\Delta$. Which makes it easy to
+check if a new constraint is compatible with the existing ones without any
+backtracking.
+
+$\construct$ is the function that breaks down a $\Phi$ into multiple $\nabla$s.
+At the heart of $\construct$ is adding a $\varphi$ literal to the $\nabla$
+under construction via $\!\addphi\!$ and filtering out any unsuccessful attempts
+($\false$) to do so. Conjunction is handled by the equivalent of a
+|concatMap|, whereas a disjunction corresponds to a plain union.
+
+Expanding a $\nabla$ to a pattern vector in $\expand$ is syntactically heavy, but
+straightforward: When there is a positive constraint like 
+$x \termeq |Just y|$ in $\Delta$ for the head $x$ of the variable vector of
+interest, expand $y$ in addition to the other variables and wrap it in a |Just|.
+Only that it's not plain $x \termeq |Just y|$, but $\Delta(x) \termeq |Just
+y|$. That's because $\Delta$ is in \emph{triangular form} (alluding to
+\emph{triangular substitutions} \sg{TODO cite something}): We have to follow $x
+\termeq y$ constraints in $\Delta$ until we find the representative of its
+equality class, to which all constraints apply. Note that a $x \termeq y$
+constraint implies absence of any other constraints mentioning $x$ in its
+left-hand side
+($x \termeq y \in \Delta \Rightarrow (\Delta\,\cap\,x = x \termeq y)$,
+foreshadowing notation from \cref{fig:add}). For $\expand$ to be well-defined,
+there needs to be at most one positive constraint in $\Delta$.
+
+Thus, constraints within $\nabla$s constructed by $\!\addphi\!$ satisfy a
+number of well-formedness constraints, like mutual compatibility, triangular
+form and the fact that there is at most one positive constraint $x \termeq
+\mathunderscore$ per variable $x$. We refer to such $\nabla$s as an \emph{inert
+set}, in the sense that constraints inside it satisfy it are of canonical form
+and already checked for mutual compatibility, in analogy to a typechecker's
+implementation \sg{Feel free to flesh out or correct this analogy}.
+
+\subsection{Extending the inert set}
+
+
 
 \begin{figure}[t]
 \centering
@@ -639,15 +707,23 @@ for the emptiness check involving $\generate$, as we'll see later on
 \end{array}
 \]
 
+% TODO: Expand currently assumes that there are only positive assignments in
+% nabla. But that's not the case! E.g. for
+%   data T = A | B | C 
+%   f A = ()
+% The nabla representing the uncovered set will only have the constraint x /~ A.
+% Currently, we will print this as _, but we want the two patterns B and C.
+% I think we should consider this an implementation detail, but should really write
+% about it later on.
 \[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
 \[ \ruleform{ \expand(\nabla, \overline{x}) = \mathcal{P}(\PS) } \]
 \[
 \begin{array}{lcl}
 
   \expand(\nabla, \epsilon) &=& \{ \epsilon \} \\
-  \expand(\ctxt{\Gamma}{\Phi}, x_1 ... x_n) &=& \begin{cases}
-    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid (q_1 ... q_m \, p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Phi}, y_1 ... y_m x_2 ... x_n) \right\} & \text{if $\rep{\Phi}{x} \termeq \phiconapp{K}{a}{y} \in \Phi$} \\
-    \left\{ \_ \; p_2 ... p_n \mid (p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Phi}, x_2 ... x_n) \right\} & \text{otherwise} \\
+  \expand(\ctxt{\Gamma}{\Delta}, x_1 ... x_n) &=& \begin{cases}
+    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid (q_1 ... q_m \, p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, y_1 ... y_m x_2 ... x_n) \right\} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
+    \left\{ \_ \; p_2 ... p_n \mid (p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, x_2 ... x_n) \right\} & \text{otherwise} \\
   \end{cases} \\
 
 \end{array}
@@ -666,6 +742,7 @@ for the emptiness check involving $\generate$, as we'll see later on
 
 
 \caption{Generating inhabitants of $\Theta$ via $\nabla$}
+\label{fig:gen}
 \end{figure}
 
 
@@ -687,7 +764,7 @@ for the emptiness check involving $\generate$, as we'll see later on
   \nabla &\addphi& \false &=& \false \\
   \nabla &\addphi& \true &=& \nabla \\
   \ctxt{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
-    \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta x \termeq \phiconapp{K}{a}{y} \\
+    \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
   % TODO: Really ugly to mix between adding a delta, a phi and then a delta again. But whatever
   \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x}{\expconapp{K}{\tau'}{\tau}{\gamma}{e}} &=& \ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta} \addphi \ctcon{\genconapp{K}{a}{\gamma}{y}}{x} \adddelta \overline{a \typeeq \tau} \addphi \overline{\ctlet{y}{e}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\sigma}$} \\ 
   \nabla &\addphi& \ctlet{x}{e} &=& \nabla \\
@@ -709,13 +786,13 @@ for the emptiness check involving $\generate$, as we'll see later on
     \ctxt{\Gamma}{(\Delta,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\Delta,\gamma)}}{\rep{\Delta}{x}}$} \\
     \false & \text{otherwise} \\
   \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \phiconapp{K}{a}{y} &=& \begin{cases}
-    \ctxt{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \phiconapp{K}{b}{z} \in \Delta$ } \\
-    \ctxt{\Gamma'}{(\Delta',\rep{\Delta}{x} \termeq \phiconapp{K}{a}{y})} & \parbox[t]{0.6\textwidth}{where $\ctxt{\Gamma'}{\Delta'} = \ctxt{\Gamma}{\Delta} \adddelta \overline{\gamma} $ \\ and $\rep{\Delta'}{x} \ntermeq K \not\in \Delta'$ and $\overline{\inhabited{\ctxt{\Gamma'}{\Delta'}}{y}}$} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
+    \ctxt{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
+    \ctxt{\Gamma'}{(\Delta',\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \parbox[t]{0.6\textwidth}{where $\ctxt{\Gamma'}{\Delta'} = \ctxt{\Gamma}{\Delta} \adddelta \overline{\gamma} $ \\ and $\rep{\Delta'}{x} \ntermeq K \not\in \Delta'$ and $\overline{\inhabited{\ctxt{\Gamma'}{\Delta'}}{y}}$} \\
     \false & \text{otherwise} \\
   \end{cases} \\
   \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
-    \false & \text{if $\rep{\Delta}{x} \termeq \phiconapp{K}{a}{y} \in \Delta$} \\
+    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
     % TODO: I'm not sure if we really need the next line. It should be covered
     % by the following case, which will try to instantiate all constructors and
     % see if any is still possible by the x ~ K as gammas ys case
@@ -746,7 +823,7 @@ for the emptiness check involving $\generate$, as we'll see later on
 \[
 \begin{array}{lcl}
   \varnothing \cap x &=& \varnothing \\
-  (\Delta,x \termeq \phiconapp{K}{a}{y}) \cap x &=& (\Delta \cap x), x \termeq \phiconapp{K}{a}{y} \\
+  (\Delta,x \termeq \deltaconapp{K}{a}{y}) \cap x &=& (\Delta \cap x), x \termeq \deltaconapp{K}{a}{y} \\
   (\Delta,x \ntermeq K) \cap x &=& (\Delta \cap x), x \ntermeq K \\
   (\Delta,x \termeq \bot) \cap x &=& (\Delta \cap x), x \termeq \bot \\
   (\Delta,x \ntermeq \bot) \cap x &=& (\Delta \cap x), x \ntermeq \bot \\
@@ -755,6 +832,7 @@ for the emptiness check involving $\generate$, as we'll see later on
 \]
 
 \caption{Adding a constraint to the inert set $\nabla$}
+\label{fig:add}
 \end{figure}
 
 \begin{figure}[t]
@@ -823,7 +901,7 @@ for the emptiness check involving $\generate$, as we'll see later on
 \begin{array}{c}
 
   \inst{\Gamma}{x}{K} = \begin{cases}
-    \tau_x \typeeq \tau, \overline{\gamma}, x \termeq \phiconapp{K}{a}{y}, \overline{y' \ntermeq \bot} & \parbox[t]{0.8\textwidth}{$K : \forall \overline{a}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{y} \# \Gamma$, $\overline{a} \# \Gamma$, $x:\tau_x \in \Gamma$, $\overline{y'}$ bind strict fields} \\
+    \tau_x \typeeq \tau, \overline{\gamma}, x \termeq \deltaconapp{K}{a}{y}, \overline{y' \ntermeq \bot} & \parbox[t]{0.8\textwidth}{$K : \forall \overline{a}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{y} \# \Gamma$, $\overline{a} \# \Gamma$, $x:\tau_x \in \Gamma$, $\overline{y'}$ bind strict fields} \\
     % TODO: We'd need a cosntraint like \delta's \false here... Or maybe we
     % just omit this case and accept that the function is partial
     \bot & \text{otherwise} \\
