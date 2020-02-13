@@ -158,6 +158,36 @@
 %% comma separated list
 \keywords{Haskell, pattern matching, Generalized Algebraic Data Types, \OutsideIn{X}}  %% \keywords are mandatory in final camera-ready submission
 
+\section{Introduction}
+
+\simon{Ryan is going to draft.  Include a list of contributions}
+
+Contributions from our call:
+\begin{itemize}
+\item Things we do that weren’t done in GADTs meet their match
+  \begin{itemize}
+    \item Strictness, including bang patterns, data structures with strict fields.
+\item 	COMPLETE pragmas
+\item	Newtype pattern matching
+\item	..anything else?
+\item	Less syntactic; robust to mixing pattern guards and syntax pattern matching and view patterns
+\end{itemize}
+
+  \item 
+Much simpler and more modular formalism (evidence: compare the Figures; separation of desugaring and clause-tree processing, so that it’s easy to add new source-language forms)
+\item 	Leading to a simpler, more correct, and much more performant implementation.  (Evidence: GHC’s bug tracker, perf numbers)
+\item 	Maybe the first to handle both strict and lazy languages.
+
+\end{itemize}
+
+
+\section{The problem we want to solve}
+
+\simon{Ryan is going to draft}
+
+\simon{Maybe a Figure with Tricky Examples}
+
+
 \begin{figure}
 \centering
 \begin{verbatim}
@@ -288,12 +318,14 @@
 \label{fig:grphnot}
 \end{figure}
 
+\simon{Add diagram of the main road map here}
+
 \subsection{Desugaring to clause trees}
 
 % TODO: better words
 It is customary to define Haskell functions using pattern-matching, possibly
 with one or more \emph{guarded right-hand sides} (GRHS) per \emph{clause} (see
-\cref{fig:srcsyn}). Consider for example this 3 AM attempt at lifting equality
+\cref{fig:srcsyn}). Consider for example this 3am attempt at lifting equality
 over \hs{Maybe}:
 
 % TODO: better code style
@@ -303,18 +335,18 @@ liftEq (Just x) (Just y)
   | x == y          = True
   | otherwise       = False
 \end{code}
-
+\noindent
 This function will crash for the call site |liftEq (Just 1) Nothing|. To see
 that, we can follow Haskell's top-to-bottom, left-to-right pattern match
-semantics. The first clause already fails to match |Just 1| against |Nothing|,
+semantics. The first clause fails to match |Just 1| against |Nothing|,
 while the second clause successfully matches |1| with |x|, but then fails
 trying to match |Nothing| against |Just y|. There is no third clause, and an
 \emph{uncovered} value vector that falls out at the bottom of this process
-will lead to a crash.
+will lead to a crash. \simon{We have not talked about value vectors yet!  Rephrase}
 
 Compare that to matching on |(Just 1) (Just 2)|: While matching against the first 
 clause fails, the second matches |x| to |1| and |y| to |2|. Since there are
-multiple guarded right-hand sides, every one of them in turn has to be tried in
+multiple guarded right-hand sides (GRHSs), each of them in turn has to be tried in
 a top-to-bottom fashion. The first GRHS consists of a single
 boolean guard (in general we have to consider each of them in a left-to-right
 fashion!) \sg{Maybe an example with more guards would be helpful} that will
@@ -324,23 +356,24 @@ fail because |1 /= 2|. So the second GRHS is tried successfully, because
 Note how both the pattern matching per clause and the guard checking within a
 syntactic $match$ share top-to-bottom and left-to-right semantics. Having to
 make sense of both pattern and guard semantics seems like a waste of energy.
-Why can't we just express all pattern matching simply by pattern guards on an
-auxiliary variable match? See for yourself:
-
+Perhpas we can express all pattern matching by (nested) pattern guards, thus:
 \begin{code}
 liftEq mx my
   | Nothing <- mx, Nothing <- my              = True
   | Just x <- mx,  Just y <- my  | x == y     = True
                                  | otherwise  = False
 \end{code}
-
-Transforming the first clause with its single GRHS was quite successful.
-But the second clause already had two GRHSs before, and the resulting tree-like
-nesting of guards definitely is not valid Haskell! Although intuitively, this
-is just what we want: After the successful match on the first two guards
+Transforming the first clause with its single GRHS easy.
+But the second clause already had two GRHSs, so we need to use
+\emph{nested} pattern guards.  This is not a feature that Haskell offers (yet),
+but it allows a very convenient uniformity for our purposes:
+after the successful match on the first two guards
 left-to-right, we try to match each of the GRHSs in turn, top-to-bottom (and
-their individual guards left-to-right). In fact, it seems rather arbitrary to
-only allow one level of nested guards! Hence our algorithm desugars the source
+their individual guards left-to-right).
+
+% In fact, it seems rather arbitrary to
+% only allow one level of nested guards!
+Hence our algorithm desugars the source
 syntax to the following \emph{guard tree} (see \cref{fig:syn} for the full
 syntax and \cref{fig:grphnot} the corresponding graphical notation):
 
@@ -574,6 +607,11 @@ As in the previous section, this comes in two main parts: Pattern match
 checking and finding inhabitants of the arising refinement types.
 \sg{Maybe we'll split that last part in two: 1. Converting $\Theta$ into a
 bunch of inhabited $\nabla$s 2. Make sure that each $\nabla$ is inhabited.}
+
+\subsection{Desugaring to Guard Trees}
+
+\simon{Write a desugaring function (in a Figure) and describe it here.
+  Give one example that illustrates; e.g. the one from my talk.}
 
 \subsection{Checking Guard Trees}
 
