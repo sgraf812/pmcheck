@@ -693,13 +693,16 @@ the trace of commitments to a left or right disjunct in a $\Phi$ \sg{Not sure
 how to say this more accurately}, which are checked in isolation. So in
 contrast to $\Phi$, there is no disjunction in $\Delta$. Which makes it easy to
 check if a new constraint is compatible with the existing ones without any
-backtracking.
+backtracking. Another fundamental difference is that $\delta$ has no binding
+construts (so every variable has to be bound in the $\Gamma$ part of $\nabla$),
+whereas pattern bindings in $\varphi$ bind constructor arguments.
 
 $\construct$ is the function that breaks down a $\Phi$ into multiple $\nabla$s.
 At the heart of $\construct$ is adding a $\varphi$ literal to the $\nabla$
 under construction via $\!\addphi\!$ and filtering out any unsuccessful attempts
-($\false$) to do so. Conjunction is handled by the equivalent of a
-|concatMap|, whereas a disjunction corresponds to a plain union.
+(via intercepting the $\false$ failure mode) to do so. Conjunction is handled
+by the equivalent of a |concatMap|, whereas a disjunction corresponds to a
+plain union.
 
 Expanding a $\nabla$ to a pattern vector in $\expand$ is syntactically heavy, but
 straightforward: When there is a positive constraint like
@@ -723,10 +726,6 @@ form and the fact that there is at most one positive constraint $x \termeq
 set}, in the sense that constraints inside it satisfy it are of canonical form
 and already checked for mutual compatibility, in analogy to a typechecker's
 implementation \sg{Feel free to flesh out or correct this analogy}.
-
-\subsection{Extending the inert set}
-
-
 
 \begin{figure}[t]
 \centering
@@ -792,12 +791,40 @@ implementation \sg{Feel free to flesh out or correct this analogy}.
 \end{figure}
 
 
+\subsection{Extending the inert set}
+
+After tearing down abstraction after abstraction in the previous sections we
+nearly hit rock bottom: \Cref{fig:add} depicts how to add a $\varphi$
+constraint to an inert set $\nabla$.
+
+It does so by expressing a $\varphi$ in terms of once again simpler constraints
+$\delta$ and calling out to $\!\adddelta\!$. Specifically, for a lack of
+binding constructs in $\delta$, pattern bindings extend the context and
+disperse into separate type constraints and a positive constructor constraint
+arising from the binding. The fourth case of $\!\adddelta\!$ makes sense of let
+bindings: In case the right-hand side was a constructor application (which is
+not to be confused with a pattern binding, if only for the difference in
+binding semantics!), we add appropriate positive constructor and type
+constraints, as well as recurse into the field expressions, which might in turn
+contain nested constructor applications. The last case of $\!\addphi\!$ turns
+the syntactically and semantically identical subset of $\varphi$ into $\delta$
+and adds that constraint via $\!\adddelta\!$.
+
+Which brings us to the prime unification procedure, $\!\adddelta\!$.
+Consider adding a positive constructor constraint like $x \termeq |Just y|$:
+The unification procedure will first look for any positive constructor constraint
+involving the representative of $x$ with \emph{that same constructor}. Let's say
+there is $\Delta(x) = z$ and $z \termeq |Just u| \in \Delta$. Then
+$\!\adddelta\!$ decomposes the new constraint just like a classic unification
+algorithm, by equating type and term variables with new constraints. If there
+was no such 
 
 
 
 
-
-
+Adding a type constraint entails calling out to the type-checker (the logic of
+which we do not and would not replicate in this paper or our implementation)
+a
 
 
 \begin{figure}[t]
@@ -811,9 +838,8 @@ implementation \sg{Feel free to flesh out or correct this analogy}.
   \nabla &\addphi& \true &=& \nabla \\
   \ctxt{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
     \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
-  % TODO: Really ugly to mix between adding a delta, a phi and then a delta again. But whatever
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x}{\expconapp{K}{\tau'}{\tau}{\gamma}{e}} &=& \ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta} \addphi \ctcon{\genconapp{K}{a}{\gamma}{y}}{x} \adddelta \overline{a \typeeq \tau} \addphi \overline{\ctlet{y}{e}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\sigma}$} \\
-  \nabla &\addphi& \ctlet{x}{e} &=& \nabla \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{\expconapp{K}{\sigma'}{\sigma}{\gamma}{e}} &=& \ctxt{\Gamma,x:\tau,\overline{a},\overline{y:\tau'}}{\Delta} \adddelta \overline{a \typeeq \tau'} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y}{e}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\tau'}$} \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \ctxt{\Gamma,x:\tau}{\Delta} \\
   % TODO: Somehow make the coercion from delta to phi less ambiguous
   \ctxt{\Gamma}{\Delta} &\addphi& \varphi &=& \ctxt{\Gamma}{\Delta} \adddelta \varphi
 
@@ -834,7 +860,8 @@ implementation \sg{Feel free to flesh out or correct this analogy}.
   \end{cases} \\
   \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
     \ctxt{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
-    \ctxt{\Gamma'}{(\Delta',\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \parbox[t]{0.6\textwidth}{where $\ctxt{\Gamma'}{\Delta'} = \ctxt{\Gamma}{\Delta} \adddelta \overline{\gamma} $ \\ and $\rep{\Delta'}{x} \ntermeq K \not\in \Delta'$ and $\overline{\inhabited{\ctxt{\Gamma'}{\Delta'}}{y}}$} \\
+    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K'}{b}{z} \in \Delta$ } \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \text{where $\rep{\Delta}{x} \ntermeq K \not\in \Delta$ and $\overline{\inhabited{\ctxt{\Gamma}{\Delta}}{y}}$} \\
     \false & \text{otherwise} \\
   \end{cases} \\
   \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
@@ -847,7 +874,7 @@ implementation \sg{Feel free to flesh out or correct this analogy}.
     \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{otherwise} \\
   \end{cases} \\
   \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
-    \bot & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
+    \false & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
     \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
   \end{cases} \\
   \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
