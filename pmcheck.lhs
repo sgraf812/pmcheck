@@ -168,7 +168,7 @@
 
 \section{Introduction}
 
-\simon{Ryan is going to draft.  Include a list of contributions}
+\ryan{I will draft. Include a list of contributions}
 
 Contributions from our call:
 \begin{itemize}
@@ -191,9 +191,9 @@ Much simpler and more modular formalism (evidence: compare the Figures; separati
 
 \section{The problem we want to solve}
 
-\simon{Ryan is going to draft}
+\ryan{I will draft}
 
-\simon{Maybe a Figure with Tricky Examples}
+\ryan{Maybe a Figure with Tricky Examples}
 
 
 \begin{figure}
