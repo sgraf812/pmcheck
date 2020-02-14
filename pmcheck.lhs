@@ -555,6 +555,25 @@ important to test guard-bound variables for inhabitants, too.
 \sg{GMTM goes into detail about type constraints, term constraints and
 worst-case complexity here. That feels a bit out of place.}
 
+\section{Formalism}
+
+The previous section gave insights into how we represent pattern match checking
+problems as clause trees and provided an intuition for how to check them for
+exhaustiveness and redundancy. This section formalises these intuitions in
+terms of the syntax (\cf \cref{fig:syn}) we introduced earlier.
+
+As in the previous section, this comes in two main parts: Pattern match
+checking and finding inhabitants of the arising refinement types.
+\sg{Maybe we'll split that last part in two: 1. Converting $\Theta$ into a
+bunch of inhabited $\nabla$s 2. Make sure that each $\nabla$ is inhabited.}
+
+\subsection{Desugaring to Guard Trees}
+
+\simon{Write a desugaring function (in a Figure) and describe it here.
+  Give one example that illustrates; e.g. the one from my talk.}
+
+\subsection{Checking Guard Trees}
+
 \begin{figure}
 \[ \textbf{Operations on $\Theta$} \]
 % TODO: Figure out where to move these
@@ -604,25 +623,6 @@ worst-case complexity here. That feels a bit out of place.}
 \label{fig:check}
 \end{figure}
 
-\section{Formalism}
-
-The previous section gave insights into how we represent pattern match checking
-problems as clause trees and provided an intuition for how to check them for
-exhaustiveness and redundancy. This section formalises these intuitions in
-terms of the syntax (\cf \cref{fig:syn}) we introduced earlier.
-
-As in the previous section, this comes in two main parts: Pattern match
-checking and finding inhabitants of the arising refinement types.
-\sg{Maybe we'll split that last part in two: 1. Converting $\Theta$ into a
-bunch of inhabited $\nabla$s 2. Make sure that each $\nabla$ is inhabited.}
-
-\subsection{Desugaring to Guard Trees}
-
-\simon{Write a desugaring function (in a Figure) and describe it here.
-  Give one example that illustrates; e.g. the one from my talk.}
-
-\subsection{Checking Guard Trees}
-
 \Cref{fig:check} shows the two main functions for checking guard trees. $\unc$
 carries out exhaustiveness checking by computing the set of uncovered values
 for a particular guard tree, whereas $\ann$ computes the corresponding
@@ -661,7 +661,71 @@ uninteresting to the checking process, but making sense of them is important
 for the precision of the emptiness check involving $\generate$, as we'll see
 later on \sg{TODO: cref}.
 
+
 \subsection{Testing for Emptiness}
+
+\begin{figure}
+\centering
+\[ \textbf{Generate inhabitants of $\Theta$} \]
+\[ \ruleform{ \generate(\Theta) = \mathcal{P}(\PS) } \]
+\[
+\begin{array}{c}
+   \generate(\reft{\Gamma}{\Phi}) = \bigcup \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \construct(\ctxt{\Gamma}{\varnothing}, \Phi) \right\}
+\end{array}
+\]
+
+\[ \textbf{Construct inhabited $\nabla$s from $\Phi$} \]
+\[ \ruleform{ \construct(\nabla, \Phi) = \mathcal{P}(\nabla) } \]
+\[
+\begin{array}{lcl}
+
+  \construct(\nabla, \varphi) &=& \begin{cases}
+    \left\{ \ctxt{\Gamma'}{\Phi'} \right\} & \text{where $\ctxt{\Gamma'}{\Phi'} = \nabla \addphi \varphi$} \\
+    \emptyset & \text{otherwise} \\
+  \end{cases} \\
+  \construct(\nabla, \Phi_1 \wedge \Phi_2) &=& \bigcup \left\{ \construct(\nabla', \Phi_2) \mid \nabla' \in \construct(\nabla, \Phi_1) \right\} \\
+  \construct(\nabla, \Phi_1 \vee \Phi_2) &=& \construct(\nabla, \Phi_1) \cup \construct(\nabla, \Phi_2)
+
+\end{array}
+\]
+
+% TODO: Expand currently assumes that there are only positive assignments in
+% nabla. But that's not the case! E.g. for
+%   data T = A | B | C
+%   f A = ()
+% The nabla representing the uncovered set will only have the constraint x /~ A.
+% Currently, we will print this as _, but we want the two patterns B and C.
+% I think we should consider this an implementation detail, but should really write
+% about it later on.
+\[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
+\[ \ruleform{ \expand(\nabla, \overline{x}) = \mathcal{P}(\PS) } \]
+\[
+\begin{array}{lcl}
+
+  \expand(\nabla, \epsilon) &=& \{ \epsilon \} \\
+  \expand(\ctxt{\Gamma}{\Delta}, x_1 ... x_n) &=& \begin{cases}
+    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid (q_1 ... q_m \, p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, y_1 ... y_m x_2 ... x_n) \right\} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
+    \left\{ \_ \; p_2 ... p_n \mid (p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, x_2 ... x_n) \right\} & \text{otherwise} \\
+  \end{cases} \\
+
+\end{array}
+\]
+
+\[ \textbf{Finding the representative of a variable in $\Delta$} \]
+\[ \ruleform{ \rep{\Delta}{x} = y } \]
+\[
+\begin{array}{lcl}
+  \rep{\Delta}{x} &=& \begin{cases}
+    \rep{\Delta}{y} & x \termeq y \in \Delta \\
+    x & \text{otherwise} \\
+  \end{cases} \\
+\end{array}
+\]
+
+
+\caption{Generating inhabitants of $\Theta$ via $\nabla$}
+\label{fig:gen}
+\end{figure}
 
 \sg{Maybe the this paragraph should somewhere else, possibly earlier.}
 The predicate literals $\varphi$ of refinement types looks quite similar to the
@@ -727,71 +791,98 @@ set}, in the sense that constraints inside it satisfy it are of canonical form
 and already checked for mutual compatibility, in analogy to a typechecker's
 implementation \sg{Feel free to flesh out or correct this analogy}.
 
-\begin{figure}[t]
-\centering
-\[ \textbf{Generate inhabitants of $\Theta$} \]
-\[ \ruleform{ \generate(\Theta) = \mathcal{P}(\PS) } \]
-\[
-\begin{array}{c}
-   \generate(\reft{\Gamma}{\Phi}) = \bigcup \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \construct(\ctxt{\Gamma}{\varnothing}, \Phi) \right\}
-\end{array}
-\]
-
-\[ \textbf{Construct inhabited $\nabla$s from $\Phi$} \]
-\[ \ruleform{ \construct(\nabla, \Phi) = \mathcal{P}(\nabla) } \]
-\[
-\begin{array}{lcl}
-
-  \construct(\nabla, \varphi) &=& \begin{cases}
-    \left\{ \ctxt{\Gamma'}{\Phi'} \right\} & \text{where $\ctxt{\Gamma'}{\Phi'} = \nabla \addphi \varphi$} \\
-    \emptyset & \text{otherwise} \\
-  \end{cases} \\
-  \construct(\nabla, \Phi_1 \wedge \Phi_2) &=& \bigcup \left\{ \construct(\nabla', \Phi_2) \mid \nabla' \in \construct(\nabla, \Phi_1) \right\} \\
-  \construct(\nabla, \Phi_1 \vee \Phi_2) &=& \construct(\nabla, \Phi_1) \cup \construct(\nabla, \Phi_2)
-
-\end{array}
-\]
-
-% TODO: Expand currently assumes that there are only positive assignments in
-% nabla. But that's not the case! E.g. for
-%   data T = A | B | C
-%   f A = ()
-% The nabla representing the uncovered set will only have the constraint x /~ A.
-% Currently, we will print this as _, but we want the two patterns B and C.
-% I think we should consider this an implementation detail, but should really write
-% about it later on.
-\[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
-\[ \ruleform{ \expand(\nabla, \overline{x}) = \mathcal{P}(\PS) } \]
-\[
-\begin{array}{lcl}
-
-  \expand(\nabla, \epsilon) &=& \{ \epsilon \} \\
-  \expand(\ctxt{\Gamma}{\Delta}, x_1 ... x_n) &=& \begin{cases}
-    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid (q_1 ... q_m \, p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, y_1 ... y_m x_2 ... x_n) \right\} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
-    \left\{ \_ \; p_2 ... p_n \mid (p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, x_2 ... x_n) \right\} & \text{otherwise} \\
-  \end{cases} \\
-
-\end{array}
-\]
-
-\[ \textbf{Finding the representative of a variable in $\Delta$} \]
-\[ \ruleform{ \rep{\Delta}{x} = y } \]
-\[
-\begin{array}{lcl}
-  \rep{\Delta}{x} &=& \begin{cases}
-    \rep{\Delta}{y} & x \termeq y \in \Delta \\
-    x & \text{otherwise} \\
-  \end{cases} \\
-\end{array}
-\]
-
-
-\caption{Generating inhabitants of $\Theta$ via $\nabla$}
-\label{fig:gen}
-\end{figure}
-
 
 \subsection{Extending the inert set}
+
+\begin{figure}
+\centering
+\[ \textbf{Add a formula literal to the inert set} \]
+\[ \ruleform{ \nabla \addphi \varphi = \nabla } \]
+\[
+\begin{array}{r@@{\,}c@@{\,}lcl}
+
+  \nabla &\addphi& \false &=& \false \\
+  \nabla &\addphi& \true &=& \nabla \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
+    \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{\expconapp{K}{\sigma'}{\sigma}{\gamma}{e}} &=& \ctxt{\Gamma,x:\tau,\overline{a},\overline{y:\tau'}}{\Delta} \adddelta \overline{a \typeeq \tau'} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y}{e}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\tau'}$} \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{y} &=& \ctxt{\Gamma,x:\tau}{\Delta} \adddelta x \termeq y \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \ctxt{\Gamma,x:\tau}{\Delta} \\
+  % TODO: Somehow make the coercion from delta to phi less ambiguous
+  \ctxt{\Gamma}{\Delta} &\addphi& \varphi &=& \ctxt{\Gamma}{\Delta} \adddelta \varphi
+
+\end{array}
+\]
+
+\[ \textbf{Add a constraint to the inert set} \]
+\[ \ruleform{ \nabla \adddelta \delta = \nabla } \]
+\[
+\begin{array}{r@@{\,}c@@{\,}lcl}
+
+  \false &\adddelta& \delta &=& \false \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& \gamma &=& \begin{cases}
+    % TODO: This rule can loop indefinitely for GADTs... I believe we do this
+    % only one level deep in the implementation and assume that it's inhabited otherwise
+    \ctxt{\Gamma}{(\Delta,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\Delta,\gamma)}}{\rep{\Delta}{x}}$} \\
+    \false & \text{otherwise} \\
+  \end{cases} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
+    \ctxt{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
+    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K'}{b}{z} \in \Delta$ } \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \text{if $\rep{\Delta}{x} \ntermeq K \not\in \Delta$ and $\overline{\inhabited{\ctxt{\Gamma}{\Delta}}{\Delta(y)}}$} \\
+    \false & \text{otherwise} \\
+  \end{cases} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
+    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
+    % TODO: I'm not sure if we really need the next line. It should be covered
+    % by the following case, which will try to instantiate all constructors and
+    % see if any is still possible by the x ~ K as gammas ys case
+    % \bot & \parbox[t]{0.6\textwidth}{if $\rep{\Delta}{x}:\tau \in \Gamma$ \\ and $\forall K' \in \cons{\ctxt{\Gamma}{\Delta}}{\tau}: \rep{\Delta}{x} \ntermeq K' \in (\Delta,\rep{\Delta}{x} \ntermeq K)$} \\
+    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{\rep{\Delta}{x}}$} \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{otherwise} \\
+  \end{cases} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
+    \false & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
+  \end{cases} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
+    \false & \text{if $\rep{\Delta}{x} \termeq \bot \in \Delta$} \\
+    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
+  \end{cases} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq y &=& \begin{cases}
+    \ctxt{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
+    % TODO: Write the function that adds a Delta to a nabla
+    \ctxt{\Gamma}{((\Delta \setminus \rep{\Delta}{x}), \rep{\Delta}{x} \termeq \rep{\Delta}{y})} \adddelta ((\Delta \cap \rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
+  \end{cases} \\
+\end{array}
+\]
+
+\[
+\begin{array}{cc}
+\ruleform{ \Delta \setminus x = \Delta } & \ruleform{ \Delta \cap x = \Delta } \\
+\begin{array}{r@@{\,}c@@{\,}lcl}
+  \varnothing &\setminus& x &=& \varnothing \\
+  (\Delta,x \termeq \deltaconapp{K}{a}{y}) &\setminus& x &=& \Delta \setminus x \\
+  (\Delta,x \ntermeq K) &\setminus& x &=& \Delta \setminus x \\
+  (\Delta,x \termeq \bot) &\setminus& x &=& \Delta \setminus x \\
+  (\Delta,x \ntermeq \bot) &\setminus& x &=& \Delta \setminus x \\
+  (\Delta,\delta) &\setminus& x &=& (\Delta \setminus x),\delta \\
+\end{array}&
+\begin{array}{r@@{\,}c@@{\,}lcl}
+  \varnothing &\cap& x &=& \varnothing \\
+  (\Delta,x \termeq \deltaconapp{K}{a}{y}) &\cap& x &=& (\Delta \cap x), x \termeq \deltaconapp{K}{a}{y} \\
+  (\Delta,x \ntermeq K) &\cap& x &=& (\Delta \cap x), x \ntermeq K \\
+  (\Delta,x \termeq \bot) &\cap& x &=& (\Delta \cap x), x \termeq \bot \\
+  (\Delta,x \ntermeq \bot) &\cap& x &=& (\Delta \cap x), x \ntermeq \bot \\
+  (\Delta,\delta) &\cap& x &=& \Delta \cap x \\
+\end{array}
+\end{array}
+\]
+
+\caption{Adding a constraint to the inert set $\nabla$}
+\label{fig:add}
+\end{figure}
 
 After tearing down abstraction after abstraction in the previous sections we
 nearly hit rock bottom: \Cref{fig:add} depicts how to add a $\varphi$
@@ -816,99 +907,58 @@ The unification procedure will first look for any positive constructor constrain
 involving the representative of $x$ with \emph{that same constructor}. Let's say
 there is $\Delta(x) = z$ and $z \termeq |Just u| \in \Delta$. Then
 $\!\adddelta\!$ decomposes the new constraint just like a classic unification
-algorithm, by equating type and term variables with new constraints. If there
-was no such 
+algorithm, by equating type and term variables with new constraints, \ie $y
+\termeq u$.
+If there was no positive constructor constraint with the same constructor, it
+will look for such a constraint involving a different constructor, like $x
+\termeq |Nothing|$. In this case the new constraint is incompatible by
+generativity of data constructors \sg{Cite, or maybe bring this argument later
+on when handling pattern synonyms, where generativity is not a given}. There
+are two other ways in which the constraint can be incompatible: If there was a
+negative constructor constraint $x \ntermeq |Just|$ or if any of the fields
+were not inhabited, which is checked by the $\inhabited{\nabla}{x}$ judgment in
+\cref{fig:inh}. Otherwise, the constraint is compatible and is added to
+$\Delta$.
+
+Adding a negative constructor constraint $x \ntermeq Just$ is quite
+similar, so is handling of positive and negative constraints involving $\bot$.
+The scheme is that whenever we add a negative constraint that doesn't
+contradict with positive constraints, we still have to test if there are any
+inhabitants left.
+
+\sg{Maybe move down the type constraint case in the definition?}
+Adding a type constraint drives this paranoia to a maximum: After calling out
+to the type-checker (the logic of which we do not and would not replicate in
+this paper or our implementation) to assert that the constraint is consistent
+with the inert set, we have to test \emph{all} variables in the domain of
+$\Gamma$ for inhabitants, because the new type constraint could have rendered
+a type empty. To demonstrate why this is necessary, imagine we have $\ctxt{x :
+a}{x \ntermeq \bot}$ and try to add $a ~ |Void|$. Although the type constraint
+is consistent, $x$ in $\ctxt{x : a}{x \ntermeq \bot, a ~ |Void|}$ is no longer
+inhabited. There is room for being smart about which variables we have to
+re-check: For example, we can exclude variables whose type is a non-GADT data
+type. \sg{That trick probably belongs in the implementation section.}
+
+The last case of $\!\adddelta\!$ equates two variables ($x \termeq y$) by
+merging their equivalence classes. Consider the case where $x$ and $y$ don't
+already belong to the same equivalence class, so have different representatives
+$\Delta(x)$ and $\Delta(y)$. $\Delta(y)$ is arbitrarily chosen to be the new
+representative of the merged equivalence class. Now to uphold one of the
+well-formedness conditions \sg{Which one? Better have a list of them and
+reference them here.}, all constraints mentioning $\Delta(x)$ have to be
+removed and renamed in terms of $\Delta(y)$ and then re-added to $\Delta$. That
+might fail, because $\Delta(x)$ might have a constraint that conflicts with
+constraints on $\Delta(y)$, so better use $\!\adddelta\!$ rather than add it
+blindly to $\Delta$.
 
 
+\subsection{Inhabitance Test}
 
+\sg{We need to find better subsection titles that clearly distinguish
+"Testing ($\Theta$) for Emptiness" from "Inhabitance Test(ing a
+particular variable in $\nabla$)".}
 
-Adding a type constraint entails calling out to the type-checker (the logic of
-which we do not and would not replicate in this paper or our implementation)
-a
-
-
-\begin{figure}[t]
-\centering
-\[ \textbf{Add a formula literal to the inert set} \]
-\[ \ruleform{ \nabla \addphi \varphi = \nabla } \]
-\[
-\begin{array}{r@@{\,}c@@{\,}lcl}
-
-  \nabla &\addphi& \false &=& \false \\
-  \nabla &\addphi& \true &=& \nabla \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
-    \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{\expconapp{K}{\sigma'}{\sigma}{\gamma}{e}} &=& \ctxt{\Gamma,x:\tau,\overline{a},\overline{y:\tau'}}{\Delta} \adddelta \overline{a \typeeq \tau'} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y}{e}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\tau'}$} \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \ctxt{\Gamma,x:\tau}{\Delta} \\
-  % TODO: Somehow make the coercion from delta to phi less ambiguous
-  \ctxt{\Gamma}{\Delta} &\addphi& \varphi &=& \ctxt{\Gamma}{\Delta} \adddelta \varphi
-
-\end{array}
-\]
-
-\[ \textbf{Add a constraint to the inert set} \]
-\[ \ruleform{ \nabla \adddelta \delta = \nabla } \]
-\[
-\begin{array}{r@@{\,}c@@{\,}lcl}
-
-  \false &\adddelta& \delta &=& \false \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& \gamma &=& \begin{cases}
-    % TODO: This rule can loop indefinitely for GADTs... I believe we do this
-    % only one level deep in the implementation and assume that it's inhabited otherwise
-    \ctxt{\Gamma}{(\Delta,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\Delta,\gamma)}}{\rep{\Delta}{x}}$} \\
-    \false & \text{otherwise} \\
-  \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
-    \ctxt{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
-    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K'}{b}{z} \in \Delta$ } \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \text{where $\rep{\Delta}{x} \ntermeq K \not\in \Delta$ and $\overline{\inhabited{\ctxt{\Gamma}{\Delta}}{y}}$} \\
-    \false & \text{otherwise} \\
-  \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
-    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
-    % TODO: I'm not sure if we really need the next line. It should be covered
-    % by the following case, which will try to instantiate all constructors and
-    % see if any is still possible by the x ~ K as gammas ys case
-    % \bot & \parbox[t]{0.6\textwidth}{if $\rep{\Delta}{x}:\tau \in \Gamma$ \\ and $\forall K' \in \cons{\ctxt{\Gamma}{\Delta}}{\tau}: \rep{\Delta}{x} \ntermeq K' \in (\Delta,\rep{\Delta}{x} \ntermeq K)$} \\
-    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{\rep{\Delta}{x}}$} \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{otherwise} \\
-  \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
-    \false & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
-  \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
-    \false & \text{if $\rep{\Delta}{x} \termeq \bot \in \Delta$} \\
-    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
-  \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq y &=& \begin{cases}
-    \ctxt{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
-    % TODO: Write the function that adds a Delta to a nabla
-    \ctxt{\Gamma}{(\Delta, \rep{\Delta}{x} \termeq \rep{\Delta}{y})} \adddelta ((\Delta \cap \rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
-  \end{cases} \\
-
-\end{array}
-\]
-
-
-\[ \ruleform{ \Delta \cap x = \Delta } \]
-\[
-\begin{array}{lcl}
-  \varnothing \cap x &=& \varnothing \\
-  (\Delta,x \termeq \deltaconapp{K}{a}{y}) \cap x &=& (\Delta \cap x), x \termeq \deltaconapp{K}{a}{y} \\
-  (\Delta,x \ntermeq K) \cap x &=& (\Delta \cap x), x \ntermeq K \\
-  (\Delta,x \termeq \bot) \cap x &=& (\Delta \cap x), x \termeq \bot \\
-  (\Delta,x \ntermeq \bot) \cap x &=& (\Delta \cap x), x \ntermeq \bot \\
-  (\Delta,\varphi) \cap x &=& \Delta \cap x \\
-\end{array}
-\]
-
-\caption{Adding a constraint to the inert set $\nabla$}
-\label{fig:add}
-\end{figure}
-
-\begin{figure}[t]
+\begin{figure}
 \centering
 \[ \textbf{Test if $x$ is inhabited considering $\nabla$} \]
 \[ \ruleform{ \inhabited{\nabla}{x} } \]
@@ -984,6 +1034,7 @@ a
 \]
 
 \caption{Inhabitance test}
+\label{fig:inh}
 \end{figure}
 
 
