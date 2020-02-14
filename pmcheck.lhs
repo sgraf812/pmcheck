@@ -168,25 +168,86 @@
 
 \section{Introduction}
 
-\ryan{I will draft. Include a list of contributions}
+Pattern matching is a tremendously useful feature in Haskell and many other
+programming languages, but it must be wielded with care. Consider the following
+example of pattern matching gone wrong:
 
-Contributions from our call:
+\begin{code}
+f :: Int -> Bool
+f 0 = True
+f 0 = False
+\end{code}
+
+The |f| function exhibits two serious flaws. One obvious issue is that there
+are two clauses that match on |0|, and due to the top-to-bottom semantics of
+pattern matching, this makes the |f 0 = False| clause completely unreachable.
+Even worse is that |f| never matches on any patterns besides |0|, making it not fully
+defined. Attempting to invoke |f 1|, for instance, will fail.
+
+To avoid these mishaps, compilers for languages with pattern matching often
+emit warnings whenever a programmer misuses patterns. Such warnings indicate
+if a function is missing clauses (i.e., if it is \emph{non-exhaustive}) or if
+a function has overlapping clauses (i.e., if it is \emph{redundant}). We refer
+to the combination of checking for exhaustivity and redundancy as
+\emph{pattern-match coverage checking}. Coverage checking is the first line
+of defense in catching programmer mistakes when defining code that uses
+pattern matching.
+
+If coverage checking catches mistakes in pattern matches, then who checks for
+mistakes in the coverage checker itself? It is a surprisingly frequent
+occurrence for coverage checkers to contain bugs that impact correctness.
+This is especially true in Haskell, which has an especially rich pattern
+language, and the Glasgow Haskell Compiler (GHC) complicates the story further
+by adding pattern-related language extensions. Designing a coverage
+checker that can cope with all of these features is no small task.
+
+The current state of the art for coverage checking GHC is
+\citet{gadtpm}, which presents an algorithm that handles the intricacies of
+checking GADTs, lazy patterns, and pattern guards. We argue that this
+algorithm is insufficient in a number of key ways. It does not account for a number of
+important language features and even gives incorrect results in certain cases.
+Moreover, the implementation of this algorithm in GHC is inefficient and has
+proved to be difficult to maintain due to its complexity.
+
+In this paper we propose a new algorithm, called \sysname, that addresses the
+deficiencies of \citet{gadtpm}. The key insight of \sysname is to condense all
+of the complexities of pattern matching into just three constructs:
+|let| bindings, pattern guards, and bang patterns. We make the
+following contributions:
+\ryan{Cite section numbers in the list below.}
+
 \begin{itemize}
-\item Things we do that weren't done in GADTs meet their match
-  \begin{itemize}
-    \item Strictness, including bang patterns, data structures with strict fields.
-\item 	COMPLETE pragmas
-\item	Newtype pattern matching
-\item	..anything else?
-\item	Less syntactic; robust to mixing pattern guards and syntax pattern matching and view patterns
+\item
+  We characterise the nuances of coverage checking that not even the
+  algorithm in \cite{gadtpm} handles. We also identify issues in GHC's
+  implementation of this algorithm.
+
+\item
+  \ryan{Describe the "Overview Over Our Solution" section and "Formalism" sections.}
+
+\item
+  We have implemented \sysname in GHC. \ryan{More details.}
 \end{itemize}
 
-  \item
-Much simpler and more modular formalism (evidence: compare the Figures; separation of desugaring and clause-tree processing, so that it's easy to add new source-language forms)
-\item 	Leading to a simpler, more correct, and much more performant implementation.  (Evidence: GHC's bug tracker, perf numbers)
-\item 	Maybe the first to handle both strict and lazy languages.
+We discuss the wealth of related work in \TODO.
 
-\end{itemize}
+% Contributions from our call:
+% \begin{itemize}
+% \item Things we do that weren't done in GADTs meet their match
+%   \begin{itemize}
+%     \item Strictness, including bang patterns, data structures with strict fields.
+% \item 	COMPLETE pragmas
+% \item	Newtype pattern matching
+% \item	..anything else?
+% \item	Less syntactic; robust to mixing pattern guards and syntax pattern matching and view patterns
+% \end{itemize}
+%
+%   \item
+% Much simpler and more modular formalism (evidence: compare the Figures; separation of desugaring and clause-tree processing, so that it's easy to add new source-language forms)
+% \item 	Leading to a simpler, more correct, and much more performant implementation.  (Evidence: GHC's bug tracker, perf numbers)
+% \item 	Maybe the first to handle both strict and lazy languages.
+%
+% \end{itemize}
 
 
 \section{The problem we want to solve}
@@ -1263,8 +1324,8 @@ The result of $\ann{\Gamma}{t}$ is thus $\antseq{\antdiv{\antrhs{1}}}{\antrhs{2}
 
 %\listoftodos\relax
 
-\nocite{*}
+%\nocite{*}
 
-%\bibliography{references}
+\bibliography{references}
 
 \end{document}
