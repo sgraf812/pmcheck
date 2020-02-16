@@ -190,7 +190,7 @@ if a function is missing clauses (i.e., if it is \emph{non-exhaustive}) or if
 a function has overlapping clauses (i.e., if it is \emph{redundant}). We refer
 to the combination of checking for exhaustivity and redundancy as
 \emph{pattern-match coverage checking}. Coverage checking is the first line
-of defense in catching programmer mistakes when defining code that uses
+of defence in catching programmer mistakes when defining code that uses
 pattern matching.
 
 If coverage checking catches mistakes in pattern matches, then who checks for
@@ -252,10 +252,72 @@ We discuss the wealth of related work in \TODO.
 
 \section{The problem we want to solve}
 
-\ryan{I will draft}
+\begin{figure}
+\TODO
 
-\ryan{Maybe a Figure with Tricky Examples}
+\caption{Definitions of functions used in the text}
+\label{fig:definitions}
+\end{figure}
 
+What makes coverage checking so difficult in a language like Haskell? At first
+glance, implementing a coverage checker algorithm might appear simple: just
+check that every function matches on every possible combination of data
+constructors exactly once. A function must match on every possible combination
+of constructors in order to be exhaustive, and it must must on them exactly
+once to avoid redundant matches.
+
+This algorithm, while concise, leaves out many nuances. What constitutes a
+``match''? Haskell has multiple matching constructs, including function definitions,
+|case| expressions, and guards. How does one count the
+number of possible combinations of data constructors? This is not a simple exercise
+since term and type constraints can make some combinations of constructors
+unreachable if matched on. Moreover, what constitutes a ``data constructor''?
+In addition to traditional data constructors, GHC features \emph{pattern synonyms}
+~\cite{patsyns},
+which provide an abstract way to embed arbitrary computation into patterns.
+
+Prior work on coverage checking (which we will expound upon further in
+\ryan{Cite related work section}) accounts for some of these nuances, but
+not all of them. In this section we identify all of the language features that
+complicate coverage checking. While these features may seem disparate at first,
+we will later show in \ryan{Cite the relevant section} that these ideas can all
+fit into a unified framework.
+
+\subsection{Guards}
+
+\TODO
+
+\subsection{Strictness}
+
+\TODO
+
+\subsubsection{Bang patterns}
+
+\TODO
+
+\subsubsection{Newtypes}
+
+\TODO
+
+\subsection{Programmable patterns}
+
+\TODO
+
+\subsubsection{Overload literals}
+
+\TODO
+
+\subsubsection{Pattern synonyms}
+
+\TODO
+
+\subsection{Term and type constraints}
+
+\TODO
+
+\subsubsection{Long-distance information}
+
+\TODO
 
 \begin{figure}
 \centering
