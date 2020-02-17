@@ -626,9 +626,9 @@ decorators are irrelevant.
 
 Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
 guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
-expressive enough to express all pattern matching in Haskell (cf. fig.
-\sg{TODO: desugaring function})! We have yet to find a language extension that
-doesn't fit into this framework.
+expressive enough to express all pattern matching in Haskell (cf.
+\cref{fig:desugar})! We have yet to find a language extension that doesn't fit
+into this framework.
 
 \subsubsection{Why do we not report redundant GRHSs directly?}
 
@@ -910,10 +910,11 @@ Pattern guard semantics are important for $\unc$ and bang pattern semantics are
 important for $\ann$. But what about let bindings? They are in fact completely
 uninteresting to the checking process, but making sense of them is important
 for the precision of the emptiness check involving $\generate$, as we'll see
-later on \sg{TODO: cref}.
+in \cref{ssec:gen}.
 
 
 \subsection{Testing for Emptiness}
+\label{ssec:gen}
 
 \begin{figure}
 \centering
@@ -1025,14 +1026,13 @@ $x \termeq |Just y|$ in $\Delta$ for the head $x$ of the variable vector of
 interest, expand $y$ in addition to the other variables and wrap it in a |Just|.
 Only that it's not plain $x \termeq |Just y|$, but $\Delta(x) \termeq |Just
 y|$. That's because $\Delta$ is in \emph{triangular form} (alluding to
-\emph{triangular substitutions} \sg{TODO cite something}): We have to follow $x
-\termeq y$ constraints in $\Delta$ until we find the representative of its
-equality class, to which all constraints apply. Note that a $x \termeq y$
-constraint implies absence of any other constraints mentioning $x$ in its
-left-hand side
-($x \termeq y \in \Delta \Rightarrow (\Delta\,\cap\,x = x \termeq y)$,
-foreshadowing notation from \cref{fig:add}). For $\expand$ to be well-defined,
-there needs to be at most one positive constraint in $\Delta$.
+\emph{triangular substitutions}, as opposed to an idempotent substitution): We
+have to follow $x \termeq y$ constraints in $\Delta$ until we find the
+representative of its equality class, to which all constraints apply. Note that
+a $x \termeq y$ constraint implies absence of any other constraints mentioning
+$x$ in its left-hand side ($x \termeq y \in \Delta \Rightarrow (\Delta\,\cap\,x
+= x \termeq y)$, foreshadowing notation from \cref{fig:add}). For $\expand$ to
+be well-defined, there needs to be at most one positive constraint in $\Delta$.
 
 Thus, constraints within $\nabla$s constructed by $\!\addphi\!$ satisfy a
 number of well-formedness constraints, like mutual compatibility, triangular
@@ -1163,8 +1163,7 @@ algorithm, by equating type and term variables with new constraints, \ie $y
 If there was no positive constructor constraint with the same constructor, it
 will look for such a constraint involving a different constructor, like $x
 \termeq |Nothing|$. In this case the new constraint is incompatible by
-generativity of data constructors \sg{Cite, or maybe bring this argument later
-on when handling pattern synonyms, where generativity is not a given}. There
+\emph{generativity} of data constructors \cite{eisenberg:dependent}. There
 are two other ways in which the constraint can be incompatible: If there was a
 negative constructor constraint $x \ntermeq |Just|$ or if any of the fields
 were not inhabited, which is checked by the $\inhabited{\nabla}{x}$ judgment in
