@@ -275,6 +275,9 @@ unreachable if matched on. Moreover, what constitutes a ``data constructor''?
 In addition to traditional data constructors, GHC features \emph{pattern synonyms}
 ~\cite{patsyns},
 which provide an abstract way to embed arbitrary computation into patterns.
+Matching on a pattern synonym is syntactically identical to matching on a data
+constructor, which makes coverage checking in the presence of pattern synonyms
+challenging.
 
 Prior work on coverage checking (which we will expound upon further in
 \ryan{Cite related work section}) accounts for some of these nuances, but
