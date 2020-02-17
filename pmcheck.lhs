@@ -1077,10 +1077,6 @@ blindly to $\Delta$.
 
 \subsection{Inhabitance Test}
 
-\sg{We need to find better subsection titles that clearly distinguish
-"Testing ($\Theta$) for Emptiness" from "Inhabitance Test(ing a
-particular variable in $\nabla$)".}
-
 \begin{figure}
 \centering
 \[ \textbf{Test if $x$ is inhabited considering $\nabla$} \]
@@ -1089,49 +1085,46 @@ particular variable in $\nabla$)".}
 \begin{array}{c}
 
   \prooftree
-    (\ctxt{\Gamma}{\Phi} \adddelta x \termeq \bot) \not= \false
+    (\ctxt{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false
   \justifies
-    \inhabited{\ctxt{\Gamma}{\Phi}}{x}
+    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+  \using
+    \inhabitedbot
   \endprooftree
 
   \quad
 
   \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons{\ctxt{\Gamma}{\Phi}}{\tau}}
-                {\inst{\Gamma}{x}{K} = \overline{\varphi}}
-               {(\ctxt{\Gamma,\overline{y:\tau'}}{\Phi} \adddelta \overline{\varphi}) \not= \false}}
+    {x:\tau \in \Gamma \quad \cons{\ctxt{\Gamma}{\Delta}}{\tau} = \bot}
   \justifies
-    \inhabited{\ctxt{\Gamma}{\Phi}}{x}
+    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+  \using
+    \inhabitednocpl
   \endprooftree
 
   \\
   \\
 
+  % TODO: Maybe inline Inst into this rule?
   \prooftree
-    {x:\tau \in \Gamma \quad \cons{\ctxt{\Gamma}{\Phi}}{\tau} = \bot}
+    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons{\ctxt{\Gamma}{\Delta}}{\tau}}
+                {\inst{\ctxt{\Gamma}{\Delta}}{x}{K} \not= \false}}
   \justifies
-    \inhabited{\ctxt{\Gamma}{\Phi}}{x}
-  \endprooftree
-
-  \quad
-
-  \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons{\ctxt{\Gamma}{\Phi}}{\tau}}
-                {\inst{\Gamma}{x}{K} = \bot}}
-  \justifies
-    \inhabited{\ctxt{\Gamma}{\Phi}}{x}
+    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+  \using
+    \inhabitedinst
   \endprooftree
 
 \end{array}
 \]
 
 \[ \textbf{Find data constructors of $\tau$} \]
-\[ \ruleform{ \cons{\ctxt{\Gamma}{\Phi}}{\tau} = \overline{K}} \]
+\[ \ruleform{ \cons{\ctxt{\Gamma}{\Delta}}{\tau} = \overline{K}} \]
 \[
 \begin{array}{c}
 
-  \cons{\ctxt{\Gamma}{\Phi}}{\tau} = \begin{cases}
-    \overline{K} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ data type with constructors $\overline{K}$ \\ (after normalisation according to the type constraints in $\Phi$)} \\
+  \cons{\ctxt{\Gamma}{\Delta}}{\tau} = \begin{cases}
+    \overline{K} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ data type with constructors $\overline{K}$ \\ (after normalisation according to the type constraints in $\Delta$)} \\
     % TODO: We'd need a cosntraint like \delta's \false here... Or maybe we
     % just omit this case and accept that the function is partial
     \bot & \text{otherwise} \\
@@ -1142,16 +1135,18 @@ particular variable in $\nabla$)".}
 
 % This is mkOneConFull
 \[ \textbf{Instantiate $x$ to data constructor $K$} \]
-\[ \ruleform{ \inst{\Gamma}{x}{K} = \overline{\varphi} } \]
+\[ \ruleform{ \inst{\nabla}{x}{K} = \nabla } \]
 \[
 \begin{array}{c}
 
-  \inst{\Gamma}{x}{K} = \begin{cases}
-    \tau_x \typeeq \tau, \overline{\gamma}, x \termeq \deltaconapp{K}{a}{y}, \overline{y' \ntermeq \bot} & \parbox[t]{0.8\textwidth}{$K : \forall \overline{a}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{y} \# \Gamma$, $\overline{a} \# \Gamma$, $x:\tau_x \in \Gamma$, $\overline{y'}$ bind strict fields} \\
-    % TODO: We'd need a cosntraint like \delta's \false here... Or maybe we
-    % just omit this case and accept that the function is partial
-    \bot & \text{otherwise} \\
-  \end{cases} \\
+  \inst{\ctxt{\Gamma}{\Delta}}{x}{K} =
+    \ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta}
+      \adddelta \tau_x \typeeq \tau
+      \adddelta \overline{\gamma}
+      \adddelta x \termeq \deltaconapp{K}{a}{y}
+      \adddelta \overline{y' \ntermeq \bot} \\
+  \qquad \qquad
+    \text{where $K : \forall \overline{a}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{y} \# \Gamma$, $\overline{a} \# \Gamma$, $x:\tau_x \in \Gamma$, $\overline{y'}$ bind strict fields} \\
 
 \end{array}
 \]
@@ -1160,229 +1155,22 @@ particular variable in $\nabla$)".}
 \label{fig:inh}
 \end{figure}
 
+\sg{We need to find better subsection titles that clearly distinguish
+"Testing ($\Theta$) for Emptiness" from "Inhabitance Test(ing a
+particular variable in $\nabla$)".}
+The process for adding a constraint to an inert set above (which turned out to
+be a unification procedure in disguise) frequently made use of an
+\emph{inhabitation test} $\inhabited{\nabla}{x}$, depicted in \cref{fig:inh}.
+In contrast to the emptiness test in \cref{fig:gen}, this one focuses on a
+particular variable and works on a $\nabla$ rather than a much higher-level
+$\Theta$.
 
-
-
-\section{End to end example}
-
-\sg{This section is completely out of date and goes into so much detail that it
-is barely comprehensible. I think we might be able to recycle some of the
-examples later on.}
-
-We'll start from the following source Haskell program and see how each of the steps (translation to guard trees, checking guard trees and ultimately generating inhabitants of the occurring $\Delta$s) work.
-
-\begin{code}
-f :: Maybe Int -> Int
-f Nothing          = 0  -- RHS 1
-f x | Just y <- x  = y  -- RHS 2
-\end{code}
-
-\subsection{Translation to guard trees}
-
-The program (by a function we probably only give in the appendix?) corresponds to the following guard tree $t_{\mathtt{f}}$:
-\[
-\begin{array}{c}
-  \gdtseq{\gdtguard{(\grdbang{x})}{\gdtguard{(\grdcon{\mathtt{Nothing}}{x})}{\gdtrhs{1}}}}{\\ \gdtguard{(\grdbang{x})}{\gdtguard{(\grdcon{\mathtt{Just} \; y}{x})}{\gdtrhs{2}}}}
-\end{array}
-\]
-
-Data constructor matches are strict, so we add a bang for each match.
-
-\subsection{Checking}
-
-\subsubsection{Uncovered values}
-
-First compute the uncovered $\Delta$s, after the first and the second clause respectively.
-
-\begin{enumerate}
-  \item \[
-      \begin{array}{lcl}
-        \Delta_1 &:=& \unc{\gdtguard{(\grdbang{x})}{\gdtguard{(\grdcon{\mathtt{Nothing}}{x})}{\gdtrhs{1}}}} \\
-                 &= & x \ntermeq \bot \wedge (x \ntermeq \mathtt{Nothing} \vee \false)
-      \end{array}
-    \]
-  \item \[
-      \begin{array}{lcl}
-        \Delta_2 &:=& \unc{t_{\mathtt{f}}} = \Delta_1 \wedge x \ntermeq \bot \wedge (x \ntermeq \mathtt{Just} \vee \false)
-      \end{array}
-    \]
-\end{enumerate}
-
-The right operands of $\vee$ are vacuous, but the purely syntactical transformation doesn't see that.
-
-We can see that $\Delta_2$ is in fact uninhabited, because the three
-constraints $x \ntermeq \bot$, $x \ntermeq \mathtt{Nothing}$ and $x \ntermeq
-\mathtt{Just}$ cover all possible data constructors of the \texttt{Maybe} data
-type. And indeed $\generate{x:\texttt{Maybe Int}}{\Delta_2} = \emptyset$, as we'll see later.
-
-\subsubsection{Redundancy}
-
-In order to compute the annotated clause tree $\ann{\true}{t_{\mathtt{f}}}$, we
-need to perform the following four inhabitance checks, one for each bang (for
-knowing whether we need to wrap a $\antdiv{}$ and one for each RHS (where we
-have to decide for $\antred{}$ or $\antrhs{}$):
-
-\begin{enumerate}
-  \item The first divergence check: $\Delta_3 := \true \wedge x \termeq \bot$
-  \item Upon reaching the first RHS: $\Delta_4 := \true \wedge x \ntermeq \bot \wedge \ctcon{\mathtt{Nothing}}{x}$
-  \item The second divergence check: $\Delta_5 := \true \wedge \Delta_1 \wedge x \termeq \bot$
-  \item Upon reaching the second RHS: $\Delta_6 := \true \wedge \Delta_1 \wedge x \ntermeq \bot \wedge \ctcon{\mathtt{Just} \; y}{x}$ \end{enumerate}
-
-Except for $\Delta_5$, these are all inhabited, i.e.
-$\generate{x:\texttt{Maybe Int}}{\Delta_i} \not= \emptyset$ (as we'll see in the next
-section).
-
-Thus, we will get the following annotated tree:
-\[
-  \antseq{\antdiv{\antrhs{1}}}{\antrhs{2}}
-\]
-
-\subsection{Generating inhabitants}
-
-The last section left open how $\generate$ works, which was used to
-establish or refute vacuosity of a $\Delta$.
-
-$\generate$ proceeds in two steps: First it constructs zero, one or many
-\emph{inert sets} $\nabla$ with $\construct$ (each of them representing a
-set of mutually compatible constraints) and then expands each of the returned
-inert sets into one or more pattern vectors $\overline{p}$ with $\expand$,
-which is the preferred representation to show to the user.
-
-The interesting bit happens in $\construct$, where a $\Delta$ is basically
-transformed into disjunctive normal form, represented by a set of independently
-inhabited $\nabla$. This ultimately happens in the base case of
-$\construct$, by gradually adding individual constraints to the incoming
-inert set with $\adddelta{}{}$, which starts out empty in $\generate$.
-Conjunction is handled by performing the equivalent of a \hs{concatMap},
-whereas disjunction simply translates to set union.
-
-Let's see how that works for $\Delta_3$ above. Recall that
-$\Gamma = x:\texttt{Maybe Int}$ and $\Delta_3 = \true \wedge x \termeq \bot$:
-
-\[
-  \begin{array}{ll}
-    & \construct(\Gamma, \true \wedge x \termeq \bot) \\
-  = & \quad \{ \text{ Conjunction } \} \\
-    & \bigcup \left\{ \construct(\ctxt{\Gamma'}{\nabla'}, x \termeq \bot) \mid \ctxt{\Gamma'}{\nabla'} \in \construct(\ctxt{\Gamma}{\varnothing}, \true) \right\} \\
-  = & \quad \{ \text{ Single constraint } \} \\
-    & \begin{cases}
-        \construct(\ctxt{\Gamma'}{\nabla'}, x \termeq \bot) & \text{where $\ctxt{\Gamma'}{\nabla'} = \adddelta{\ctxt{\Gamma}{\varnothing}}{\true}$} \\
-        \emptyset & \text{otherwise} \\
-    \end{cases} \\
-  = & \quad \{ \text{ $\true$ case of $\adddelta{}{}$ } \} \\
-    & \construct(\ctxt{\Gamma}{\varnothing}, x \termeq \bot) \\
-  = & \quad \{ \text{ Single constraint } \} \\
-    & \begin{cases}
-        \{ \ctxt{\Gamma'}{\nabla'} \} & \text{where $\ctxt{\Gamma'}{\nabla'} = \adddelta{\ctxt{\Gamma}{\varnothing}}{x \termeq \bot}$} \\
-        \emptyset & \text{otherwise} \\
-    \end{cases} \\
-  = & \quad \{ \text{ $x \termeq \bot$ case of $\adddelta{}{}$ } \} \\
-    & \{ \ctxt{\Gamma}{x \termeq \bot} \}
-  \end{array}
-\]
-
-Let's start with $\generate{\Gamma}{\Delta_3}$, where
-$\Gamma = x:\texttt{Maybe Int}$ and recall that
-$\Delta_3 = \true \wedge x \termeq \bot$. The first constraint $\true$ is added
-very easily to the initial nabla by discarding it, the second one ($x
-\termeq \bot$) is not conflicting with any $x \ntermeq \bot$ constraint in the
-incoming, still empty ($\varnothing$) nabla, so we end up with
-$\ctxt{\Gamma}{x \termeq \bot}$ as proof that $\Delta_3$ is in fact inhabited.
-Indeed, $\expand(\ctxt{\Gamma}{x \termeq \bot}, x)$ generate $\_$ as the
-inhabitant (which is rather unhelpful, but correct).
-
-The result of $\generate{\Gamma}{\Delta_3}$ is thus $\{\_\}$, which is not
-empty. Thus, $\ann{\Delta}{t}$ will wrap a $\antdiv{}$ around the first RHS.
-
-Similarly, $\generate{\Gamma}{\Delta_4}$ needs
-$\construct(\ctxt{\Gamma}{\varnothing}, \Delta_4)$, which in turn will add $x
-\ntermeq \bot$ to an initially empty $\nabla$. That entails an inhabitance
-check to see if $x$ might take on any values besides $\bot$.
-
-This is one possible derivation of the $\inhabited{\ctxt{\Gamma}{x \ntermeq \bot}}{x}$ predicate:
-\[
-  \begin{array}{c}
-
-  \prooftree
-    \Shortstack{{x:\texttt{Maybe Int} \in \Gamma \quad \mathtt{Nothing} \in \cons{\ctxt{\Gamma}{x \ntermeq \bot}}{\texttt{Maybe Int}}}
-                {\inst{\Gamma}{x}{\mathtt{Nothing}} = \ctcon{\mathtt{Nothing}}{x}}
-               {(\adddelta{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}) \not= \bot}}
-  \justifies
-    \inhabited{\ctxt{\Gamma}{x \ntermeq \bot}}{x}
-  \endprooftree
-
-  \end{array}
-\]
-
-The subgoal $\adddelta{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}$
-is handled by the second case of the match on constructor pattern constraints,
-because there are no other constructor pattern constraints yet in the incoming
-$\nabla$. Since there are no type constraints carried by \texttt{Nothing}, no
-fields and no constraints of the form $x \ntermeq K$ in $\nabla$, we end up
-with $\ctxt{\Gamma}{x \ntermeq \bot, \ctcon{\mathtt{Nothing}}{x}}$. Which is
-not $\bot$, thus we conclude our proof of
-$\inhabited{\ctxt{\Gamma}{x \ntermeq \bot}}{x}$.
-
-Next, we have to add $\ctcon{\mathtt{Nothing}}{x}$ to our $\nabla = x \ntermeq \bot$,
-which amounts to computing
-$\adddelta{\ctxt{\Gamma}{x \ntermeq \bot}}{\ctcon{\mathtt{Nothing}}{x}}$.
-Conveniently, we just did that! So the result of
-$\construct(\ctxt{\Gamma}{\varnothing}, \Delta_4)$ is
-$\ctxt{\Gamma}{x \ntermeq \bot, \ctcon{\mathtt{Nothing}}{x}}$.
-
-Now, we see that
-$\expand(\ctxt{\Gamma}{(x \ntermeq \bot, \ctcon{\mathtt{Nothing}}{x})}, x) = \{\mathtt{Nothing}\}$,
-which is also the result of $\generate{\Gamma}{\Delta_4}$.
-
-The checks for $\Delta_5$ and $\Delta_6$ are quite similar, only that we start
-from $\construct(\ctxt{\Gamma}{\varnothing}, \Delta_1)$ (which occur
-syntactically in $\Delta_5$ and $\Delta_6$) as the initial $\nabla$. So, we
-first compute that.
-
-Fast forward to computing $\adddelta{\ctxt{\Gamma}{x \ntermeq \bot}}{x \ntermeq \mathtt{Nothing}}$.
-Ultimately, this entails a proof of
-$\inhabited{\ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}}{x}$, for which we need to instantiate the \texttt{Just} constructor:
-\[
-  \begin{array}{c}
-
-  \prooftree
-    \Shortstack{{x:\texttt{Maybe Int} \in \Gamma \quad \mathtt{Just} \in \cons{\ctxt{\Gamma}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})}}{\texttt{Maybe Int}}}
-                {\inst{\Gamma}{x}{\mathtt{Just}} = \ctcon{\mathtt{Just} \; y}{x}}
-               {(\adddelta{\ctxt{\Gamma,y:\mathtt{Int}}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})}}{\ctcon{\mathtt{Just} \; y}{x}}) \not= \bot}}
-  \justifies
-    \inhabited{\ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}}{x}
-  \endprooftree
-
-  \end{array}
-\]
-
-$\adddelta{\ctxt{\Gamma,y:\mathtt{Int}}{(x \ntermeq \bot, x \ntermeq \mathtt{Nothing})}}{\ctcon{\mathtt{Just} \; y}{x}})$
-is in fact not $\bot$, which is enough to conclude
-$\inhabited{\ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}}{x}$.
-
-The second operand of $\vee$ in $\Delta_1$ is similar, but ultimately ends in
-$\false$, so will never produce a $\nabla$, so
-$\construct(\ctxt{\Gamma}{\varnothing}, \Delta_1) = \ctxt{\Gamma}{x \ntermeq \bot, x \ntermeq \mathtt{Nothing}}$.
-
-$\construct{\ctxt{\Gamma}{\varnothing}}{\Delta_5}$ will then just add
-$x \termeq \bot$ to that $\nabla$, which immediately refutes with
-$x \ntermeq \bot$. So no $\antdiv{}$ around the second RHS.
-
-$\construct(\ctxt{\Gamma}{\varnothing}, \Delta_6)$ is very similar to the
-situation with $\Delta_4$, just with more (non-conflicting) constraints in the
-incoming $\nabla$ and with $\ctcon{\mathtt{Just}\;y}{x}$ instead of
-$\ctcon{\mathtt{Nothing}}{x}$. Thus, $\generate{\Gamma}{\Delta_6} = \{\mathtt{Just}\; \_\}$.
-
-The last bit concerns $\generate{\Gamma}{\Delta_2}$, which is empty because we
-ultimately would add $x \ntermeq \mathtt{Just}$ to the inert set
-$x \ntermeq \bot, x \ntermeq \mathtt{Nothing}$, which refutes by the second
-case of $\adddelta{\_}{\_}$. (The $\vee$ operand with $\false$ in it is empty,
-as usual).
-
-So we have $\generate{\Gamma}{\Delta_2} = \emptyset$ and the pattern-match is
-exhaustive.
-
-The result of $\ann{\Gamma}{t}$ is thus $\antseq{\antdiv{\antrhs{1}}}{\antrhs{2}}$.
+The \inhabitedbot judgment of $\inhabited{\nabla}{x}$ tries to instantiate $x$ to
+$\bot$ to conclude that $x$ is inhabited. \inhabitedinst instantiates $x$ to one
+of its data constructors. That will only work if its type ultimately reduces to
+a data type under the type constraints in $\nabla$. Rule \inhabitednocpl will
+accept unconditionally when its type is not a data type, \ie for $x : |Int ->
+Int|$.
 
 %\listoftodos\relax
 
