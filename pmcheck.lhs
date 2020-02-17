@@ -82,9 +82,6 @@
 
 \input{macros}
 
-% Wildcards
-\newcommand\WILD{\mbox{@_@}}
-
 \usepackage[labelfont=bf]{caption}
 
 \clubpenalty = 10000
@@ -382,13 +379,15 @@ v' (Just !x) = 1
   K           &\text{Data constructors} \\
   P           &\text{Pattern synonyms} \\
   T           &\text{Type constructors} \\
+  l           &\text{Literal} \\
+  expr        &\text{Expressions} \\
 \end{array} &
 \begin{array}{rcl}
   defn   &\Coloneqq& \overline{clause} \\
   clause &\Coloneqq&  f \; \overline{pat} \; \overline{match} \\
-  pat    &\Coloneqq& x \mid K \; \overline{pat} \\
-  match  &\Coloneqq& \mathtt{=} \; expr \mid \overline{grhss} \\ % Or: clause?
-  grhss  &\Coloneqq& \mathtt{\mid} \; \overline{guard} \; \mathtt{=} \; expr \\
+  pat    &\Coloneqq& x \mid |_| \mid K \; \overline{pat} \mid x|@|pat \mid |!|pat \mid |~|pat \mid x \, \mathtt{+} \, l \\
+  match  &\Coloneqq& \mathtt{=} \; expr \mid \overline{grhs} \\
+  grhs   &\Coloneqq& \mathtt{\mid} \; \overline{guard} \; \mathtt{=} \; expr \\
   guard  &\Coloneqq& pat \leftarrow expr \mid expr \mid \mathtt{let} \; x \; \mathtt{=} \; expr \\
 \end{array}
 \end{array}
@@ -455,11 +454,13 @@ v' (Just !x) = 1
 
 \begin{figure}
 \[
+%TODO: gdtseq and antseq are inconsistent. Also the guard case should probably
+%      have an incoming edge, but then we have an overfull hbox.
 \begin{array}{cc}
   \begin{array}{rcll}
     \vcenter{\hbox{\begin{forest}
       grdtree,
-      for tree={delay={edge={-Bar}}},
+      for tree={delay={edge={-}}},
       [ [{$t_G$}] [{$u_G$}] ]
     \end{forest}}} & \Coloneqq & \gdtseq{t_G}{u_G} \\
     \vcenter{\hbox{\begin{forest}
@@ -573,12 +574,9 @@ syntax and \cref{fig:grphnot} the corresponding graphical notation):
 This representation is quite a bit more explicit than the original program. For
 one thing, every source-level pattern guard is strict in its scrutinee, whereas
 the pattern guards in our tree language are not, so we had to insert bang
-patterns. \sg{This makes me question again if making pattern guards "lazy" was
-the right choice. But I like to keep the logic of bang patterns orthogonal to
-pattern guards in our checking function.} For another thing, the pattern guards
-in $\Grd$ only scrutinise variables (and only one level deep), so the
-comparison in the boolean guard's scrutinee had to be bound to an auxiliary
-variable in a let binding.
+patterns. For another thing, the pattern guards in $\Grd$ only scrutinise
+variables (and only one level deep), so the comparison in the boolean guard's
+scrutinee had to be bound to an auxiliary variable in a let binding.
 
 Pattern guards in $\Grd$ are the only guards that can possibly fail to match,
 in which case the value of the scrutinee was not of the shape of the
@@ -737,13 +735,93 @@ terms of the syntax (\cf \cref{fig:syn}) we introduced earlier.
 
 As in the previous section, this comes in two main parts: Pattern match
 checking and finding inhabitants of the arising refinement types.
-\sg{Maybe we'll split that last part in two: 1. Converting $\Theta$ into a
-bunch of inhabited $\nabla$s 2. Make sure that each $\nabla$ is inhabited.}
 
 \subsection{Desugaring to Guard Trees}
 
-\simon{Write a desugaring function (in a Figure) and describe it here.
-  Give one example that illustrates; e.g. the one from my talk.}
+\begin{figure}
+
+\[ \ruleform{ \ds(defn) = \Gdt, \ds(clause) = \Gdt, \ds(grhs) = \Gdt } \]
+\[ \ruleform{ \ds(guard) = \overline{\Grd}, \ds(x, pat) = \overline{\Grd} } \]
+\[
+\begin{array}{lcl}
+
+\ds(clause_1\,...\,clause_n) &=&
+  \vcenter{\hbox{\begin{forest}
+    grdtree,
+    grhs/.style={tier=rhs,edge={-}},
+    [ [{$\ds(clause_1)$}] [...] [{$\ds(clause_n)$}] ] ]
+  \end{forest}}} \\
+\\
+\ds(f \; pat_1\,...\,pat_n \; \mathtt{=} \; expr) &=&
+  \vcenter{\hbox{\begin{forest}
+    grdtree,
+    [ [{$\ds(x_1, pat_1)\,...\,\ds(x_n, pat_n)$} [{$k$}] ] ]
+  \end{forest}}} \\
+\ds(f \; pat_1\,...\,pat_n \; grhs_1\,...\,grhs_m) &=&
+  \vcenter{\hbox{\begin{forest}
+    grdtree,
+    grhs/.style={tier=rhs,edge={-}},
+    [ [{$\ds(x_1, pat_1)\,...\,\ds(x_n, pat_n)$} [{$\ds(grhs_1)$}] [...] [{$\ds(grhs_m)$}] ] ]
+  \end{forest}}} \\
+\\
+\ds(\mathtt{\mid} \; guard_1\,...\,guard_n \; \mathtt{=} \; expr) &=&
+  \vcenter{\hbox{\begin{forest}
+    grdtree,
+    [ [{$\ds(guard_1)\,...\,\ds(guard_n)$} [{$k$}] ] ]
+  \end{forest}}} \\
+\\
+%TODO: Maybe make it explicit that we desugar to core here?
+\ds(pat \leftarrow expr) &=& \grdlet{x}{expr}, \ds(x, pat) \\
+\ds(expr) &=& \grdlet{b}{expr}, \ds(b, |True|) \\
+\ds(\mathtt{let} \; x \; \mathtt{=} \; expr) &=& \grdlet{x}{expr} \\
+\\
+\ds(x, y) &=& \grdlet{y}{x} \\
+\ds(x, |_|) &=& \epsilon \\
+\ds(x, K \; pat_1\,...\,pat_n) &=& \grdbang{x}, \grdcon{K \; y_1\,...\,y_n}{x}, \ds(y_1, pat_1), ..., \ds(y_n, pat_n) \\
+\ds(x, y|@|pat) &=& \grdlet{y}{x}, \ds(y, pat) \\
+\ds(x, |!|pat) &=& \grdbang{x}, \ds(x, pat) \\
+\ds(x, |~|pat) &=& \epsilon \\
+\ds(x, y\,\mathtt{+}\,l) &=& \ds(|x >= l|), \grdlet{y}{|x - l|} \\
+
+\end{array}
+\]
+\caption{Desugaring Haskell to $\Gdt$}
+\label{fig:desugar}
+\end{figure}
+
+\sg{I find this section quite boring. There's nothing to see in \cref{fig:desugar} that wasn't already clear after reading 3.1.}
+
+\Cref{fig:desugar} outlines the desugaring step from source Haskell to our
+guard tree language $\Gdt$. It is assumed that the top-level match variables
+$x_1$ through $x_n$ in the $clause$ cases have special, fixed names. \sg{If we
+had a different font for meta variables than for object variables, we could
+make that visible in syntax. But we don't...} All other variables that aren't
+bound in arguments to $\ds$ have fresh names.
+
+Consider this example function \sg{Maybe use the same function as in 3.1? But we already desugar it there...}:
+
+\begin{code}
+f (Just (!xs,_))  ys@Nothing  = 1
+f Nothing         zs          = 2
+\end{code}
+
+Under $\ds$, this desugars to
+
+\begin{forest}
+  grdtree,
+  [
+    [{$\grdbang{x_1}, \grdcon{|Just t_1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{xs}{t_2}, \grdlet{ys}{x_2}, \grdbang{ys}, \grdcon{|Nothing|}{ys}$} [1]]
+    [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{zs}{x_2}$} [2]]]
+\end{forest}
+
+The definition of $\ds$ is mostly straight-forward, but a little expansive
+because of the realistic source language. Its most intricate job is keeping
+track of all the renaming going on to resolve name mismatches. Other than
+that, the desugaring follows from the restrictions on the $\Grd$ language.
+
+Note how our naive desugaring function generates an abundance of fresh
+temporary variables. In pratice, the implementation of $\ds$ can be smarter
+about it, by looking at the pattern when choosing a name for the variable.
 
 \subsection{Checking Guard Trees}
 
