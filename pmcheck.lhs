@@ -329,7 +329,21 @@ it does not consider constraints that arise from strict fields.
 
 \subsubsection{Bang patterns}
 
-\TODO
+Strict fields are the primary mechanism for adding extra strictness in Haskell, but
+GHC adds another mechanism in the form of \emph{bang patterns}. A bang pattern
+such as |!pat| indicates that matching against |pat| \emph{always} evaluates it to
+WHNF. While data constructor matches are normally the only patterns that match
+strictly, bang patterns extend this treatment to other patterns. For example,
+one can rewrite the earlier |v| example to use the ordinary, lazy |Maybe| data
+type: \ryan{I actually wanted to write Just !\_, but LaTeX won't parse that :(}
+
+\begin{code}
+v' :: Maybe Void -> Int
+v' Nothing = 0
+v' (Just !x) = 1
+\end{code}
+
+\ryan{Finish me}
 
 \subsubsection{Newtypes}
 
