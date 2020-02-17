@@ -253,9 +253,8 @@ We discuss the wealth of related work in \TODO.
 \section{The problem we want to solve}
 
 \begin{figure}
-\TODO
 
-\caption{Definitions of functions used in the text}
+\caption{Definitions used in the text}
 \label{fig:definitions}
 \end{figure}
 
@@ -292,7 +291,41 @@ fit into a unified framework.
 
 \subsection{Strictness}
 
-\TODO
+The evaluation order of pattern matching can impact whether a pattern is
+reachable or not. While Haskell is a lazy language, programmers can opt
+into extra strict evaluation by giving the fields of a data type strict fields,
+such as in this example: \ryan{Consider moving some of this code to the figure}
+\ryan{There is an erroneous space between the |!| and the |a|}
+
+\begin{code}
+data Void -- No data constructors
+data SMaybe a = SJust !a | SNothing
+
+v :: SMaybe Void -> Int
+v SNothing = 0
+\end{code}
+
+The |SJust| constructor is strict in its field, and as a consequence,
+evaluating |SJust| $\bot$ to weak-head normal form will diverge.
+This has consequences when coverage checking functions that match on
+|SMaybe| values, such as |v|. The definition of |v| is curious, since it appears
+to omit a case for |SJust|. We could imagine adding one:
+
+\begin{code}
+v (SJust _) = 1
+\end{code}
+
+It turns out, however, that the RHS of this case can never be
+reached. The only way to use |SJust| to construct a value of type |SMaybe Void|
+is |SJust| $\bot$, since |Void| has no data constructors. Because |SJust| is
+strict in its field, matching on |SJust| will cause |SJust| $\bot$ to diverge,
+since matching on a data constructor evaluates it to WHNF. As a result, there
+is no argument one could pass to |v| to make it return |1|, which makes the
+|SJust| case unreachable.
+
+Although \citet{gadtpm} incorporates strictness constraints into their algorithm,
+it does not consider constraints that arise from strict fields.
+\ryan{Say more here?}
 
 \subsubsection{Bang patterns}
 
