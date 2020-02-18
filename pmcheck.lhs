@@ -474,7 +474,7 @@ compute redundancy information and uncovered patterns, respectively. $\ann$
 boils down this information into an annotated tree $\Ant$, for which the set of
 redundant and inaccessible right-hand sides can be computed in a final pass of
 $\red$ \sg{TODO: Write $\red$}. $\unc$ on the other hand returns a
-\emph{refinment type} representing the set of \emph{uncovered values}, for
+\emph{refinement type} representing the set of \emph{uncovered values}, for
 which $\generate$ can generate the inhabiting patterns to show to the user.
 
 \subsection{Desugaring to Guard Trees}
@@ -547,7 +547,7 @@ a crash.
 
 To see that, we can follow Haskell's top-to-bottom, left-to-right pattern match
 semantics. The first clause fails to match |Just 1| against |Nothing|, while
-the second clause successfully matches |1| with |x|, but then fails trying to
+the second clause successfully matches |1| with |x| but then fails trying to
 match |Nothing| against |Just y|. There is no third clause, and the
 \emph{uncovered} tuple of values |(Just 1) Nothing| that falls out at the
 bottom of this process will lead to a crash.
@@ -557,8 +557,8 @@ clause fails, the second matches |x| to |1| and |y| to |2|. Since there are
 multiple GRHSs, each of them in turn has to be tried in a top-to-bottom
 fashion. The first GRHS consists of a single boolean guard (in general we have
 to consider each of them in a left-to-right fashion!) that will fail because |1
-/= 2|. So the second GRHS is tried successfully, because |otherwise| is a
-boolean guard that never fails.
+/= 2|. The second GRHS is tried next, and because |otherwise| is a
+boolean guard that never fails, this successfully matches.
 
 Note how both the pattern matching per clause and the guard checking within a
 syntactic $match$ share top-to-bottom and left-to-right semantics. Having to
@@ -571,7 +571,7 @@ liftEq mx my
                                  | otherwise  = False
 \end{code}
 Transforming the first clause with its single GRHS is easy. But the second
-clause already had two GRHSs, so we need to use \emph{nested} pattern guards.
+clause already has two GRHSs, so we need to use \emph{nested} pattern guards.
 This is not a feature that Haskell offers (yet), but it allows a very
 convenient uniformity for our purposes: after the successful match on the first
 two guards left-to-right, we try to match each of the GRHSs in turn,
@@ -593,32 +593,40 @@ corresponding graphical notation):
 This representation is quite a bit more explicit than the original program. For
 one thing, every source-level pattern guard is strict in its scrutinee, whereas
 the pattern guards in our tree language are not, so we had to insert \emph{bang
-guards}. In analogy to bang patterns, |!x| evaluates $x$ to WHNF, which always
-succeeds or diverges. For another thing, the pattern guards in $\Grd$ only
+guards}. By analogy with bang patterns, |!x| evaluates $x$ to WHNF, which will
+either succeed or diverge. Moreover, the pattern guards in $\Grd$ only
 scrutinise variables (and only one level deep), so the comparison in the
 boolean guard's scrutinee had to be bound to an auxiliary variable in a let
 binding.
+\ryan{There doesn't appear to be a |let| binding that binds |otherwise|?}
 
 Pattern guards in $\Grd$ are the only guards that can possibly fail to match,
 in which case the value of the scrutinee was not of the shape of the
 constructor application it was matched against. The $\Gdt$ tree language
 determines how to cope with a failed guard. Left-to-right matching semantics is
 captured by $\gdtguard{}{\hspace{-0.5em}}$, whereas top-to-bottom backtracking
-is expressed by sequence ($\gdtseq{}{}$). The leaves in this tree each
+is expressed by sequence ($\gdtseq{}{}$). The leaves in a guard tree each
 correspond to a GRHS.
 
 \subsection{Checking Guard Trees}
 
 Pattern match checking works by gradually refining the set of reaching values
-as they flow through the guard tree and produces two values. The set of uncovered
-values that wasn't covered by any clause and an annotated guard tree skeleton
+\ryan{Did you mean to write ``reachable values'' here? ``Reaching values''
+reads strangely to me.}
+as they flow through the guard tree until it produces two outputs.
+One output is the set of uncovered values that wasn't covered by any clause,
+and the other output is an annotated guard tree skeleton
 $\Ant$ with the same shape as the guard tree to check, capturing redundancy and
 divergence information.
 
-For the example of |liftEq|'s guard tree $t_G$, we represent the set of values
-reaching the first clause by the \emph{refinement type} (which is the $\Theta$
-from \cref{fig:syn}) $\reft{(mx : |Maybe a|, my : |Maybe a|)}{\true}$. This set
-is gradually refined, until finally we have $\Theta_{|liftEq|} := \reft{(mx :
+For the example of |liftEq|'s guard tree $t_G$,
+\ryan{Perhaps we should call this something else, like $t_{|liftEq|}$, since
+$t_G$ is used elsewhere as a metavariable.}
+we represent the set of values
+reaching the first clause by the \emph{refinement type}
+$\reft{(mx : |Maybe a|, my : |Maybe a|)}{\true}$ (which is a $\Theta$
+from \cref{fig:syn}) . This set
+is gradually refined until finally we have $\Theta_{|liftEq|} := \reft{(mx :
 |Maybe a|, my : |Maybe a|)}{\Phi}$ as the uncovered set, where the predicate
 $\Phi$ is semantically equivalent to:
 \[
@@ -629,8 +637,11 @@ $\Phi$ is semantically equivalent to:
 \]
 
 Every $\vee$ disjunct corresponds to one way in which a pattern guard in the
-tree could fail. It's not obvious at all for humans to read off satisfying
-values from this representation, but we'll give an intuitive treatment of how
+tree could fail. It is not obvious at all for humans to read off satisfying
+values
+\ryan{Did you mean to write ``satisfiable values'' instead of
+``satisfying values'' here? Again, the latter reads strangely to me.}
+from this representation, but we will give an intuitive treatment of how
 to do so in the next subsection.
 
 The annotated guard tree skeleton corresponding to $t_G$ looks like this:
@@ -645,7 +656,7 @@ The annotated guard tree skeleton corresponding to $t_G$ looks like this:
         [3,acc]]]]
 \end{forest}
 
-A GRHS is deemed accessible (\checked{}) whenever there's a non-empty set of
+A GRHS is deemed accessible (\checked{}) whenever there is a non-empty set of
 values reaching it. For the first GRHS, the set that reaches it looks
 like $\{ (mx, my) \mid mx \ntermeq \bot, \grdcon{\mathtt{Nothing}}{mx}, my
 \ntermeq \bot, \grdcon{\mathtt{Nothing}}{my} \}$, which is inhabited by
@@ -654,17 +665,18 @@ the other two clauses.
 
 A \lightning{} denotes possible divergence in one of the bang guards and
 involves testing the set of reaching values for compatibility with \ie $mx
-\termeq \bot$. We don't know for $mx$, $my$ and $t$ (hence insert a
-\lightning{}), but can certainly rule out $otherwise \termeq \bot$ simply by
+\termeq \bot$. We cannot know in advance whether $mx$, $my$ or $t$ are
+$\bot$ (hence the three uses of
+\lightning{}), but we can certainly rule out $otherwise \termeq \bot$ simply by
 knowing that it is defined as |True|. But since all GRHSs are accessible,
-there's nothing to report in terms of redundancy and the \lightning{}
+there is nothing to report in terms of redundancy and the \lightning{}
 decorators are irrelevant.
 
 Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
 guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
 expressive enough to express all pattern matching in Haskell (cf. the
 desugaring function $\ds$ in \cref{fig:desugar})! We have yet to find a
-language extension that doesn't fit into this framework.
+language extension that does not fit into this framework.
 
 \subsubsection{Why do we not report redundant GRHSs directly?}
 
@@ -682,8 +694,12 @@ g _              = 3
 
 Is the first clause inaccessible or even redundant? Although the match on |()|
 forces the argument, we can delete the first clause without changing program
-semantics, so clearly it's redundant. But that wouldn't be true if the second
-clause wasn't there to "keep alive" the |()| pattern!
+semantics, so clearly it is redundant.
+\ryan{Wait, wouldn't deleting the first clause (with its two GRHSs) change its
+semantics? With the first clause present, |g| $\bot$ = $\bot$. Without the
+first clause, |g| $\bot$ = |3|. Or am I missing something?}
+But that wouldn't be true if the second
+clause wasn't there to ``keep alive'' the |()| pattern!
 
 Here is the corresponding annotated tree after checking:
 
@@ -696,7 +712,8 @@ Here is the corresponding annotated tree after checking:
     [3,acc]]
 \end{forest}
 
-In general, at least one GRHS under a \lightning{} may not be flagged as redundant.
+In general, at least one GRHS under a \lightning{} may not be flagged as
+redundant ($\times$).
 Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
 inaccessible) when it reaches a particular GRHS.
 
@@ -706,21 +723,23 @@ The predicate literals $\varphi$ of refinement types look quite similar to the
 original $\Grd$ language, so how is checking them for emptiness an improvement
 over reasoning about about guard trees directly? To appreciate the transition,
 it is important to realise that semantics of $\Grd$s are \emph{highly
-non-local}! Left-to-right and top-to-bottom match semantics means that it's
-hard to view $\Grd$s in isolation, we always have to reason about whole
+non-local}! Left-to-right and top-to-bottom match semantics means that it is
+hard to view $\Grd$s in isolation; we always have to reason about whole
 $\Gdt$s. By contrast, refinement types are self-contained, which means the
-generating inhabitants can be treated in separation from the whole pattern
-match checking problem.
+process of generating inhabitants can be treated separately from the process
+of pattern match checking
+\ryan{We inconsistently switch between calling it ``pattern match checking''
+and ``coverage checking'' in the prose. We should adopt one term and stick with it.}
 
-Apart from generating inhabitants of the final uncovered set for missing
-equation warnings, there are two points at which we have to check whether such
+Apart from generating inhabitants of the final uncovered set for non-exhaustive
+match warnings, there are two points at which we have to check whether
 a refinement type has become empty: To determine whether a right-hand side is
 inaccessible and whether a particular bang guard may lead to divergence and
 requires us to wrap a \lightning{}.
 
 Take the final uncovered set $\Theta_{|liftEq|}$ after checking |liftEq| above
 as an example. \sg{Do we need to give its predicate here again?}
-A bit of eyeballing |liftEq|'s definition finds |Nothing (Just _)| as an
+A bit of eyeballing |liftEq|'s definition reveals that |Nothing (Just _)| is an
 uncovered pattern, but eyeballing the constraint formula of $\Theta_{|liftEq|}$
 seems impossible in comparison. A more systematic approach is to adopt a
 generate-and-test scheme: Enumerate possible values of the data types for each
@@ -737,7 +756,7 @@ of the top-level $\wedge$. Trying |Just y| (|y| fresh) instead as the shape for
 a trivial inhabitant. Similarly for |(Just _) Nothing| and |(Just _) (Just _)|.
 
 Why do we have to test guard-bound variables in addition to the pattern
-variables? It's because of empty data types and strict fields:
+variables? It is because of empty data types and strict fields:
 \sg{This example will probably move to an earlier section}
 
 \begin{code}
@@ -747,13 +766,12 @@ v :: SMaybe Void -> Int
 v x@SNothing = 0
 \end{code}
 
-|v| does not have any uncovered patterns. And our approach better should see that
+|v| does not have any uncovered patterns. And our approach should see that
 by looking at its uncovered set
 $\reft{x : |Maybe Void|}{x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}}$.
-
 Specifically, the candidate |SJust y| (for fresh |y|) for |x| should be rejected,
 because there is no inhabitant for |y|! $\bot$ is ruled out by the strict field
-and |Void| means there is no data constructor to instantiate. Hence it is
+and |Void| has no data constructors with which to instantiate |y|. Hence it is
 important to test guard-bound variables for inhabitants, too.
 
 \sg{GMTM goes into detail about type constraints, term constraints and
