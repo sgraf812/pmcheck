@@ -397,7 +397,7 @@ v' (Just !x) = 1
 \label{fig:srcsyn}
 \end{figure}
 
-\section{Overview over Our Solution}
+\section{Overview of Our Solution}
 
 \begin{figure}
 \includegraphics{pipeline.eps}
@@ -440,7 +440,7 @@ v' (Just !x) = 1
   \varphi &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Literals} \\
   \Phi &\Coloneqq& \varphi \mid \Phi \wedge \Phi \mid \Phi \vee \Phi & \text{Formula} \\
   \Theta &\Coloneqq& \reft{\Gamma}{\Phi} & \text{Refinement Type} \\
-  \delta &\Coloneqq& \gamma \mid x \termeq \deltaconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Constraints without scoping} \\
+  \delta &\Coloneqq& \gamma \mid x \termeq \deltaconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Constraints} \\
   \Delta &\Coloneqq& \varnothing \mid \Delta,\delta & \text{Set of constraints} \\
   \nabla &\Coloneqq& \false \mid \ctxt{\Gamma}{\Delta} & \text{Inert Set} \\
 \end{array}
@@ -527,17 +527,11 @@ which $\generate$ can generate the inhabiting patterns to show to the user.
 \label{fig:grphnot}
 \end{figure}
 
-\simon{Add diagram of the main road map here}
 
-\subsection{Desugaring to clause trees}
+To understand what language we should desugar to, consider the following 3am
+attempt at lifting equality over \hs{Maybe}:
 
-% TODO: better words
-It is customary to define Haskell functions using pattern-matching, possibly
-with one or more \emph{guarded right-hand sides} (GRHS) per \emph{clause} (see
-\cref{fig:srcsyn}). Consider for example this 3am attempt at lifting equality
-over \hs{Maybe}:
-
-% TODO: better code style
+% TODO: Work on code style
 \begin{code}
 liftEq Nothing  Nothing  = True
 liftEq (Just x) (Just y)
@@ -545,22 +539,26 @@ liftEq (Just x) (Just y)
   | otherwise       = False
 \end{code}
 \noindent
-This function will crash for the call site |liftEq (Just 1) Nothing|. To see
-that, we can follow Haskell's top-to-bottom, left-to-right pattern match
-semantics. The first clause fails to match |Just 1| against |Nothing|,
-while the second clause successfully matches |1| with |x|, but then fails
-trying to match |Nothing| against |Just y|. There is no third clause, and an
-\emph{uncovered} value vector that falls out at the bottom of this process
-will lead to a crash. \simon{We have not talked about value vectors yet!  Rephrase}
+Function definitions in Haskell allow one or more \emph{guarded right-hand
+sides} (GRHS) per syntactic \emph{clause} (see \cref{fig:srcsyn}). For example,
+|liftEq| has two clauses, the second of which defines two GRHSs. Semantically,
+neither of them will match the call site |liftEq (Just 1) Nothing|, leading to
+a crash.
+
+To see that, we can follow Haskell's top-to-bottom, left-to-right pattern match
+semantics. The first clause fails to match |Just 1| against |Nothing|, while
+the second clause successfully matches |1| with |x|, but then fails trying to
+match |Nothing| against |Just y|. There is no third clause, and the
+\emph{uncovered} tuple of values |(Just 1) Nothing| that falls out at the
+bottom of this process will lead to a crash.
 
 Compare that to matching on |(Just 1) (Just 2)|: While matching against the first
 clause fails, the second matches |x| to |1| and |y| to |2|. Since there are
-multiple guarded right-hand sides (GRHSs), each of them in turn has to be tried in
-a top-to-bottom fashion. The first GRHS consists of a single
-boolean guard (in general we have to consider each of them in a left-to-right
-fashion!) \sg{Maybe an example with more guards would be helpful} that will
-fail because |1 /= 2|. So the second GRHS is tried successfully, because
-|otherwise| is a boolean guard that never fails.
+multiple GRHSs, each of them in turn has to be tried in a top-to-bottom
+fashion. The first GRHS consists of a single boolean guard (in general we have
+to consider each of them in a left-to-right fashion!) that will fail because |1
+/= 2|. So the second GRHS is tried successfully, because |otherwise| is a
+boolean guard that never fails.
 
 Note how both the pattern matching per clause and the guard checking within a
 syntactic $match$ share top-to-bottom and left-to-right semantics. Having to
@@ -583,9 +581,6 @@ Hence our algorithm desugars the source syntax to the following \emph{guard
 tree} (see \cref{fig:syn} for the full syntax and \cref{fig:grphnot} the
 corresponding graphical notation):
 
-\sg{TODO: Make the connection between textual syntax and graphic representation.}
-\sg{The bangs are distracting. Also the otherwise. Also binding the temporary.}
-
 \begin{forest}
   grdtree
   [
@@ -598,32 +593,47 @@ corresponding graphical notation):
 This representation is quite a bit more explicit than the original program. For
 one thing, every source-level pattern guard is strict in its scrutinee, whereas
 the pattern guards in our tree language are not, so we had to insert \emph{bang
-guards}. In analogy to bang patterns, |!x| evaluates $x$ to WHNF, which, as a
-guard, always succeeds or diverges. For another thing, the pattern guards in
-$\Grd$ only scrutinise variables (and only one level deep), so the comparison
-in the boolean guard's scrutinee had to be bound to an auxiliary variable in a
-let binding.
+guards}. In analogy to bang patterns, |!x| evaluates $x$ to WHNF, which always
+succeeds or diverges. For another thing, the pattern guards in $\Grd$ only
+scrutinise variables (and only one level deep), so the comparison in the
+boolean guard's scrutinee had to be bound to an auxiliary variable in a let
+binding.
 
 Pattern guards in $\Grd$ are the only guards that can possibly fail to match,
 in which case the value of the scrutinee was not of the shape of the
 constructor application it was matched against. The $\Gdt$ tree language
 determines how to cope with a failed guard. Left-to-right matching semantics is
-captured by $\gdtguard{}{}$, whereas top-to-bottom backtracking is expressed by
-sequence ($\gdtseq{}{}$). The leaves in this tree each correspond to a GRHS.
-\sg{The preceding and following paragraph would benefit from illustrations.
-It's hard to come up with something concrete that doesn't go into too much
-detail. GMTM just shows a top-to-bottom pipeline. But why should we leave out
-left-to-right composition? Also we produce an annotated syntax tree $\Ant$
-instead of a covered set.}
+captured by $\gdtguard{}{\hspace{-0.5em}}$, whereas top-to-bottom backtracking
+is expressed by sequence ($\gdtseq{}{}$). The leaves in this tree each
+correspond to a GRHS.
 
 \subsection{Checking Guard Trees}
 
-Pattern match checking works by gradually refining the set of uncovered values
-as they flow through the tree and produces two values: The uncovered set that
-wasn't covered by any clause and an annotated guard tree skeleton $\Ant$ with
-the same shape as the guard tree to check, capturing redundancy and divergence
-information. Pattern match checking our guard tree from above should yield
-an empty uncovered set and an annotated guard tree skeleton like
+Pattern match checking works by gradually refining the set of reaching values
+as they flow through the guard tree and produces two values. The set of uncovered
+values that wasn't covered by any clause and an annotated guard tree skeleton
+$\Ant$ with the same shape as the guard tree to check, capturing redundancy and
+divergence information.
+
+For the example of |liftEq|'s guard tree $t_G$, we represent the set of values
+reaching the first clause by the \emph{refinement type} (which is the $\Theta$
+from \cref{fig:syn}) $\reft{(mx : |Maybe a|, my : |Maybe a|)}{\true}$. This set
+is gradually refined, until finally we have $\Theta_{|liftEq|} := \reft{(mx :
+|Maybe a|, my : |Maybe a|)}{\Phi}$ as the uncovered set, where the predicate
+$\Phi$ is semantically equivalent to:
+\[
+\begin{array}{cl}
+         & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Nothing} \vee (\ctcon{\mathtt{Nothing}}{mx} \wedge my \ntermeq \bot \wedge my \ntermeq \mathtt{Nothing}))) \\
+  \wedge & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Just} \vee (\ctcon{\mathtt{Just}\;x}{mx} \wedge my \ntermeq \bot \wedge (my \ntermeq \mathtt{Just})))) \\
+\end{array}
+\]
+
+Every $\vee$ disjunct corresponds to one way in which a pattern guard in the
+tree could fail. It's not obvious at all for humans to read off satisfying
+values from this representation, but we'll give an intuitive treatment of how
+to do so in the next subsection.
+
+The annotated guard tree skeleton corresponding to $t_G$ looks like this:
 
 \begin{forest}
   anttree
@@ -652,9 +662,9 @@ decorators are irrelevant.
 
 Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
 guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
-expressive enough to express all pattern matching in Haskell (cf.
-\cref{fig:desugar})! We have yet to find a language extension that doesn't fit
-into this framework.
+expressive enough to express all pattern matching in Haskell (cf. the
+desugaring function $\ds$ in \cref{fig:desugar})! We have yet to find a
+language extension that doesn't fit into this framework.
 
 \subsubsection{Why do we not report redundant GRHSs directly?}
 
@@ -690,12 +700,17 @@ In general, at least one GRHS under a \lightning{} may not be flagged as redunda
 Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
 inaccessible) when it reaches a particular GRHS.
 
-\subsection{Testing for Emptiness}
+\subsection{Generating Inhabitants of a Refinement Type}
 
-The informal style of pattern match checking above represents the set of values
-reaching a particular node of the guard tree as a \emph{refinement type} (which
-is the $\Theta$ from \cref{fig:syn}). Each guard encountered in the tree
-traversal refines this set with its own constraints.
+The predicate literals $\varphi$ of refinement types look quite similar to the
+original $\Grd$ language, so how is checking them for emptiness an improvement
+over reasoning about about guard trees directly? To appreciate the transition,
+it is important to realise that semantics of $\Grd$s are \emph{highly
+non-local}! Left-to-right and top-to-bottom match semantics means that it's
+hard to view $\Grd$s in isolation, we always have to reason about whole
+$\Gdt$s. By contrast, refinement types are self-contained, which means the
+generating inhabitants can be treated in separation from the whole pattern
+match checking problem.
 
 Apart from generating inhabitants of the final uncovered set for missing
 equation warnings, there are two points at which we have to check whether such
@@ -703,23 +718,15 @@ a refinement type has become empty: To determine whether a right-hand side is
 inaccessible and whether a particular bang guard may lead to divergence and
 requires us to wrap a \lightning{}.
 
-Take the the final uncovered set $\reft{(mx : |Maybe a|, my : |Maybe a|)}{\Phi}$ after checking |liftEq| above
-as an example, where the predicate $\Phi$ is:
-\sg{This doesn't even pick up the trivially empty clauses ending in $\false$,
-but is already qutie complex.}
-\[
-\begin{array}{cl}
-         & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Nothing} \vee (\ctcon{\mathtt{Nothing}}{mx} \wedge my \ntermeq \bot \wedge my \ntermeq \mathtt{Nothing}))) \\
-  \wedge & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Just} \vee (\ctcon{\mathtt{Just}\;x}{mx} \wedge my \ntermeq \bot \wedge (my \ntermeq \mathtt{Just})))) \\
-\end{array}
-\]
-
+Take the final uncovered set $\Theta_{|liftEq|}$ after checking |liftEq| above
+as an example. \sg{Do we need to give its predicate here again?}
 A bit of eyeballing |liftEq|'s definition finds |Nothing (Just _)| as an
-uncovered pattern, but eyeballing the constraint formula above seems impossible
-in comparison. A more systematic approach is to adopt a generate-and-test
-scheme: Enumerate possible values of the data types for each variable involved
-(the pattern variables |mx| and |my|, but also possibly the guard-bound |x|,
-|y| and |t|) and test them for compatibility with the recorded constraints.
+uncovered pattern, but eyeballing the constraint formula of $\Theta_{|liftEq|}$
+seems impossible in comparison. A more systematic approach is to adopt a
+generate-and-test scheme: Enumerate possible values of the data types for each
+variable involved (the pattern variables |mx| and |my|, but also possibly the
+guard-bound |x|, |y| and |t|) and test them for compatibility with the recorded
+constraints.
 
 Starting from |mx my|, we enumerate all possibilities for the shape of |mx|,
 and similarly for |my|. The obvious first candidate in a lazy language is
@@ -939,7 +946,7 @@ for the precision of the emptiness check involving $\generate$, as we'll see
 in \cref{ssec:gen}.
 
 
-\subsection{Testing for Emptiness}
+\subsection{Generating Inhabitants of a Refinement Type}
 \label{ssec:gen}
 
 \begin{figure}
@@ -1004,17 +1011,6 @@ in \cref{ssec:gen}.
 \caption{Generating inhabitants of $\Theta$ via $\nabla$}
 \label{fig:gen}
 \end{figure}
-
-\sg{Maybe the this paragraph should somewhere else, possibly earlier.}
-The predicate literals $\varphi$ of refinement types looks quite similar to the
-original $\Grd$ language, so how is checking them for emptiness an improvement
-over reasoning about about guard trees directly? To appreciate the translation
-step we just described, it is important to realise that semantics of $\Grd$s
-are \emph{highly non-local}! Left-to-right and top-to-bottom match semantics
-means that it's hard to view $\Grd$s in isolation, we always have to reason
-about whole $\Gdt$s. By contrast, refinement types are self-contained, which
-means the emptiness test can be treated in separation from the whole pattern
-match checking problem.
 
 The key function for the emptiness test is $\generate$ in \cref{fig:gen}, which
 generates a set of patterns which inhabit a given refinement type $\Theta$.
