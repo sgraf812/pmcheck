@@ -896,7 +896,7 @@ about it, by looking at the pattern when choosing a name for the variable.
 \unc(\reft{\Gamma}{\Phi}, \gdtrhs{n}) &=& \reft{\Gamma}{\false} \\
 \unc(\Theta, \gdtseq{t}{u}) &=& \unc(\unc(\Theta, t), u) \\
 \unc(\Theta, \gdtguard{(\grdbang{x})}{t}) &=& \unc(\Theta \andtheta (x \ntermeq \bot), t) \\
-\unc(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \unc(\Theta \andtheta (x \termeq e), t) \\
+\unc(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \unc(\Theta \andtheta (\ctlet{x}{e}), t) \\
 \unc(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& (\Theta \andtheta (x \ntermeq K)) \uniontheta \unc(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
@@ -1369,34 +1369,22 @@ sell that.}
     (\reft{\Gamma}{\false}, \antred{n}), & \generate(\Theta) = \emptyset \\
     (\reft{\Gamma}{\false}, \antrhs{n}), & \text{otherwise} \\
   \end{cases} \\
-\unc(\Theta, \gdtseq{t_G}{u_G}) &=& (\antseq{t_A}{u_A}, \Theta_2) \hspace{0.5em} \text{where} \begin{array}{l}(t_A, \Theta_1) = \uncann(\Theta, t_G) \\ (u_A, \Theta_2) = \uncann(\Theta_1, u_G) \end{array} \\
-\unc(\Theta, \gdtguard{(\grdbang{x})}{t}) &=& \begin{cases}
-    \ann(\Theta \andtheta (x \ntermeq \bot), t), & \generate(\Theta \andtheta (x \termeq \bot)) = \emptyset \\
-    \antdiv{\ann(\Theta \andtheta (x \ntermeq \bot), t)} & \text{otherwise} \\
+\uncann(\Theta, \gdtseq{t_G}{u_G}) &=& (\antseq{t_A}{u_A}, \Theta_2) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
+    (t_A, \Theta_1) &=& \uncann(\Theta, t_G) \\
+    (u_A, \Theta_2) &=& \uncann(\Theta_1, u_G)
+  \end{array} \\
+\uncann(\Theta, \gdtguard{(\grdbang{x})}{t_G}) &=& \begin{cases}
+    (\Theta', t_A), & \generate(\Theta \andtheta (x \termeq \bot)) = \emptyset \\
+    (\Theta', \antdiv{t_A}) & \text{otherwise} \\
   \end{cases} \\
-\unc(\Theta \andtheta (x \ntermeq \bot), t) \\
-\unc(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \unc(\Theta \andtheta (x \termeq e), t) \\
-\unc(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& (\Theta \andtheta (x \ntermeq K)) \uniontheta \unc(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
-\end{array}
-\]
-\[ \ruleform{ \ann(\Delta, t_G) = t_A } \]
-\[
-\begin{array}{lcl}
-\ann(\Theta,\gdtrhs{n}) &=& \begin{cases}
-    \antred{n}, & \generate(\Theta) = \emptyset \\
-    \antrhs{n}, & \text{otherwise} \\
-  \end{cases} \\
-\ann(\Theta, (\gdtseq{t}{u})) &=& \antseq{\ann(\Theta, t)}{\ann(\unc(\Theta, t), u)} \\
-\ann(\Theta, \gdtguard{(\grdbang{x})}{t}) &=& \begin{cases}
-    \ann(\Theta \andtheta (x \ntermeq \bot), t), & \generate(\Theta \andtheta (x \termeq \bot)) = \emptyset \\
-    \antdiv{\ann(\Theta \andtheta (x \ntermeq \bot), t)} & \text{otherwise} \\
-  \end{cases} \\
-\ann(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \ann(\Theta \andtheta (x \termeq e), t) \\
-\ann(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& \ann(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
+  && \quad \text{where } (\Theta', t_A) = \uncann(\Theta \andtheta (x \ntermeq \bot), t_G) \\
+\uncann(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \uncann(\Theta \andtheta (\ctlet{x}{e}), t) \\
+\uncann(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t_G}) &=& ((\Theta \andtheta (x \ntermeq K)) \uniontheta \Theta', t_A) \\
+  && \quad \text{where } (\Theta', t_A) = \uncann(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t_G) \\
 \end{array}
 \]
 
-\caption{Pattern match checking}
+\caption{Fast pattern match checking}
 \label{fig:fastcheck}
 \end{figure}
 
