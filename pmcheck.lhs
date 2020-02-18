@@ -209,7 +209,7 @@ proved to be difficult to maintain due to its complexity.
 In this paper we propose a new algorithm, called \sysname, that addresses the
 deficiencies of \citet{gadtpm}. The key insight of \sysname is to condense all
 of the complexities of pattern matching into just three constructs:
-|let| bindings, pattern guards, and bang patterns. We make the
+|let| bindings, pattern guards, and bang guards. We make the
 following contributions:
 \ryan{Cite section numbers in the list below.}
 
@@ -573,10 +573,12 @@ syntax and \cref{fig:grphnot} the corresponding graphical notation):
 
 This representation is quite a bit more explicit than the original program. For
 one thing, every source-level pattern guard is strict in its scrutinee, whereas
-the pattern guards in our tree language are not, so we had to insert bang
-patterns. For another thing, the pattern guards in $\Grd$ only scrutinise
-variables (and only one level deep), so the comparison in the boolean guard's
-scrutinee had to be bound to an auxiliary variable in a let binding.
+the pattern guards in our tree language are not, so we had to insert \emph{bang
+guards}. In analogy to bang patterns, |!x| evaluates $x$ to WHNF, which, as a
+guard, always succeeds or diverges. For another thing, the pattern guards in
+$\Grd$ only scrutinise variables (and only one level deep), so the comparison
+in the boolean guard's scrutinee had to be bound to an auxiliary variable in a
+let binding.
 
 Pattern guards in $\Grd$ are the only guards that can possibly fail to match,
 in which case the value of the scrutinee was not of the shape of the
@@ -616,7 +618,7 @@ like $\{ (mx, my) \mid mx \ntermeq \bot, \grdcon{\mathtt{Nothing}}{mx}, my
 $(\mathtt{Nothing}, \mathtt{Nothing})$. Similarly, we can find inhabitants for
 the other two clauses.
 
-A \lightning{} denotes possible divergence in one of the bang patterns and
+A \lightning{} denotes possible divergence in one of the bang guards and
 involves testing the set of reaching values for compatibility with \ie $mx
 \termeq \bot$. We don't know for $mx$, $my$ and $t$ (hence insert a
 \lightning{}), but can certainly rule out $otherwise \termeq \bot$ simply by
@@ -674,7 +676,7 @@ traversal refines this set with its own constraints.
 Apart from generating inhabitants of the final uncovered set for missing
 equation warnings, there are two points at which we have to check whether such
 a refinement type has become empty: To determine whether a right-hand side is
-inaccessible and whether a particular bang pattern may lead to divergence and
+inaccessible and whether a particular bang guard may lead to divergence and
 requires us to wrap a \lightning{}.
 
 Take the the final uncovered set $\reft{(mx : |Maybe a|, my : |Maybe a|)}{\Phi}$ after checking |liftEq| above
@@ -888,7 +890,7 @@ reaching the right (or bottom) child is exactly the set of values that were
 uncovered by the left (or top) child on the set of values reaching the whole
 node. A GRHS covers every reaching value. The left-to-right semantics of
 $\gdtguard{}{}$ are respected by refining the set of values reaching the
-wrapped subtree, depending on the particular guard. Bang patterns and let
+wrapped subtree, depending on the particular guard. Bang guards and let
 bindings don't do anything beyond that refinement, whereas pattern guards
 additionally account for the possibility of a failed pattern match. Note that
 ultimately, a failing pattern guard is the only way in which the uncovered set
@@ -898,15 +900,15 @@ When $\ann$ hits a GRHS, it asks $\generate$ for inhabitants of $\Theta$
 to decide whether the GRHS is accessible or not. Since $\ann$ needs to compute
 and maintain the set of reaching values just the same as $\unc$, it has to call
 out to $\unc$ for the $\gdtseq{}{}$ case. Out of the three guard cases, the one
-handling bang patterns is the only one doing more than just refining the set of
+handling bang guards is the only one doing more than just refining the set of
 reaching values for the subtree (thus respecting left-to-right semantics). A
-bang pattern $\grdbang{x}$ is handled by testing whether the set of reaching
+bang guard $\grdbang{x}$ is handled by testing whether the set of reaching
 values $\Theta$ is compatible with the assignment $x \termeq \bot$, which again
 is done by asking $\generate$ for concrete inhabitants of the resulting
-refinement type. If it \emph{is} inhabited, then the bang pattern might diverge
+refinement type. If it \emph{is} inhabited, then the bang guard might diverge
 and we need to wrap the annotated subtree in a \lightning{}.
 
-Pattern guard semantics are important for $\unc$ and bang pattern semantics are
+Pattern guard semantics are important for $\unc$ and bang guard semantics are
 important for $\ann$. But what about let bindings? They are in fact completely
 uninteresting to the checking process, but making sense of them is important
 for the precision of the emptiness check involving $\generate$, as we'll see
