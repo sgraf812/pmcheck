@@ -597,8 +597,8 @@ guards}. By analogy with bang patterns, |!x| evaluates $x$ to WHNF, which will
 either succeed or diverge. Moreover, the pattern guards in $\Grd$ only
 scrutinise variables (and only one level deep), so the comparison in the
 boolean guard's scrutinee had to be bound to an auxiliary variable in a let
-binding.
-\ryan{There doesn't appear to be a |let| binding that binds |otherwise|?}
+binding. Note that |otherwise| is an external identifier which we can assume to
+be bound to |True|, which is in fact how it defined.
 
 Pattern guards in $\Grd$ are the only guards that can possibly fail to match,
 in which case the value of the scrutinee was not of the shape of the
@@ -613,22 +613,20 @@ correspond to a GRHS.
 Pattern match checking works by gradually refining the set of reaching values
 \ryan{Did you mean to write ``reachable values'' here? ``Reaching values''
 reads strangely to me.}
+\sg{I was thinking ``reaching values'' as in ``reaching definitions'': The set
+of values that reach that particular piece of the guard tree.}
 as they flow through the guard tree until it produces two outputs.
 One output is the set of uncovered values that wasn't covered by any clause,
 and the other output is an annotated guard tree skeleton
 $\Ant$ with the same shape as the guard tree to check, capturing redundancy and
 divergence information.
 
-For the example of |liftEq|'s guard tree $t_G$,
-\ryan{Perhaps we should call this something else, like $t_{|liftEq|}$, since
-$t_G$ is used elsewhere as a metavariable.}
-we represent the set of values
-reaching the first clause by the \emph{refinement type}
-$\reft{(mx : |Maybe a|, my : |Maybe a|)}{\true}$ (which is a $\Theta$
-from \cref{fig:syn}) . This set
-is gradually refined until finally we have $\Theta_{|liftEq|} := \reft{(mx :
-|Maybe a|, my : |Maybe a|)}{\Phi}$ as the uncovered set, where the predicate
-$\Phi$ is semantically equivalent to:
+For the example of |liftEq|'s guard tree $t_|liftEq|$, we represent the set of
+values reaching the first clause by the \emph{refinement type} $\reft{(mx :
+|Maybe a|, my : |Maybe a|)}{\true}$ (which is a $\Theta$ from \cref{fig:syn}) .
+This set is gradually refined until finally we have $\Theta_{|liftEq|} :=
+\reft{(mx : |Maybe a|, my : |Maybe a|)}{\Phi}$ as the uncovered set, where the
+predicate $\Phi$ is semantically equivalent to:
 \[
 \begin{array}{cl}
          & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Nothing} \vee (\ctcon{\mathtt{Nothing}}{mx} \wedge my \ntermeq \bot \wedge my \ntermeq \mathtt{Nothing}))) \\
@@ -641,10 +639,13 @@ tree could fail. It is not obvious at all for humans to read off satisfying
 values
 \ryan{Did you mean to write ``satisfiable values'' instead of
 ``satisfying values'' here? Again, the latter reads strangely to me.}
+\sg{I think I agree. I was thinking of the values that satisfy $\Phi$ and thus
+inhabit $\Theta$. Maybe ``inhabiting values'' then?}
 from this representation, but we will give an intuitive treatment of how
 to do so in the next subsection.
 
-The annotated guard tree skeleton corresponding to $t_G$ looks like this:
+The annotated guard tree skeleton corresponding to $t_|liftEq|$ looks like
+this:
 
 \begin{forest}
   anttree
@@ -692,14 +693,15 @@ g ()   | False   = 1
 g _              = 3
 \end{code}
 
-Is the first clause inaccessible or even redundant? Although the match on |()|
-forces the argument, we can delete the first clause without changing program
+Is the first GRHS just inaccessible or even redundant? Although the match on
+|()| forces the argument, we can delete the first GRHS without changing program
 semantics, so clearly it is redundant.
 \ryan{Wait, wouldn't deleting the first clause (with its two GRHSs) change its
 semantics? With the first clause present, |g| $\bot$ = $\bot$. Without the
 first clause, |g| $\bot$ = |3|. Or am I missing something?}
-But that wouldn't be true if the second
-clause wasn't there to ``keep alive'' the |()| pattern!
+\sg{I meant the first \emph{GRHS}, not the whole syntactic clause.}
+But that wouldn't be true if the second GRHS wasn't there to ``keep alive'' the
+|()| pattern!
 
 Here is the corresponding annotated tree after checking:
 
@@ -730,6 +732,7 @@ process of generating inhabitants can be treated separately from the process
 of pattern match checking
 \ryan{We inconsistently switch between calling it ``pattern match checking''
 and ``coverage checking'' in the prose. We should adopt one term and stick with it.}
+\sg{I think I like ``coverage checking'' (after introducing it as ``pattern match coverage checking'' better, provided the term subsumes both exhaustivity and overlap checking.}
 
 Apart from generating inhabitants of the final uncovered set for non-exhaustive
 match warnings, there are two points at which we have to check whether
