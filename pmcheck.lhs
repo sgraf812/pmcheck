@@ -921,7 +921,7 @@ about it, by looking at the pattern when choosing a name for the variable.
     \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann(\reft{\Gamma}{\true}, t)$ (TODO: Write a function that collects the RHSs).
   \end{enumerate}
 
-\caption{Pattern-match checking}
+\caption{Pattern match checking}
 \label{fig:check}
 \end{figure}
 
@@ -1338,6 +1338,86 @@ of its data constructors. That will only work if its type ultimately reduces to
 a data type under the type constraints in $\nabla$. Rule \inhabitednocpl will
 accept unconditionally when its type is not a data type, \ie for $x : |Int ->
 Int|$.
+
+
+\section{Implementation}
+
+The implementation of our algorithm in GHC accumulates quite a few tricks that
+go beyond the pure formalism. This section is dedicated to describing these.
+
+Warning messages need to reference source syntax in order to be comprehensible
+by the user. At the same time, completeness checks involving GADTs need a
+type-checked program, so the only reasonable phase to run the Pattern match
+checker is between type-checking and desugaring to GHC Core, a typed
+intermediate representation lacking the connection to source syntax.
+We perform pattern match checking in the same tree traversal as desugaring.
+
+\sg{New implementation has 3850 lines, out of which 1753 is code. Previous impl
+as of GHC 8.6.5 had 3118 lines, out of which 1438 were code. Not sure how to
+sell that.}
+
+\subsection{Interleaving $\unc$ and $\ann$}
+
+\begin{figure}
+\[ \ruleform{ \uncann(\Theta, t_G) = (\Theta, \Ant) } \]
+\[
+\begin{array}{lcl}
+\uncann(\reft{\Gamma}{\Phi}, \gdtrhs{n}) &=& \begin{cases}
+    (\reft{\Gamma}{\false}, \antred{n}), & \generate(\Theta) = \emptyset \\
+    (\reft{\Gamma}{\false}, \antrhs{n}), & \text{otherwise} \\
+  \end{cases} \\
+\unc(\Theta, \gdtseq{t_G}{u_G}) &=& (\antseq{t_A}{u_A}, \Theta_2) \hspace{0.5em} \text{where} \begin{array}{l}(t_A, \Theta_1) = \uncann(\Theta, t_G) \\ (u_A, \Theta_2) = \uncann(\Theta_1, u_G) \end{array} \\
+\unc(\Theta, \gdtguard{(\grdbang{x})}{t}) &=& \begin{cases}
+    \ann(\Theta \andtheta (x \ntermeq \bot), t), & \generate(\Theta \andtheta (x \termeq \bot)) = \emptyset \\
+    \antdiv{\ann(\Theta \andtheta (x \ntermeq \bot), t)} & \text{otherwise} \\
+  \end{cases} \\
+\unc(\Theta \andtheta (x \ntermeq \bot), t) \\
+\unc(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \unc(\Theta \andtheta (x \termeq e), t) \\
+\unc(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& (\Theta \andtheta (x \ntermeq K)) \uniontheta \unc(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
+\end{array}
+\]
+\[ \ruleform{ \ann(\Delta, t_G) = t_A } \]
+\[
+\begin{array}{lcl}
+\ann(\Theta,\gdtrhs{n}) &=& \begin{cases}
+    \antred{n}, & \generate(\Theta) = \emptyset \\
+    \antrhs{n}, & \text{otherwise} \\
+  \end{cases} \\
+\ann(\Theta, (\gdtseq{t}{u})) &=& \antseq{\ann(\Theta, t)}{\ann(\unc(\Theta, t), u)} \\
+\ann(\Theta, \gdtguard{(\grdbang{x})}{t}) &=& \begin{cases}
+    \ann(\Theta \andtheta (x \ntermeq \bot), t), & \generate(\Theta \andtheta (x \termeq \bot)) = \emptyset \\
+    \antdiv{\ann(\Theta \andtheta (x \ntermeq \bot), t)} & \text{otherwise} \\
+  \end{cases} \\
+\ann(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \ann(\Theta \andtheta (x \termeq e), t) \\
+\ann(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& \ann(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
+\end{array}
+\]
+
+\caption{Pattern match checking}
+\label{fig:fastcheck}
+\end{figure}
+
+The set of reaching values is an argument to both $\unc$ and $\ann$. given a
+particular set of reaching values and a guard tree, one can see by a simple
+inductive argument that both $\unc$ and $\ann$ are always called at the same
+arguments! Hence for an implementation it makes sense to compute both results
+together, if only for not having to recompute the results of $\unc$ again in
+$\ann$.
+
+But there's more: Looking at the last clause of $\unc$ in \cref{fig:check},
+we can see that we syntactically duplicate $\Theta$ every time we have a
+pattern guard. That can amount to exponential growth of the refinement
+predicate in the worst case and for the time to prove it empty!
+
+Clearly, the space usage won't actually grow exponentially due to sharing in
+the implementation, but the problems for runtime performance remain.
+What we really want is to summarise a $\Theta$ into a more compact canonical
+form before doing these kinds of \emph{splits}. But that's exactly what
+$\nabla$ is! Therefore, in our implementation we don't really build up a
+refinement type but pass around the result of calling $\construct$ on what
+would have been the set of reaching values.
+
+You can see the resulting definition in \cref{fig:fastcheck}.
 
 %\listoftodos\relax
 
