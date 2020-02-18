@@ -400,6 +400,12 @@ v' (Just !x) = 1
 \section{Overview over Our Solution}
 
 \begin{figure}
+\includegraphics{pipeline.eps}
+\caption{Bird's eye view of pattern match checking}
+\label{fig:pipeline}
+\end{figure}
+
+\begin{figure}
 \centering
 \[ \textbf{Guard Syntax} \]
 \[
@@ -409,7 +415,7 @@ v' (Just !x) = 1
   x,y,a,b     \in &\Var &         & \\
   \tau,\sigma \in &\Type&         & \\
   e \in           &\Expr&\Coloneqq& x \\
-                  &     &\mid     & \expconapp{K}{\tau}{\sigma}{\gamma}{e} \\ % TODO: We should probably have univ tvs split from ex
+                  &     &\mid     & \expconapp{K}{\tau}{\sigma}{\gamma}{e} \\
                   &     &\mid     & ... \\
 \end{array} &
 \begin{array}{rlcl}
@@ -452,10 +458,31 @@ v' (Just !x) = 1
 \label{fig:syn}
 \end{figure}
 
+In this section, we aim to provide an intuitive understanding of our pattern
+match checking algorithm, by way of deriving the intermediate representations
+of the pipeline step by step from motivating examples.
+
+%TODO: Not sure how I can tell ipe (the program from which I exported the
+%      graphics) to use the ACM font
+\Cref{fig:pipeline} depicts a high-level overview over this pipeline.
+Desugaring the complex source Haskell syntax to the very elementary language of
+guard trees $\Gdt$ via $\ds$ is an incredible simplification for the checking
+process. At the same time, $\ds$ is the only transformation that is specific to
+Haskell, implying easy applicability to other languages. The resulting guard
+tree is then processed by two different functions, $\ann$ and $\unc$, which
+compute redundancy information and uncovered patterns, respectively. $\ann$
+boils down this information into an annotated tree $\Ant$, for which the set of
+redundant and inaccessible right-hand sides can be computed in a final pass of
+$\red$ \sg{TODO: Write $\red$}. $\unc$ on the other hand returns a
+\emph{refinment type} representing the set of \emph{uncovered values}, for
+which $\generate$ can generate the inhabiting patterns to show to the user.
+
+\subsection{Desugaring to Guard Trees}
+
 \begin{figure}
 \[
-%TODO: gdtseq and antseq are inconsistent. Also the guard case should probably
-%      have an incoming edge, but then we have an overfull hbox.
+%TODO: Guard and MayDiverge should probably have an incoming edge (-|), but
+%      then we have an overfull hbox.
 \begin{array}{cc}
   \begin{array}{rcll}
     \vcenter{\hbox{\begin{forest}
