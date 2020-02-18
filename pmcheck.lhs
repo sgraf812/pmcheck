@@ -545,19 +545,16 @@ liftEq mx my
   | Just x <- mx,  Just y <- my  | x == y     = True
                                  | otherwise  = False
 \end{code}
-Transforming the first clause with its single GRHS easy.
-But the second clause already had two GRHSs, so we need to use
-\emph{nested} pattern guards.  This is not a feature that Haskell offers (yet),
-but it allows a very convenient uniformity for our purposes:
-after the successful match on the first two guards
-left-to-right, we try to match each of the GRHSs in turn, top-to-bottom (and
-their individual guards left-to-right).
+Transforming the first clause with its single GRHS is easy. But the second
+clause already had two GRHSs, so we need to use \emph{nested} pattern guards.
+This is not a feature that Haskell offers (yet), but it allows a very
+convenient uniformity for our purposes: after the successful match on the first
+two guards left-to-right, we try to match each of the GRHSs in turn,
+top-to-bottom (and their individual guards left-to-right).
 
-% In fact, it seems rather arbitrary to
-% only allow one level of nested guards!
-Hence our algorithm desugars the source
-syntax to the following \emph{guard tree} (see \cref{fig:syn} for the full
-syntax and \cref{fig:grphnot} the corresponding graphical notation):
+Hence our algorithm desugars the source syntax to the following \emph{guard
+tree} (see \cref{fig:syn} for the full syntax and \cref{fig:grphnot} the
+corresponding graphical notation):
 
 \sg{TODO: Make the connection between textual syntax and graphic representation.}
 \sg{The bangs are distracting. Also the otherwise. Also binding the temporary.}
