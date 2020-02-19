@@ -419,7 +419,7 @@ v' (Just !x) = 1
                   &     &\mid     & ... \\
 \end{array} &
 \begin{array}{rlcl}
-  n      \in      &\mathbb{N}&    & \\
+  k,n,m  \in      &\mathbb{N}&    & \\
 
   \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
 
@@ -604,7 +604,7 @@ Pattern guards in $\Grd$ are the only guards that can possibly fail to match,
 in which case the value of the scrutinee was not of the shape of the
 constructor application it was matched against. The $\Gdt$ tree language
 determines how to cope with a failed guard. Left-to-right matching semantics is
-captured by $\gdtguard{}{\hspace{-0.5em}}$, whereas top-to-bottom backtracking
+captured by $\gdtguard{}{\hspace{-0.6em}}$, whereas top-to-bottom backtracking
 is expressed by sequence ($\gdtseq{}{}$). The leaves in a guard tree each
 correspond to a GRHS.
 
@@ -783,12 +783,13 @@ worst-case complexity here. That feels a bit out of place.}
 \section{Formalism}
 
 The previous section gave insights into how we represent pattern match checking
-problems as clause trees and provided an intuition for how to check them for
+problems as guard trees and provided an intuition for how to check them for
 exhaustiveness and redundancy. This section formalises these intuitions in
 terms of the syntax (\cf \cref{fig:syn}) we introduced earlier.
 
-As in the previous section, this comes in two main parts: Pattern match
-checking and finding inhabitants of the arising refinement types.
+As in the previous section, this comes in three main parts: Desugaring, Pattern
+match checking and finding inhabitants of the arising refinement types, but the
+latter subtask proves challenging enough to warrant two additional subsections.
 
 \subsection{Desugaring to Guard Trees}
 
@@ -868,14 +869,17 @@ Under $\ds$, this desugars to
     [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{zs}{x_2}$} [2]]]
 \end{forest}
 
-The definition of $\ds$ is mostly straight-forward, but a little expansive
-because of the realistic source language. Its most intricate job is keeping
-track of all the renaming going on to resolve name mismatches. Other than
-that, the desugaring follows from the restrictions on the $\Grd$ language.
+The definition of $\ds$ is straight-forward, but a little expansive because of
+the realistic source language. Its most intricate job is keeping track of all
+the renaming going on to resolve name mismatches. Other than that, the
+desugaring follows from the restrictions on the $\Grd$ language, such as the
+fact that source-level pattern guards also need to emit a bang guard on the
+variable representing the scrutinee.
 
 Note how our naive desugaring function generates an abundance of fresh
-temporary variables. In pratice, the implementation of $\ds$ can be smarter
-about it, by looking at the pattern when choosing a name for the variable.
+temporary variables. In practice, the implementation of $\ds$ can be smarter
+about it, by looking at the pattern (which might be a variable match or
+|@|-pattern) when choosing a name for the variable.
 
 \subsection{Checking Guard Trees}
 
@@ -912,17 +916,25 @@ about it, by looking at the pattern when choosing a name for the variable.
     \ann(\Theta \andtheta (x \ntermeq \bot), t), & \generate(\Theta \andtheta (x \termeq \bot)) = \emptyset \\
     \antdiv{\ann(\Theta \andtheta (x \ntermeq \bot), t)} & \text{otherwise} \\
   \end{cases} \\
-\ann(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \ann(\Theta \andtheta (x \termeq e), t) \\
+\ann(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \ann(\Theta \andtheta (\ctlet{x}{e}), t) \\
 \ann(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& \ann(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
-
-\[ \textbf{Putting it all together} \]
-  \begin{enumerate}
-    \item[(0)] Input: Context with match vars $\Gamma$ and desugared $\Gdt$ $t$
-    \item Report $n$ pattern vectors of $\generate(\unc(\reft{\Gamma}{\true}, t))$ as uncovered
-    \item Report the collected redundant and not-redundant-but-inaccessible clauses in $\ann(\reft{\Gamma}{\true}, t)$ (TODO: Write a function that collects the RHSs).
-  \end{enumerate}
+\[ \ruleform{ \red(t_A) = (\overline{k}, \overline{n}, \overline{m}) } \]
+\[
+\begin{array}{lcl}
+\red(\antrhs{n}) &=& (n, \epsilon, \epsilon) \\
+\red(\antred{n}) &=& (\epsilon, n, \epsilon) \\
+\red(\antseq{t}{u}) &=& (\overline{k}\,\overline{k'}, \overline{n}\,\overline{n'}, \overline{m}\,\overline{m'}) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
+    (\overline{k}, \overline{n}, \overline{m}) &=& \red(t) \\
+    (\overline{k'}, \overline{n'}, \overline{m'}) &=& \red(u) \\
+  \end{array} \\
+\red(\antdiv{t}) &=& \begin{cases}
+    (\epsilon, m, \overline{m'}) & \text{if $\red(t) = (\epsilon, \epsilon, m\,\overline{m'})$} \\
+    \red(t) & \text{otherwise} \\
+  \end{cases} \\
+\end{array}
+\]
 
 \caption{Pattern match checking}
 \label{fig:check}
@@ -931,17 +943,20 @@ about it, by looking at the pattern when choosing a name for the variable.
 \Cref{fig:check} shows the two main functions for checking guard trees. $\unc$
 carries out exhaustiveness checking by computing the set of uncovered values
 for a particular guard tree, whereas $\ann$ computes the corresponding
-annotated tree, capturing redundancy information.
+annotated tree, capturing redundancy information. $\red$ extracts a triple of
+accessible, (just) inaccessible and (even) redundant GRHS from such an
+annotated tree.
 
-Both functions take as input the set of values \emph{reaching} the particular
-guard tree node passed in as second parameter. The definition of $\unc$ follows
-the intuition we built up earlier: It refines the set of reaching values as a
-subset of it falls through from one clause to the next. This is most visible in
-the $\gdtseq{}{}$ case (top-to-bottom composition), where the set of values
-reaching the right (or bottom) child is exactly the set of values that were
-uncovered by the left (or top) child on the set of values reaching the whole
-node. A GRHS covers every reaching value. The left-to-right semantics of
-$\gdtguard{}{}$ are respected by refining the set of values reaching the
+Both checking functions take as input the set of values \emph{reaching} the
+particular guard tree node passed in as second parameter. If no value reaches a
+particular tree node, that node is inaccessible. The definition of $\unc$
+follows the intuition we built up earlier: It refines the set of reaching
+values as a subset of it falls through from one clause to the next. This is
+most visible in the $\gdtseq{}{}$ case (top-to-bottom composition), where the
+set of values reaching the right (or bottom) child is exactly the set of values
+that were uncovered by the left (or top) child on the set of values reaching
+the whole node. A GRHS covers every reaching value. The left-to-right semantics
+of $\gdtguard{}{\hspace{-0.6em}}$ are respected by refining the set of values reaching the
 wrapped subtree, depending on the particular guard. Bang guards and let
 bindings don't do anything beyond that refinement, whereas pattern guards
 additionally account for the possibility of a failed pattern match. Note that
@@ -963,8 +978,11 @@ and we need to wrap the annotated subtree in a \lightning{}.
 Pattern guard semantics are important for $\unc$ and bang guard semantics are
 important for $\ann$. But what about let bindings? They are in fact completely
 uninteresting to the checking process, but making sense of them is important
-for the precision of the emptiness check involving $\generate$, as we'll see
-in \cref{ssec:gen}.
+for the precision of the emptiness check involving $\generate$. Of course,
+``making sense'' of an expression is an open-ended endeavour, but we'll
+see a few reasonable ways to improve precision considerably at almost no cost,
+both in \cref{ssec:extinert} and \sg{TODO: Reference CoreMap/semantic equality
+extension, and possibly an extension for linear arithmetic or boolean logic}.
 
 
 \subsection{Generating Inhabitants of a Refinement Type}
@@ -1047,14 +1065,15 @@ But what \emph{is} $\nabla$? To a first approximation, it is a set of mutually
 compatible constraints $\delta$ (or a proven incomatibility $\false$ between
 them). It is also a unifier to the particular $\Phi$ it is constructed for, in
 that the recorded constraints are valid assignments for the variables occuring
-in the orginal predicate \sg{This is not true of $\false$}. Each $\nabla$ is
-the trace of commitments to a left or right disjunct in a $\Phi$ \sg{Not sure
-how to say this more accurately}, which are checked in isolation. So in
-contrast to $\Phi$, there is no disjunction in $\Delta$. Which makes it easy to
-check if a new constraint is compatible with the existing ones without any
-backtracking. Another fundamental difference is that $\delta$ has no binding
-construts (so every variable has to be bound in the $\Gamma$ part of $\nabla$),
-whereas pattern bindings in $\varphi$ bind constructor arguments.
+in the orginal predicate \sg{This is not true of $\false$, but maybe we can
+gloss over that fact?}. Each $\nabla$ is the trace of commitments to a left or
+right disjunct in a $\Phi$ \sg{Not sure how to say this more accurately}, which
+are checked in isolation. So in contrast to $\Phi$, there is no disjunction in
+$\Delta$, which makes it easy to check if a new constraint is compatible with
+the existing ones without any backtracking. Another fundamental difference is
+that $\delta$ has no binding constructs (so every variable has to be bound in
+the $\Gamma$ part of $\nabla$), whereas pattern bindings in $\varphi$ bind
+constructor arguments.
 
 $\construct$ is the function that breaks down a $\Phi$ into multiple $\nabla$s.
 At the heart of $\construct$ is adding a $\varphi$ literal to the $\nabla$
@@ -1063,6 +1082,7 @@ under construction via $\!\addphi\!$ and filtering out any unsuccessful attempts
 by the equivalent of a |concatMap|, whereas a disjunction corresponds to a
 plain union.
 
+\sg{$\expand$ undoubtly needs some love, but that's a TODO for later.}
 Expanding a $\nabla$ to a pattern vector in $\expand$ is syntactically heavy, but
 straightforward: When there is a positive constraint like
 $x \termeq |Just y|$ in $\Delta$ for the head $x$ of the variable vector of
@@ -1077,16 +1097,26 @@ $x$ in its left-hand side ($x \termeq y \in \Delta \Rightarrow (\Delta\,\cap\,x
 = x \termeq y)$, foreshadowing notation from \cref{fig:add}). For $\expand$ to
 be well-defined, there needs to be at most one positive constraint in $\Delta$.
 
+\noindent
 Thus, constraints within $\nabla$s constructed by $\!\addphi\!$ satisfy a
-number of well-formedness constraints, like mutual compatibility, triangular
-form and the fact that there is at most one positive constraint $x \termeq
-\mathunderscore$ per variable $x$. We refer to such $\nabla$s as an \emph{inert
-set}, in the sense that constraints inside it satisfy it are of canonical form
-and already checked for mutual compatibility, in analogy to a typechecker's
-implementation \sg{Feel free to flesh out or correct this analogy}.
+number of well-formedness constraints:
 
+\begin{enumerate}
+  \item[\inert{1}] \emph{Mutual compatibility}: No two constraints in $\nabla$ should
+    conflict with each other.
+  \item[\inert{2}] \emph{Triangular form}: A $x \termeq y$ constraint implies absence
+    of any other constraints mentioning |x| in its left-hand side.
+  \item[\inert{3}] \emph{Single solution}: There is at most one positive constraint $x
+    \termeq \mathunderscore$ per variable |x|.
+\end{enumerate}
+
+We refer to such $\nabla$s as an \emph{inert set}, in the sense that its
+constraints are of canonical form and already checked for mutual compatibility,
+in analogy to a typechecker's implementation.
+\sg{Feel free to flesh out or correct this analogy}
 
 \subsection{Extending the inert set}
+\label{ssec:extinert}
 
 \begin{figure}
 \centering
@@ -1186,14 +1216,16 @@ It does so by expressing a $\varphi$ in terms of once again simpler constraints
 $\delta$ and calling out to $\!\adddelta\!$. Specifically, for a lack of
 binding constructs in $\delta$, pattern bindings extend the context and
 disperse into separate type constraints and a positive constructor constraint
-arising from the binding. The fourth case of $\!\adddelta\!$ makes sense of let
-bindings: In case the right-hand side was a constructor application (which is
-not to be confused with a pattern binding, if only for the difference in
-binding semantics!), we add appropriate positive constructor and type
-constraints, as well as recurse into the field expressions, which might in turn
-contain nested constructor applications. The last case of $\!\addphi\!$ turns
-the syntactically and semantically identical subset of $\varphi$ into $\delta$
-and adds that constraint via $\!\adddelta\!$.
+arising from the binding. The fourth case of $\!\adddelta\!$ finally performs
+some limited, but important reasoning about let bindings: In case the
+right-hand side was a constructor application (which is not to be confused with
+a pattern binding, if only for the difference in binding semantics!), we add
+appropriate positive constructor and type constraints, as well as recurse into
+the field expressions, which might in turn contain nested constructor
+applications. All other let bindings are simply discarded. We'll see an
+extension \sg{TODO reference CoreMap} which will expand here. The last case of
+$\!\addphi\!$ turns the syntactically and semantically identical subset of
+$\varphi$ into $\delta$ and adds that constraint via $\!\adddelta\!$.
 
 Which brings us to the prime unification procedure, $\!\adddelta\!$.
 Consider adding a positive constructor constraint like $x \termeq |Just y|$:
@@ -1202,16 +1234,21 @@ involving the representative of $x$ with \emph{that same constructor}. Let's say
 there is $\Delta(x) = z$ and $z \termeq |Just u| \in \Delta$. Then
 $\!\adddelta\!$ decomposes the new constraint just like a classic unification
 algorithm, by equating type and term variables with new constraints, \ie $y
-\termeq u$.
+\termeq u$. The original constraint, although not conflicting (thus maintaining
+wellformed-ness condition \inert{1}), is not added to the inert set because of
+\inert{3}.
+
 If there was no positive constructor constraint with the same constructor, it
 will look for such a constraint involving a different constructor, like $x
 \termeq |Nothing|$. In this case the new constraint is incompatible by
-\emph{generativity} of data constructors \cite{eisenberg:dependent}. There
-are two other ways in which the constraint can be incompatible: If there was a
-negative constructor constraint $x \ntermeq |Just|$ or if any of the fields
-were not inhabited, which is checked by the $\inhabited{\nabla}{x}$ judgment in
-\cref{fig:inh}. Otherwise, the constraint is compatible and is added to
-$\Delta$.
+\emph{generativity} of data constructors \cite{eisenberg:dependent}.
+\sg{We can also cite injectivity to justify decomposition above, but that would
+serve no other purpose than sounding smart?!}
+There are two other ways in which the constraint can be incompatible: If there
+was a negative constructor constraint $x \ntermeq |Just|$ or if any of the
+fields were not inhabited, which is checked by the $\inhabited{\nabla}{x}$
+judgment in \cref{fig:inh}. Otherwise, the constraint is compatible and is
+added to $\Delta$.
 
 Adding a negative constructor constraint $x \ntermeq Just$ is quite
 similar, so is handling of positive and negative constraints involving $\bot$.
@@ -1226,26 +1263,26 @@ this paper or our implementation) to assert that the constraint is consistent
 with the inert set, we have to test \emph{all} variables in the domain of
 $\Gamma$ for inhabitants, because the new type constraint could have rendered
 a type empty. To demonstrate why this is necessary, imagine we have $\ctxt{x :
-a}{x \ntermeq \bot}$ and try to add $a ~ |Void|$. Although the type constraint
-is consistent, $x$ in $\ctxt{x : a}{x \ntermeq \bot, a ~ |Void|}$ is no longer
-inhabited. There is room for being smart about which variables we have to
-re-check: For example, we can exclude variables whose type is a non-GADT data
-type. \sg{That trick probably belongs in the implementation section.}
+a}{x \ntermeq \bot}$ and try to add $a \typeeq |Void|$. Although the type
+constraint is consistent, $x$ in $\ctxt{x : a}{x \ntermeq \bot, a \typeeq
+|Void|}$ is no longer inhabited. There is room for being smart about which
+variables we have to re-check: For example, we can exclude variables whose type
+is a non-GADT data type. \sg{That trick probably belongs in the implementation
+section. Although it's quite boring and ad-hoc.}
 
 The last case of $\!\adddelta\!$ equates two variables ($x \termeq y$) by
 merging their equivalence classes. Consider the case where $x$ and $y$ don't
 already belong to the same equivalence class, so have different representatives
 $\Delta(x)$ and $\Delta(y)$. $\Delta(y)$ is arbitrarily chosen to be the new
-representative of the merged equivalence class. Now to uphold one of the
-well-formedness conditions \sg{Which one? Better have a list of them and
-reference them here.}, all constraints mentioning $\Delta(x)$ have to be
-removed and renamed in terms of $\Delta(y)$ and then re-added to $\Delta$. That
-might fail, because $\Delta(x)$ might have a constraint that conflicts with
-constraints on $\Delta(y)$, so better use $\!\adddelta\!$ rather than add it
-blindly to $\Delta$.
+representative of the merged equivalence class. Now, to uphold the
+well-formedness condition \inert{2}, all constraints mentioning $\Delta(x)$
+have to be removed and renamed in terms of $\Delta(y)$ and then re-added to
+$\Delta$. That might fail, because $\Delta(x)$ might have a constraint that
+conflicts with constraints on $\Delta(y)$, so better use $\!\adddelta\!$ rather
+than add it blindly to $\Delta$.
 
 
-\subsection{Inhabitance Test}
+\subsection{Inhabitation Test}
 
 \begin{figure}
 \centering
@@ -1326,7 +1363,7 @@ blindly to $\Delta$.
 \end{figure}
 
 \sg{We need to find better subsection titles that clearly distinguish
-"Testing ($\Theta$) for Emptiness" from "Inhabitance Test(ing a
+"Testing ($\Theta$) for Emptiness" from "Inhabitation Test(ing a
 particular variable in $\nabla$)".}
 The process for adding a constraint to an inert set above (which turned out to
 be a unification procedure in disguise) frequently made use of an
@@ -1342,6 +1379,30 @@ a data type under the type constraints in $\nabla$. Rule \inhabitednocpl will
 accept unconditionally when its type is not a data type, \ie for $x : |Int ->
 Int|$.
 
+Note that the outlined approach is complete in the sense that
+$\inhabited{\nabla}{x}$ is derivable (if and) only if |x| is actually inhabited
+in $\nabla$, because that means we don't have any $\nabla$s floating around
+in the checking process that actually aren't inhabited and trigger false
+positive warnings. But that also means that the $\inhabited{}{}$ relation is
+undecidable! Consider the following example:
+\begin{code}
+data T = MkT !T
+f :: SMaybe T -> ()
+f SNothing = ()
+\end{code}
+
+This is exhaustive, because |T| is an uninhabited type. Upon adding the constraint
+$x \ntermeq |SNothing|$ on the match variable |x| via $\!\adddelta\!$, we
+perform an inhabitation test, which tries to instantiate the $|SJust|$ constructor
+via \inhabitedinst. That implies adding (via $\!\adddelta\!$) the constraints
+$x \termeq |SJust y|, y \ntermeq \bot$, the latter of which leads to an
+inhabitation test on |y|. That leads to instantiation of the |MkT| constructor,
+which leads to constraints $y \termeq |MkT z|, z \ntermeq \bot$, and so on for
+|z| \etc. An infinite chain of fruitless instantiation attempts!
+
+In practice, we implement a fuel-based approach that conservatively assumes
+that a variable is inhabited after $n$ such iterations and consider
+supplementing that with a simple termination analysis in the future.
 
 \section{Implementation}
 
@@ -1478,7 +1539,7 @@ are bound. That makes one wonder why we record a fact like $t_1 \ntermeq
 |True|$ in the first place. Some smart "garbage collection" process might get
 rid of this additional information when falling through to the next equation,
 where the variable is out of scope and can't be accessed. The same procedure
-could even find out that in the particular case of the split that the $\nabla$ 
+could even find out that in the particular case of the split that the $\nabla$
 falling through from the |f1| match models a superset of the $\nabla$ falling
 through from the |f2| match (which could additionally diverge when calling
 |f2|). This approach seemed far to complicated for us to pursue.
@@ -1486,8 +1547,8 @@ through from the |f2| match (which could additionally diverge when calling
 Instead, we implement \emph{throttling}: We limit the number of reaching
 $\nabla$s to a constant. Whenever a split would exceed this limit, we continue
 with the original reaching $\nabla$ (which as we established is a superset,
-thus a conservative estimate) instead. Intuitively, throttling corresponds to 
-\emph{forgetting} what we matched on in that particular sub-tree.
+thus a conservative estimate) instead. Intuitively, throttling corresponds to
+\emph{forgetting} what we matched on in that particular subtree.
 
 Throttling is refreshingly easy to implement! Only the last clause of
 $\uncann$, where splitting is performed, needs to change:
@@ -1517,7 +1578,7 @@ test suite.
 For the sake of our above example we'll use 4 as the limit. The initial $\nabla$
 will be split by the first equation in two, which in turn results in 4 $\nabla$s
 reaching the third equation. Here, splitting would result in 8 $\nabla$s, so
-we throttle, so that the same four $\nabla$s reaching the third equation also 
+we throttle, so that the same four $\nabla$s reaching the third equation also
 reach the fourth equation, and so on. Basically, every equation is checked for
 overlaps \emph{as if} it was the third equation, because we keep on forgetting
 what was matched beyond that.
