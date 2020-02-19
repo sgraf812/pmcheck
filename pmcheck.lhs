@@ -284,7 +284,40 @@ fit into a unified framework.
 
 \subsection{Guards}
 
-\TODO
+Guards are a flexible form of control flow in Haskell. Here is a function that
+demonstrates various capabilities of guards:
+
+\begin{code}
+guardDemo :: Char -> Char -> Int
+guardDemo c1 c2
+  | c1 == 'a' = 0
+  | 'b' <- c1 = 1
+  | let c1' = c1, 'c' <- c1', c2 == 'd' = 2
+  | otherwise = 3
+\end{code}
+
+The first guard is a boolean-valued guard that evaluates its right-hand side if
+the expression in the guard returns |True|. The second guard is
+a \emph{pattern guard} that evaluates its right-hand side if the pattern in
+the guard successfully matches. Moreover, a guard can have |let| bindings or
+even multiple checks, as the third guard demonstrates. Note that the fourth
+guard uses |otherwise|, a boolean guard that is guaranteed to match successfully.
+
+Guards can be thought of as a generalization of patterns, and we would like to
+include them as part of coverage checking. Checking guards is significantly more
+complicated than checking ordinary pattern matches, however, since guards can
+contain arbitrary expressions. Consider this implementation of the |signum|
+function:
+
+\begin{code}
+signum :: Int -> Int
+signum x
+  | x  > 0 =  1
+  | x == 0 =  0
+  | x  < 0 = -1
+\end{code}
+
+\ryan{Finish this}
 
 \subsection{Strictness}
 
