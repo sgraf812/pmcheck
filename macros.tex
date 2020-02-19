@@ -69,7 +69,7 @@
 \newcommand{\antseq}[2]{#1; #2}
 \newcommand{\antdiv}[1]{\texttt{MayDiverge} \; #1}
 
-% Graphc notation for trees
+% Graphic notation for trees
 \forestset{%
   clausetree/.style={
     for tree={
@@ -121,7 +121,6 @@
 \newcommand{\ctxt}[2]{#1 \triangleright #2}
 \newcommand{\adddelta}{\,\oplus_{\delta}\,}
 \newcommand{\addphi}{\,\oplus_{\varphi}\,}
-\newcommand{\addphiv}{\,\dot{\oplus}_{\varphi}\,} % "Vectorised" \addphi, hence \addphiv
 \newcommand{\inhabited}[2]{#1 \vdash #2}
 \newcommand{\inhabitedbot}{\textsc{$\vdash$Bot}\xspace}
 \newcommand{\inhabitednocpl}{\textsc{$\vdash$NoCpl}\xspace}
@@ -129,3 +128,5 @@
 \newcommand{\cons}[2]{\mathsf{Cons}(#1,#2)}
 \newcommand{\inst}[3]{\mathsf{Inst}(#1,#2,#3)}
 \newcommand{\rep}[2]{#1(#2)}
+\newcommand{\addphiv}{\,\dot{\oplus}_{\varphi}\,} % "Vectorised" \addphi, hence \addphiv
+\newcommand{\throttle}[2]{\left\lfloor#2\right\rfloor_{#1}}

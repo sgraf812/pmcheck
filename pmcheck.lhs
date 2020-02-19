@@ -1428,7 +1428,7 @@ first place, only whether there where any inhabitants at all! In this new
 representation, whether a vector of $\nabla$ is inhabited is easily seen by
 syntactically comparing it to the empty vector, $\epsilon$.
 
-\subsection{Graceful Degradation}
+\subsection{Throttling for Graceful Degradation}
 
 Even with the tweaks from \cref{ssec:interleaving}, checking certain pattern
 matches remains NP-hard \sg{Cite something here or earlier, bring an example}.
@@ -1439,14 +1439,88 @@ Consider the following example:
 \begin{code}
 f1, f2 :: Int -> Bool
 g _
-  | True <- f1 0, True <- f2 0 = ()
-  | True <- f1 1, True <- f2 1 = ()
-  | True <- f1 2, True <- f2 2 = ()
+  | True <- f1 0,  True <- f2 0  = ()
+  | True <- f1 1,  True <- f2 1  = ()
   ...
-  | True <- f1 N, True <- f2 N = ()
+  | True <- f1 N,  True <- f2 N  = ()
 \end{code}
 
+Here's the corresponding guard tree:
 
+\begin{forest}
+  grdtree,
+  [
+    [{$\grdlet{t_1}{|f1 0|}, \grdbang{t_1}, \grdcon{|True|}{t_1}, \grdlet{t_2}{|f2 0|}, \grdbang{t_2}, \grdcon{|True|}{t_2}$} [1]]
+    [{$\grdlet{t_3}{|f1 1|}, \grdbang{t_3}, \grdcon{|True|}{t_3}, \grdlet{t_4}{|f2 1|}, \grdbang{t_4}, \grdcon{|True|}{t_4}$} [2]]
+    [... [...]]
+    [{$\grdlet{t_{2*N+1}}{|f1 N|}, \grdbang{t_{2*N+1}}, \grdcon{|True|}{t_{2*N+1}}, \grdlet{t_{2*N+2}}{|f2 N|}, \grdbang{t_{2*N+2}}, \grdcon{|True|}{t_{2*N+2}}$} [N]]]
+\end{forest}
+
+Each of the $N$ GRHS can fall through in two distinct ways: By failure of
+either pattern guard involving |f1| or |f2|. Each way corresponds to a way in
+which the vector of reaching $\nabla$s is split. For example, the single,
+unconstrained $\nabla$ reaching the first equation will be split in one $\nabla$
+that records that either $t_1 \ntermeq |True|$ or that $t_2 \ntermeq |True|$.
+Now two $\nabla$s fall through and reach the second branch, where they are
+split into four $\nabla$s. This exponential pattern repeats $N$ times, and
+leads to horrible performance!
+
+There are a couple of ways to go about this. First off, that it is always OK to
+overapproximate the set of reaching values! Instead of \emph{refining} $\nabla$
+with the pattern guard, leading to a split, we could just continue with the
+original $\nabla$, thus forgetting about the $t_1 \ntermeq |True|$ or $t_2
+\ntermeq |True|$ constraints. In terms of the modeled refinement type, $\nabla$
+is still a superset of both refinements.
+
+Another realisation is that each of the temporary variables binding the pattern
+guard expressions are only scrutinised once, within the particular branch they
+are bound. That makes one wonder why we record a fact like $t_1 \ntermeq
+|True|$ in the first place. Some smart "garbage collection" process might get
+rid of this additional information when falling through to the next equation,
+where the variable is out of scope and can't be accessed. The same procedure
+could even find out that in the particular case of the split that the $\nabla$ 
+falling through from the |f1| match models a superset of the $\nabla$ falling
+through from the |f2| match (which could additionally diverge when calling
+|f2|). This approach seemed far to complicated for us to pursue.
+
+Instead, we implement \emph{throttling}: We limit the number of reaching
+$\nabla$s to a constant. Whenever a split would exceed this limit, we continue
+with the original reaching $\nabla$ (which as we established is a superset,
+thus a conservative estimate) instead. Intuitively, throttling corresponds to 
+\emph{forgetting} what we matched on in that particular sub-tree.
+
+Throttling is refreshingly easy to implement! Only the last clause of
+$\uncann$, where splitting is performed, needs to change:
+\[
+\begin{array}{r@@{\,}c@@{\,}lcl}
+\uncann(\overline{\nabla}, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t_G}) &=& (\throttle{\overline{\nabla}}{(\overline{\nabla} \addphiv (x \ntermeq K)) \, \overline{\nabla}'}, t_A) \\
+  && \quad \text{where } (\overline{\nabla}', t_A) = \uncann(\overline{\nabla} \addphiv (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t_G)
+\end{array}
+\]
+
+where the new throttling operator $\throttle{\mathunderscore}{\mathunderscore}$
+is defined simply as
+\[
+\begin{array}{lcl}
+\throttle{\overline{\nabla}'}{\overline{\nabla}} &=& \begin{cases}
+    \overline{\nabla} & \text{if $||\{\overline{\nabla}\}|| \leq K$} \\
+    \overline{\nabla}' & \text{otherwise}
+  \end{cases}
+\end{array}
+\]
+
+with $K$ being an arbitrary constant. We use 30 as an arbitrary limit in our
+implementation (dynamically configurable via a command-line flag) without
+noticing any false positives in terms of exhaustiveness warnings outside of the
+test suite.
+
+For the sake of our above example we'll use 4 as the limit. The initial $\nabla$
+will be split by the first equation in two, which in turn results in 4 $\nabla$s
+reaching the third equation. Here, splitting would result in 8 $\nabla$s, so
+we throttle, so that the same four $\nabla$s reaching the third equation also 
+reach the fourth equation, and so on. Basically, every equation is checked for
+overlaps \emph{as if} it was the third equation, because we keep on forgetting
+what was matched beyond that.
 
 %\listoftodos\relax
 
