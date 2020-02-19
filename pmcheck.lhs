@@ -1360,27 +1360,36 @@ as of GHC 8.6.5 had 3118 lines, out of which 1438 were code. Not sure how to
 sell that.}
 
 \subsection{Interleaving $\unc$ and $\ann$}
+\label{ssec:interleaving}
 
 \begin{figure}
-\[ \ruleform{ \uncann(\Theta, t_G) = (\Theta, \Ant) } \]
+\[ \ruleform{ \overline{\nabla} \addphiv \varphi = \overline{\nabla} } \]
+\[
+\begin{array}{r@@{\,}c@@{\,}lcl}
+\epsilon &\addphiv& \varphi &=& \epsilon \\
+(\nabla_1\,...\,\nabla_n) &\addphiv& \varphi &=& \begin{cases}
+    (\ctxt{\Gamma}{\Delta}) \, (\nabla_2\,...\,\nabla_n \addphiv \varphi) & \text{if $\ctxt{\Gamma}{\Delta} = \nabla \addphi \varphi$} \\
+    (\nabla_2\,...\,\nabla_n) \addphiv \varphi & \text{otherwise} \\
+  \end{cases} \\
+\end{array}
+\]
+\[ \ruleform{ \uncann(\overline{\nabla}, t_G) = (\overline{\nabla}, \Ant) } \]
 \[
 \begin{array}{lcl}
-\uncann(\reft{\Gamma}{\Phi}, \gdtrhs{n}) &=& \begin{cases}
-    (\reft{\Gamma}{\false}, \antred{n}), & \generate(\Theta) = \emptyset \\
-    (\reft{\Gamma}{\false}, \antrhs{n}), & \text{otherwise} \\
-  \end{cases} \\
-\uncann(\Theta, \gdtseq{t_G}{u_G}) &=& (\antseq{t_A}{u_A}, \Theta_2) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
-    (t_A, \Theta_1) &=& \uncann(\Theta, t_G) \\
-    (u_A, \Theta_2) &=& \uncann(\Theta_1, u_G)
+\uncann(\epsilon, \gdtrhs{n}) &=& (\epsilon, \antred{n}) \\
+\uncann(\overline{\nabla}, \gdtrhs{n}) &=& (\epsilon, \antrhs{n}) \\
+\uncann(\overline{\nabla}, \gdtseq{t_G}{u_G}) &=& (\overline{\nabla}_2, \antseq{t_A}{u_A}) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
+    (\overline{\nabla}_1, t_A) &=& \uncann(\overline{\nabla}, t_G) \\
+    (\overline{\nabla}_2, u_A) &=& \uncann(\overline{\nabla}_1, u_G)
   \end{array} \\
-\uncann(\Theta, \gdtguard{(\grdbang{x})}{t_G}) &=& \begin{cases}
-    (\Theta', t_A), & \generate(\Theta \andtheta (x \termeq \bot)) = \emptyset \\
-    (\Theta', \antdiv{t_A}) & \text{otherwise} \\
+\uncann(\overline{\nabla}, \gdtguard{(\grdbang{x})}{t_G}) &=& \begin{cases}
+    (\overline{\nabla}', t_A), & \overline{\nabla} \addphiv (x \termeq \bot) = \epsilon \\
+    (\overline{\nabla}', \antdiv{t_A}) & \text{otherwise} \\
   \end{cases} \\
-  && \quad \text{where } (\Theta', t_A) = \uncann(\Theta \andtheta (x \ntermeq \bot), t_G) \\
-\uncann(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \uncann(\Theta \andtheta (\ctlet{x}{e}), t) \\
-\uncann(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t_G}) &=& ((\Theta \andtheta (x \ntermeq K)) \uniontheta \Theta', t_A) \\
-  && \quad \text{where } (\Theta', t_A) = \uncann(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t_G) \\
+  && \quad \text{where } (\overline{\nabla}', t_A) = \uncann(\overline{\nabla} \addphiv (x \ntermeq \bot), t_G) \\
+\uncann(\overline{\nabla}, \gdtguard{(\grdlet{x}{e})}{t}) &=& \uncann(\overline{\nabla} \addphiv (\ctlet{x}{e}), t) \\
+\uncann(\overline{\nabla}, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t_G}) &=& ((\overline{\nabla} \addphiv (x \ntermeq K)) \, \overline{\nabla}', t_A) \\
+  && \quad \text{where } (\overline{\nabla}', t_A) = \uncann(\overline{\nabla} \addphiv (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t_G) \\
 \end{array}
 \]
 
@@ -1408,7 +1417,36 @@ $\nabla$ is! Therefore, in our implementation we don't really build up a
 refinement type but pass around the result of calling $\construct$ on what
 would have been the set of reaching values.
 
-You can see the resulting definition in \cref{fig:fastcheck}.
+You can see the resulting definition in \cref{fig:fastcheck}. The readability
+of the interleaving of both functions is clouded by unwrapping of pairs. Other
+than that, all references to $\Theta$ were replaced by a vector of $\nabla$s.
+$\uncann$ requires that these $\nabla$s are non-empty, \ie not $\false$. This
+invariant is maintained by adding $\varphi$ constraints through $\addphiv$,
+which filters out any $\nabla$ that would become empty. All mentions of
+$\generate$ are gone, because we never were interested in inhabitants in the
+first place, only whether there where any inhabitants at all! In this new
+representation, whether a vector of $\nabla$ is inhabited is easily seen by
+syntactically comparing it to the empty vector, $\epsilon$.
+
+\subsection{Graceful Degradation}
+
+Even with the tweaks from \cref{ssec:interleaving}, checking certain pattern
+matches remains NP-hard \sg{Cite something here or earlier, bring an example}.
+Naturally, there will be cases where we have to conservatively approximate in
+order not to slow down compilation too much. After all, pattern match checking
+is just a static analysis pass without any effect on the produced binary!
+Consider the following example:
+\begin{code}
+f1, f2 :: Int -> Bool
+g _
+  | True <- f1 0, True <- f2 0 = ()
+  | True <- f1 1, True <- f2 1 = ()
+  | True <- f1 2, True <- f2 2 = ()
+  ...
+  | True <- f1 N, True <- f2 N = ()
+\end{code}
+
+
 
 %\listoftodos\relax
 
