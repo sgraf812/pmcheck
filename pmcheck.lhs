@@ -729,10 +729,6 @@ g _              = 3
 Is the first GRHS just inaccessible or even redundant? Although the match on
 |()| forces the argument, we can delete the first GRHS without changing program
 semantics, so clearly it is redundant.
-\ryan{Wait, wouldn't deleting the first clause (with its two GRHSs) change its
-semantics? With the first clause present, |g| $\bot$ = $\bot$. Without the
-first clause, |g| $\bot$ = |3|. Or am I missing something?}
-\sg{I meant the first \emph{GRHS}, not the whole syntactic clause.}
 But that wouldn't be true if the second GRHS wasn't there to ``keep alive'' the
 |()| pattern!
 
