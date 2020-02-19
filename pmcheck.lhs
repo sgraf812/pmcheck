@@ -816,9 +816,10 @@ problems as guard trees and provided an intuition for how to check them for
 exhaustiveness and redundancy. This section formalises these intuitions in
 terms of the syntax (\cf \cref{fig:syn}) we introduced earlier.
 
-As in the previous section, this comes in three main parts: Desugaring, Pattern
-match checking and finding inhabitants of the arising refinement types, but the
-latter subtask proves challenging enough to warrant two additional subsections.
+As in the previous section, we divide this section into three main parts:
+desugaring, pattern match checking and finding inhabitants of the resulting
+refinement types. The latter subtask proves challenging enough to warrant two
+additional subsections.
 
 \subsection{Desugaring to Guard Trees}
 
@@ -905,10 +906,10 @@ desugaring follows from the restrictions on the $\Grd$ language, such as the
 fact that source-level pattern guards also need to emit a bang guard on the
 variable representing the scrutinee.
 
-Note how our naive desugaring function generates an abundance of fresh
+Note how our na{\"i}ve desugaring function generates an abundance of fresh
 temporary variables. In practice, the implementation of $\ds$ can be smarter
-about it, by looking at the pattern (which might be a variable match or
-|@|-pattern) when choosing a name for the variable.
+than this by looking at the pattern (which might be a variable match or
+|@|-pattern) when choosing a name for a variable.
 
 \subsection{Checking Guard Trees}
 
@@ -975,9 +976,11 @@ for a particular guard tree, whereas $\ann$ computes the corresponding
 annotated tree, capturing redundancy information. $\red$ extracts a triple of
 accessible, (just) inaccessible and (even) redundant GRHS from such an
 annotated tree.
+\ryan{The ``just'' and ``even'' parts of the previous sentence read strangely
+to me. Consider removing them, as I don't feel they add much.}
 
-Both checking functions take as input the set of values \emph{reaching} the
-particular guard tree node passed in as second parameter. If no value reaches a
+Both $\unc$ and $\ann$ take as their second parameter the set of values
+\emph{reaching} the particular guard tree node. If no value reaches a
 particular tree node, that node is inaccessible. The definition of $\unc$
 follows the intuition we built up earlier: It refines the set of reaching
 values as a subset of it falls through from one clause to the next. This is
@@ -989,7 +992,7 @@ of $\gdtguard{}{\hspace{-0.6em}}$ are respected by refining the set of values re
 wrapped subtree, depending on the particular guard. Bang guards and let
 bindings don't do anything beyond that refinement, whereas pattern guards
 additionally account for the possibility of a failed pattern match. Note that
-ultimately, a failing pattern guard is the only way in which the uncovered set
+a failing pattern guard is the \emph{only} way in which the uncovered set
 can become non-empty!
 
 When $\ann$ hits a GRHS, it asks $\generate$ for inhabitants of $\Theta$
@@ -1238,7 +1241,12 @@ in analogy to a typechecker's implementation.
 \end{figure}
 
 After tearing down abstraction after abstraction in the previous sections we
-nearly hit rock bottom: \Cref{fig:add} depicts how to add a $\varphi$
+nearly hit rock bottom:
+\ryan{I imagine you probably used the phrase ``hit rock bottom'' in the sense
+of almost being finished, but that phrase conjures up negative connotations in
+most situations. I would find another way to phrase this that doesn't sound
+so negative.}
+\Cref{fig:add} depicts how to add a $\varphi$
 constraint to an inert set $\nabla$.
 
 It does so by expressing a $\varphi$ in terms of once again simpler constraints
@@ -1273,6 +1281,10 @@ will look for such a constraint involving a different constructor, like $x
 \emph{generativity} of data constructors \cite{eisenberg:dependent}.
 \sg{We can also cite injectivity to justify decomposition above, but that would
 serve no other purpose than sounding smart?!}
+\ryan{Do we even need to cite anything at all here? As far as I understand it,
+generativity is a specific property of type constructors with respect to type
+inference. In other words, I don't think it applies here. Personally, I would
+just say something about |Just|/|Nothing| being a mistmatch and move on.}
 There are two other ways in which the constraint can be incompatible: If there
 was a negative constructor constraint $x \ntermeq |Just|$ or if any of the
 fields were not inhabited, which is checked by the $\inhabited{\nabla}{x}$
@@ -1280,8 +1292,8 @@ judgment in \cref{fig:inh}. Otherwise, the constraint is compatible and is
 added to $\Delta$.
 
 Adding a negative constructor constraint $x \ntermeq Just$ is quite
-similar, so is handling of positive and negative constraints involving $\bot$.
-The scheme is that whenever we add a negative constraint that doesn't
+similar, as is handling of positive and negative constraints involving $\bot$.
+The idea is that whenever we add a negative constraint that doesn't
 contradict with positive constraints, we still have to test if there are any
 inhabitants left.
 
@@ -1301,14 +1313,14 @@ section. Although it's quite boring and ad-hoc.}
 
 The last case of $\!\adddelta\!$ equates two variables ($x \termeq y$) by
 merging their equivalence classes. Consider the case where $x$ and $y$ don't
-already belong to the same equivalence class, so have different representatives
+already belong to the same equivalence class and thus have different representatives
 $\Delta(x)$ and $\Delta(y)$. $\Delta(y)$ is arbitrarily chosen to be the new
 representative of the merged equivalence class. Now, to uphold the
 well-formedness condition \inert{2}, all constraints mentioning $\Delta(x)$
 have to be removed and renamed in terms of $\Delta(y)$ and then re-added to
 $\Delta$. That might fail, because $\Delta(x)$ might have a constraint that
-conflicts with constraints on $\Delta(y)$, so better use $\!\adddelta\!$ rather
-than add it blindly to $\Delta$.
+conflicts with constraints on $\Delta(y)$, so it is better to use $\!\adddelta\!$ rather
+than to add it blindly to $\Delta$.
 
 
 \subsection{Inhabitation Test}
