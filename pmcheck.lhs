@@ -14,12 +14,6 @@
 
 %include custom.fmt
 
-% The following lines remove ACM stuff unneeded for prototyping
-% https://tex.stackexchange.com/a/346309/52414
-\settopmatter{printacmref=false} % Removes citation information below abstract
-\renewcommand\footnotetextcopyrightpermission[1]{} % removes footnote with conference information in first column
-\pagestyle{plain} % removes running headers
-
 %% Journal information
 %% Supplied to authors by publisher for camera-ready submission;
 %% use defaults for review submission.
