@@ -1522,6 +1522,12 @@ reach the fourth equation, and so on. Basically, every equation is checked for
 overlaps \emph{as if} it was the third equation, because we keep on forgetting
 what was matched beyond that.
 
+\sg{I'm not sure what other hacks we should mention beyond this. I don't think
+we want to write about ad-hoc details like 6.2 in GMTM, because they are
+specific to how $\Delta$ is represented (solved, canonical type constraints in
+particular). That's of limited value for other implementations and not a
+conceptual improvement.}
+
 %\listoftodos\relax
 
 %\nocite{*}
