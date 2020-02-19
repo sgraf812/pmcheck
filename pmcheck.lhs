@@ -473,9 +473,9 @@ tree is then processed by two different functions, $\ann$ and $\unc$, which
 compute redundancy information and uncovered patterns, respectively. $\ann$
 boils down this information into an annotated tree $\Ant$, for which the set of
 redundant and inaccessible right-hand sides can be computed in a final pass of
-$\red$ \sg{TODO: Write $\red$}. $\unc$ on the other hand returns a
-\emph{refinement type} representing the set of \emph{uncovered values}, for
-which $\generate$ can generate the inhabiting patterns to show to the user.
+$\red$. $\unc$ on the other hand returns a \emph{refinement type} representing
+the set of \emph{uncovered values}, for which $\generate$ can generate the
+inhabiting patterns to show to the user.
 
 \subsection{Desugaring to Guard Trees}
 
@@ -1404,6 +1404,49 @@ In practice, we implement a fuel-based approach that conservatively assumes
 that a variable is inhabited after $n$ such iterations and consider
 supplementing that with a simple termination analysis in the future.
 
+
+\section{Possible Extensions}
+
+
+\subsection{Long Distance Information}
+
+\TODO
+
+
+\subsection{Empty Case}
+
+\TODO
+
+
+\subsection{Identifying Semantically Equivalent Expressions}
+
+\sg{Or just ``View Patterns'' for a catchier title?}
+\TODO
+
+
+\subsection{Pattern Synonyms and \texttt{COMPLETE} Pragmas}
+
+\TODO
+
+
+\subsection{Literals}
+
+\TODO
+
+
+\subsection{Newtypes}
+
+\TODO
+
+
+\subsection{Strictness}
+
+\TODO
+
+
+\sg{Treat type information as an extension?}
+
+
 \section{Implementation}
 
 The implementation of our algorithm in GHC accumulates quite a few tricks that
@@ -1588,6 +1631,11 @@ we want to write about ad-hoc details like 6.2 in GMTM, because they are
 specific to how $\Delta$ is represented (solved, canonical type constraints in
 particular). That's of limited value for other implementations and not a
 conceptual improvement.}
+
+\sg{We could talk about when adding a type constraint, we only need to perform
+the inhabitation check on a subset of all variables. Namely those that aren't
+obviously of plain old ADT type. But the implementation doesn't currently do
+that hack, so it's a bit of a moot point.}
 
 %\listoftodos\relax
 
