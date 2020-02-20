@@ -459,10 +459,6 @@ the programmer to ensure that this invariant is upheld.
 
 \TODO
 
-\subsubsection{Long-distance information}
-
-\TODO
-
 \begin{figure}
 \centering
 \begin{verbatim}
