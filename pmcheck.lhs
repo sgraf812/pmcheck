@@ -306,12 +306,38 @@ function:
 \begin{code}
 signum :: Int -> Int
 signum x
-  | x  > 0 =  1
-  | x == 0 =  0
-  | x  < 0 = -1
+  | x > 0 = 1
+  | x == 0 = 0
+  | x < 0 = -1
 \end{code}
 
-\ryan{Finish this}
+Intuitively, |signum| is exhaustive since the combination of |(>)|, |(==)|, and
+|(<)| covers all possible |Int|s. This is much harder for a machine to check,
+however, since that would require knowledge about the properties of |Int|
+inequalities. In fact, coverage checking for guards in the general case is an
+undecidable problem. While we cannot accurately check \emph{all} uses of guards,
+we can at least give decent warnings for some commonly use cases for guards.
+For instance, take the following function that only uses pattern guards:
+
+\begin{code}
+not :: Bool -> Bool
+not b
+  | False <- b = True
+  | True <- b = False
+\end{code}
+
+|not| is clearly equivalent to the following function that matches on its argument
+without guards:
+
+\begin{code}
+not' :: Bool -> Bool
+not' False = True
+not' True = False
+\end{code}
+
+We would like our coverage checking algorithm to mark both |not| and |not'|
+as exhaustive, and \sysname does so. We explore the subset of guards that
+\sysname can check in more detail in \ryan{Cite relevant section}.
 
 \subsection{Strictness}
 
@@ -1273,7 +1299,7 @@ inference. In other words, I don't think it applies here. Personally, I would
 just say something about |Just|/|Nothing| being a mistmatch and move on.}
 \sg{True, but later on in the extensions section we will have Pattern Synonyms
 which specifically \emph{lack} generativity (at least without doing any
-reasoning about their defn). For example 
+reasoning about their defn). For example
 \begin{code}
 pattern P
 pattern Q
