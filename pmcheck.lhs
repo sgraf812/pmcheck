@@ -356,7 +356,7 @@ v SNothing = 0
 \end{code}
 
 The |SJust| constructor is strict in its field, and as a consequence,
-evaluating |SJust| $\bot$ to weak-head normal form will diverge.
+evaluating |SJust| $\bot$ to weak-head normal form (WHNF) will diverge.
 This has consequences when coverage checking functions that match on
 |SMaybe| values, such as |v|. The definition of |v| is curious, since it appears
 to omit a case for |SJust|. We could imagine adding one:
@@ -393,7 +393,10 @@ v' Nothing = 0
 v' (Just !x) = 1
 \end{code}
 
-\ryan{Finish me}
+The |Just| case in |v'| is unreachable for the same reasons that the |SJust| case in
+|v| is unreachable. Due to bang patterns, a strictness-aware coverage-checking
+algorithm must be consider the effects of strictness on any possible pattern,
+not just those arising from matching on data constructors with strict fields.
 
 \subsubsection{Newtypes}
 
@@ -403,13 +406,54 @@ v' (Just !x) = 1
 
 \TODO
 
-\subsubsection{Overload literals}
+\subsubsection{Overloaded literals}
+
+\TODO
+
+\subsubsection{View patterns}
 
 \TODO
 
 \subsubsection{Pattern synonyms}
 
-\TODO
+Pattern synonyms~\cite{patsyns} allow abstracting over patterns in a very general
+fashion. For example, one can define patterns that allow viewing Haskell's
+opaque |Text| data type as though it were a linked list of characters:
+
+\begin{code}
+pattern Nil :: Text
+pattern Nil <- (Text.null -> True)
+
+pattern Cons :: Char -> Text -> Text
+pattern Cons x xs <- (Text.uncons -> Just (x, xs))
+
+length :: Text -> Int
+length Nil = 0
+length (Cons x xs) = 1 + length xs
+\end{code}
+
+How should a coverage checker handle pattern synonyms? One idea is to simply look
+through the definitions of each pattern synonym and verify whether the underlying
+patterns are exhaustive. This would be undesirable, however, because (1) we would
+like to avoid leaking the implementation details of abstract pattern synonyms, and
+(2) even if we \emph{did} look at the underlying implementation, it would be
+challenging to automatically check that the combination of |Text.null| and
+|Text.uncons| is exhaustive.
+
+Intuitively, |Text.null| and |Text.uncons| are obviously exhaustive. GHC allows
+programmers to communicate this sort of intuition to the coverage checker in the
+form of |COMPLETE| sets.
+\ryan{Cite the |COMPLETE| section of the users guide.}
+A |COMPLETE| set is a combination of data constructors
+and pattern synonyms that should be regarded as exhaustive when a function matches
+on all of them.
+For example, declaring |{-# COMPLETE Nil, Cons #-}| is sufficient to make
+the definition of |length| above compile without any exhaustivity warnings.
+Since GHC does not (and cannot, in general) check that all of the members of
+a |COMPLETE| actually comprise a complete set of patterns, the burden is on
+the programmer to ensure that this invariant is upheld.
+
+\ryan{More?}
 
 \subsection{Term and type constraints}
 
