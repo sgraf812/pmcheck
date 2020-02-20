@@ -1467,7 +1467,8 @@ Clearly, neither option is satisfactory to implement |absurd|: The first one
 would actually return |undefined| when called with $\bot$, thus masking the
 original $\bot$ with the error thrown by |undefined|. The second one would
 diverge alright, but it is unfortunate that we still have to provide a RHS that
-we know will never be entered.
+we know will never be entered. In fact, our checking algorithm will mark the
+second option as having an inaccessible RHS!
 
 GHC provides an extension, called \extension{EmptyCase}, that introduces the
 following bit of new syntax:
