@@ -1443,15 +1443,63 @@ supplementing that with a simple termination analysis in the future.
 \section{Possible Extensions}
 
 
+
 \subsection{Long Distance Information}
+\label{ssec:ldi}
 
 \TODO
 
 
 \subsection{Empty Case}
 
-\TODO
+As can be seen in \cref{fig:srcsyn}, Haskell function definitions need to have
+at least one clause. That leads to an awkward situation when pattern matching
+on empty data types, like |Void|:
+\begin{code}
+absurd :: Void -> a
+absurd  x    = undefined
+absurd (!x)  = undefined
+\end{code}
 
+\noindent
+\sg{lhs2TeX chokes on wildcards and will format |absurd !x| as infix. Yuck}
+Clearly, neither option is satisfactory to implement |absurd|: The first one
+would actually return |undefined| when called with $\bot$, thus masking the
+original $\bot$ with the error thrown by |undefined|. The second one would
+diverge alright, but it is unfortunate that we still have to provide a RHS that
+we know will never be entered.
+
+GHC provides an extension, called \extension{EmptyCase}, that introduces the
+following bit of new syntax:
+\begin{code}
+absurd x = case x of {}
+\end{code}
+
+\noindent
+Such a |case| expression without any alternatives evaluates its argument to
+WHNF and crashes when evaluation returns.
+
+Although we did not give the syntax of |case| expressions in \cref{fig:srcsyn},
+it is quite easy to see that $\Gdt$ lacks expressive power to desugar
+\extension{EmptyCase} into, since all leaves in a guard tree need to have
+corresponding RHSs. Therefore, we need to introduce $\gdtempty$ to $\Gdt$ and
+$\antempty$ to $\Ant$. The new $\gdtempty$ case has to be handled by the
+checking functions and is a neutral element to $\gdtseq{}{}$ as far as $\unc$
+is concerned:
+\[
+\begin{array}{lcl}
+\unc(\Theta, \gdtempty) &=& \Theta \\
+\ann(\Theta, \gdtempty) &=& \antempty \\
+\end{array}
+\]
+
+Since \extension{EmptyCase}, unlike regular |case|, evaluates its scrutinee
+to WHNF \emph{before} matching any of the patterns, the set of reaching
+values is refined with a $x \ntermeq \bot$ constraint before traversing the
+guard tree. So, for checking an empty |case|, the call to $\unc$ looks like
+$\unc(\Theta \andtheta (x \ntermeq \bot), \gdtempty)$, where $\Theta$ is the
+context-sensitive set of reaching values, possibly enriched with long distance
+information (\cf \cref{ssec:ldi}).
 
 \subsection{Identifying Semantically Equivalent Expressions}
 

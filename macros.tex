@@ -30,12 +30,13 @@
 \newcommand{\rulename}[1]{\textsc{[#1]}}
 
 \newcommand{\ticket}[1]{\href{https://ghc.haskell.org/trac/ghc/ticket/#1}{\##1}}
+\newcommand{\extension}[1]{\texttt{#1}}
 
 \newcommand{\sg}[1]{\begin{color}{red}{\bf SG:} #1\end{color}}
 \newcommand{\simon}[1]{\begin{color}{purple}{\bf SLPJ:} #1\end{color}}
 \newcommand{\ryan}[1]{\begin{color}{orange}{\bf Ryan:} #1\end{color}}
 
-% This is the stuff from 2019
+
 % Types and Grd syntax
 \newcommand{\ty}[1]{\textsf{#1}\xspace}
 \newcommand{\Pat}{\ty{Pat}}
@@ -62,6 +63,7 @@
 \newcommand{\gdtrhs}[1]{\texttt{Rhs} \; #1}
 \newcommand{\gdtseq}[2]{#1; #2}
 \newcommand{\gdtguard}[2]{\texttt{Guard} \; #1 \; #2}
+\newcommand{\gdtempty}{\texttt{Empty}}
 
 % AnnTree Ant
 \newcommand{\Ant}{\ty{Ant}}
@@ -69,6 +71,7 @@
 \newcommand{\antrhs}[1]{\texttt{AccessibleRhs} \; #1}
 \newcommand{\antseq}[2]{#1; #2}
 \newcommand{\antdiv}[1]{\texttt{MayDiverge} \; #1}
+\newcommand{\antempty}{\texttt{AntEmpty}}
 
 % Graphic notation for trees
 \forestset{%
