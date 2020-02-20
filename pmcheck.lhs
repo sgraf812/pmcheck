@@ -535,6 +535,17 @@ not just those arising from matching on data constructors with strict fields.
 
 \TODO
 
+\subsection{A solved problem?}
+
+We are not the first to tackle the problem of coverage checking.
+\citet{gadtpm} develop a checking algorithm that handles many of the
+subtleties of GADTs, guards, and laziness mentioned earlier in this
+section. For the sake of brevity, we will refer to their algorithm
+as \gmtm (an abbreviation of ``GADTs Meet Their Match'', the name of the
+corresponding paper).
+
+\ryan{more details pls}
+
 \begin{figure}
 \centering
 \begin{verbatim}
