@@ -339,6 +339,135 @@ We would like our coverage checking algorithm to mark both |not| and |not'|
 as exhaustive, and \sysname does so. We explore the subset of guards that
 \sysname can check in more detail in \ryan{Cite relevant section}.
 
+\subsection{Programmable patterns}
+
+Expressions in guards are far from the only source of undecidability that the
+coverage checker must cope with. Both Haskell and GHC offer patterns that are
+impossible to check in the general case. We consider three such patterns
+here: overloaded literals, view patterns, and pattern synonyms.
+
+\subsubsection{Overloaded literals}
+
+Numeric literals in Haskell can be used at multiple types by virtue of being
+overloaded. For example, the literal |0|, when used as an expression, has
+|Num a => a| as its most general type. The |Num| class, in turn, has instances
+for |Int|, |Double|, and many other numeric data types, allowing |0|
+to inhabit those types with little fuss.
+
+In addition to their role as expression, overloaded literals can also be used
+as patterns. The |isZero| function below, for instance, can check whether any
+numeric value is equal to zero:
+
+\begin{code}
+isZero :: (Eq a, Num a) => a -> Bool
+isZero 0 = True
+isZero n = False
+\end{code}
+
+Why does |isZero| require an |Eq| constraint on top of a |Num| constraint? This
+is because when compiled, overloaded literal patterns essentially desugar to
+guards. As one example, |isZero| can be rewritten to use guards like so:
+
+\begin{code}
+isZero :: (Eq a, Num a) => a -> Bool
+isZero n | n == 0 = True
+isZero n = False
+\end{code}
+
+Desugaring overloaded literal patterns to guards directly like this is perhaps
+not always desirable, however, since that can make the coverage checker's job
+more difficult. For instance, if the |isZero n = False| clause were omitted,
+concluding that |isZero| is non-exhaustive would require reasoning about
+properties of the |Eq| and |Num| classes. For this reason, it can be worthwhile
+to have special checking treatment for common numeric types such as |Int| or
+|Double|. In general, however, coverage checking patterns with overloaded
+literals is undecidable.
+
+\subsubsection{View patterns}
+
+View patterns are a GHC extension that allow arbitrary computation to be performed
+while pattern matching. When a value |v| is matched against a view pattern |f -> p|,
+the match is successful when |f v| successfully matches against the pattern |p|.
+For example, one can use view patterns to succintly define a function that computes
+the length of Haskell's opaque |Text| data type:
+
+\begin{code}
+Text.null :: Text -> Bool
+  -- Checks if a Text is empty
+Text.uncons :: Text -> Maybe (Char, Text)
+  -- If a Text is non-empty, return Just (x, xs),
+  -- where x is the first character and xs is the rest of the Text
+
+length :: Text -> Int
+length (Text.null -> True) = 0
+length (Text.uncons -> Just (x, xs)) = 1 + length xs
+\end{code}
+
+View patterns can be thought of as a generalization of overloaded literals. For
+example, the |isZero| function in \ryan{cite section} can be rewritten to
+use view patterns like so:
+
+\begin{code}
+isZero :: (Eq a, Num a) => a -> Bool
+isZero ((==) 0 -> True) = True
+isZero n = False
+\end{code}
+
+Just like with overloaded literals, view patterns desugar to guards when compiled.
+As a result, the coverage checker can cope with view patterns provided that they
+desugar to guards that are not too complex. For instance, \sysname would not be
+able to conclude that |length| is exhaustive, but it would be able to conclude
+that this reimplementation of |not| is exhaustive:
+
+\begin{code}
+not :: Bool -> Bool
+not (id -> False) = True
+not (id -> True) = False
+\end{code}
+
+\ryan{Different example, perhaps?}
+
+\subsubsection{Pattern synonyms}
+
+Pattern synonyms~\cite{patsyns} allow abstraction over patterns themselves.
+Pattern synonyms and view patterns can be useful in tandem, as the pattern
+synonym can present an abstract interface to a view pattern that does
+complicated things under the hood. For example, one can define
+|length| with pattern synonyms like so:
+
+\begin{code}
+pattern Nil :: Text
+pattern Nil <- (Text.null -> True)
+
+pattern Cons :: Char -> Text -> Text
+pattern Cons x xs <- (Text.uncons -> Just (x, xs))
+
+length :: Text -> Int
+length Nil = 0
+length (Cons x xs) = 1 + length xs
+\end{code}
+
+How should a coverage checker handle pattern synonyms? One idea is to simply look
+through the definitions of each pattern synonym and verify whether the underlying
+patterns are exhaustive. This would be undesirable, however, because (1) we would
+like to avoid leaking the implementation details of abstract pattern synonyms, and
+(2) even if we \emph{did} look at the underlying implementation, it would be
+challenging to automatically check that the combination of |Text.null| and
+|Text.uncons| is exhaustive.
+
+Intuitively, |Text.null| and |Text.uncons| are obviously exhaustive. GHC allows
+programmers to communicate this sort of intuition to the coverage checker in the
+form of |COMPLETE| sets.
+\ryan{Cite the |COMPLETE| section of the users guide.}
+A |COMPLETE| set is a combination of data constructors
+and pattern synonyms that should be regarded as exhaustive when a function matches
+on all of them.
+For example, declaring |{-# COMPLETE Nil, Cons #-}| is sufficient to make
+the definition of |length| above compile without any exhaustivity warnings.
+Since GHC does not (and cannot, in general) check that all of the members of
+a |COMPLETE| actually comprise a complete set of patterns, the burden is on
+the programmer to ensure that this invariant is upheld.
+
 \subsection{Strictness}
 
 The evaluation order of pattern matching can impact whether a pattern is
@@ -401,59 +530,6 @@ not just those arising from matching on data constructors with strict fields.
 \subsubsection{Newtypes}
 
 \TODO
-
-\subsection{Programmable patterns}
-
-\TODO
-
-\subsubsection{Overloaded literals}
-
-\TODO
-
-\subsubsection{View patterns}
-
-\TODO
-
-\subsubsection{Pattern synonyms}
-
-Pattern synonyms~\cite{patsyns} allow abstracting over patterns in a very general
-fashion. For example, one can define patterns that allow viewing Haskell's
-opaque |Text| data type as though it were a linked list of characters:
-
-\begin{code}
-pattern Nil :: Text
-pattern Nil <- (Text.null -> True)
-
-pattern Cons :: Char -> Text -> Text
-pattern Cons x xs <- (Text.uncons -> Just (x, xs))
-
-length :: Text -> Int
-length Nil = 0
-length (Cons x xs) = 1 + length xs
-\end{code}
-
-How should a coverage checker handle pattern synonyms? One idea is to simply look
-through the definitions of each pattern synonym and verify whether the underlying
-patterns are exhaustive. This would be undesirable, however, because (1) we would
-like to avoid leaking the implementation details of abstract pattern synonyms, and
-(2) even if we \emph{did} look at the underlying implementation, it would be
-challenging to automatically check that the combination of |Text.null| and
-|Text.uncons| is exhaustive.
-
-Intuitively, |Text.null| and |Text.uncons| are obviously exhaustive. GHC allows
-programmers to communicate this sort of intuition to the coverage checker in the
-form of |COMPLETE| sets.
-\ryan{Cite the |COMPLETE| section of the users guide.}
-A |COMPLETE| set is a combination of data constructors
-and pattern synonyms that should be regarded as exhaustive when a function matches
-on all of them.
-For example, declaring |{-# COMPLETE Nil, Cons #-}| is sufficient to make
-the definition of |length| above compile without any exhaustivity warnings.
-Since GHC does not (and cannot, in general) check that all of the members of
-a |COMPLETE| actually comprise a complete set of patterns, the burden is on
-the programmer to ensure that this invariant is upheld.
-
-\ryan{More?}
 
 \subsection{Term and type constraints}
 
