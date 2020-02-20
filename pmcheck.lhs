@@ -968,10 +968,7 @@ than this by looking at the pattern (which might be a variable match or
 carries out exhaustiveness checking by computing the set of uncovered values
 for a particular guard tree, whereas $\ann$ computes the corresponding
 annotated tree, capturing redundancy information. $\red$ extracts a triple of
-accessible, (just) inaccessible and (even) redundant GRHS from such an
-annotated tree.
-\ryan{The ``just'' and ``even'' parts of the previous sentence read strangely
-to me. Consider removing them, as I don't feel they add much.}
+accessible, inaccessible and redundant GRHS from such an annotated tree.
 
 Both $\unc$ and $\ann$ take as their second parameter the set of values
 \emph{reaching} the particular guard tree node. If no value reaches a
@@ -1235,13 +1232,8 @@ in analogy to a typechecker's implementation.
 \end{figure}
 
 After tearing down abstraction after abstraction in the previous sections we
-nearly hit rock bottom:
-\ryan{I imagine you probably used the phrase ``hit rock bottom'' in the sense
-of almost being finished, but that phrase conjures up negative connotations in
-most situations. I would find another way to phrase this that doesn't sound
-so negative.}
-\Cref{fig:add} depicts how to add a $\varphi$
-constraint to an inert set $\nabla$.
+are nearly at the kernel of our algorithm: \Cref{fig:add} depicts how to add a
+$\varphi$ constraint to an inert set $\nabla$.
 
 It does so by expressing a $\varphi$ in terms of once again simpler constraints
 $\delta$ and calling out to $\!\adddelta\!$. Specifically, for a lack of
@@ -1279,6 +1271,21 @@ serve no other purpose than sounding smart?!}
 generativity is a specific property of type constructors with respect to type
 inference. In other words, I don't think it applies here. Personally, I would
 just say something about |Just|/|Nothing| being a mistmatch and move on.}
+\sg{True, but later on in the extensions section we will have Pattern Synonyms
+which specifically \emph{lack} generativity (at least without doing any
+reasoning about their defn). For example 
+\begin{code}
+pattern P
+pattern Q
+case P 15 of
+  Q _  -> ...
+  P 15 ->
+\end{code}
+The first clause shouldn't be flagged as redundant, because Q and P might have
+the same defns. But arguably we could bring that point when we need it in the
+extensions section. Or not argue in terms of generativity at all, but it's
+quite similar to how type inference works: We discard |x ~ Q y| from the fact
+that we know |x ~ P z|, inferring that |x| must be a |P|.}
 There are two other ways in which the constraint can be incompatible: If there
 was a negative constructor constraint $x \ntermeq |Just|$ or if any of the
 fields were not inhabited, which is checked by the $\inhabited{\nabla}{x}$
