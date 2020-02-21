@@ -1721,6 +1721,8 @@ pattern Q = ()
 b = case P of Q -> (); P -> ()
 \end{code}
 
+\sg{caveat about completeness and soundness -- which warnings to expect}
+
 With long distance information from the scrutinee expression, the checker will
 mark the first case alternative as redundant, which clearly is unsound given
 the overlapping definitions of |P| and |Q|! In general, we cannot assume that
