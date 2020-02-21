@@ -1167,7 +1167,7 @@ extension, and possibly an extension for linear arithmetic or boolean logic}.
 \begin{figure}
 \centering
 \[ \textbf{Generate inhabitants of $\Theta$} \]
-\[ \ruleform{ \generate(\Theta) = \mathcal{P}(\PS) } \]
+\[ \ruleform{ \generate(\Theta) = \mathcal{P}(\overline{p}) } \]
 \[
 \begin{array}{c}
    \generate(\reft{\Gamma}{\Phi}) = \bigcup \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \construct(\ctxt{\Gamma}{\varnothing}, \Phi) \right\}
@@ -1198,7 +1198,7 @@ extension, and possibly an extension for linear arithmetic or boolean logic}.
 % I think we should consider this an implementation detail, but should really write
 % about it later on.
 \[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
-\[ \ruleform{ \expand(\nabla, \overline{x}) = \mathcal{P}(\PS) } \]
+\[ \ruleform{ \expand(\nabla, \overline{x}) = \mathcal{P}(\overline{p}) } \]
 \[
 \begin{array}{lcl}
 
@@ -1282,8 +1282,6 @@ number of well-formedness constraints:
     conflict with each other.
   \item[\inert{2}] \emph{Triangular form}: A $x \termeq y$ constraint implies absence
     of any other constraints mentioning |x| in its left-hand side.
-  \item[\inert{3}] \emph{Single solution}: There is at most one positive constraint $x
-    \termeq \mathunderscore$ per variable |x|.
 \end{enumerate}
 
 We refer to such $\nabla$s as an \emph{inert set}, in the sense that its
@@ -1412,7 +1410,7 @@ $\!\adddelta\!$ decomposes the new constraint just like a classic unification
 algorithm, by equating type and term variables with new constraints, \ie $y
 \termeq u$. The original constraint, although not conflicting (thus maintaining
 wellformed-ness condition \inert{1}), is not added to the inert set because of
-\inert{3}.
+\inert{2}.
 
 If there was no positive constructor constraint with the same constructor, it
 will look for such a constraint involving a different constructor, like $x
@@ -1607,7 +1605,32 @@ supplementing that with a simple termination analysis in the future.
 \subsection{Long Distance Information}
 \label{ssec:ldi}
 
-\TODO
+\sg{This currently doesn't mention the term ``long distance information'' even
+once...}
+
+Pattern match checking as described also works for |case| expressions (with the
+appropriate desugaring function) and nested function definitions, like in the
+following example:
+\begin{code}
+f Nothing    = 1
+f x@(Just 15) = ... (case x of
+  Nothing -> 2
+  Just 15 -> 3
+  Just _  -> 4) ...
+\end{code}
+
+The pattern match checking algorithm as is will not produce any warnings for
+this definition. But for the reader it is as plain as it can be that the |case|
+expression has two redundant GRHSs! That simply follows by context-sensitive
+reasoning, knowing that |x| was successfully matched to |Just 15| in the
+outer match.
+
+In fact, the checking algorithm does exactly the same kind of reasoning when
+checking |f|! Specifically, the set of values reaching the second GRHS (which
+we test for inhabitants to determine whether the GRHS is accessible)
+$\Theta_{rhs2}$ encodes the information we are after. We just have to start
+checking the |case| expression starting from $\Theta_{rhs2}$ as the initial set
+of reaching values instead of $\reft{x:|Maybe Int|}{\true}$.
 
 
 \subsection{Empty Case}
@@ -1668,15 +1691,90 @@ information (\cf \cref{ssec:ldi}).
 \TODO
 
 
-\subsection{Pattern Synonyms and \texttt{COMPLETE} Pragmas}
+\subsection{Pattern Synonyms}
+\label{ssec:extpatsyn}
 
-\TODO
+\sg{Write some motivation}
 
+First, we have to extend the source syntax and IR syntax to account for pattern
+synonyms $P$, by adding the syntactic concept of a \emph{ConLike}:
+\[
+\begin{array}{cc}
+\begin{array}{rcl}
+  cl     &\Coloneqq& K \mid P \\
+  pat    &\Coloneqq& x \mid |_| \mid \highlightchange{$cl$} \; \overline{pat} \mid x|@|pat \mid ... \\
+\end{array} &
+\begin{array}{rlcl}
+  P \in           &\PS \\
+  C \in           &\CL  &\Coloneqq& K \mid P \\
+  p \in           &\Pat &\Coloneqq& \_ \mid \highlightchange{C} \; \overline{p} \mid ... \\
+\end{array}
+\end{array}
+\]
+
+Assuming every definition encountered so far is changed to handle ConLikes $C$
+now instead of data constructors $K$, everything should work almost fine. Why
+then introduce the new syntactic variant in the first place? Consider
+\begin{code}
+pattern P = ()
+pattern Q = ()
+b = case P of Q -> (); P -> ()
+\end{code}
+
+With long distance information from the scrutinee expression, the checker will
+mark the first case alternative as redundant, which clearly is unsound given
+the overlapping definitions of |P| and |Q|! In general, we cannot assume that
+arbitrary pattern synonym definitions are generative. That is in stark contrast
+to data constructors, which never overlap. 
+
+The solution is to tweak the clause of $\!\adddelta\!$ dealing with positive
+ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
+\[
+\begin{array}{r@@{\,}c@@{\,}lcl}
+\ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{C}{a}{y} &=& \begin{cases}
+    \ctxt{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C}{b}{z} \in \Delta$ } \\
+    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C'}{b}{z} \in \Delta$ \highlightchange{and $C \cap C' = \emptyset$}} \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{C}{a}{y})} & \text{if $\rep{\Delta}{x} \ntermeq C \not\in \Delta$ and $\overline{\inhabited{\ctxt{\Gamma}{\Delta}}{\Delta(y)}}$} \\
+    \false & \text{otherwise} \\
+  \end{cases} \\
+\end{array}
+\]
+
+Where the suggestive notation $C \cap C' = \emptyset$ is only true if $C$ and
+$C'$ don't overlap, if both are data constructors, for example. 
+
+
+\subsection{\extension{COMPLETE} pragmas}
+\label{ssec:complete}
+
+\extension{COMPLETE} pragmas allow users to specify a set of data constructors
+or pattern synonyms which constitute a total match. This sole reason for this
+extension is to communicate to the pattern match checker when \emph{not} to
+warn about an inexhaustive pattern match and blindly trust that the users
+assertion that the match is in fact exhaustive.
+
+In a sense, every algebraic data type defines its own builtin
+\extension{COMPLETE} pragma, consisting of all its data constructors. And we
+have \inhabitedinst currently making sure that this \extension{COMPLETE} set is
+in fact inhabited. We also have \inhabitednocpl that handles the case when
+we can't \emph{any} \extension{COMPLETE} set for the given type (think |x : Int
+-> Int|).
+
+The obvious way to generalise this is by looking up all \extension{COMPLETE} sets
+attached to a type and deem
+
+5. Now for COMPLETE sets: Modify \inhabitedinst to use new function |Cpls(..,..)| returning a set of COMPLETE sets, where each set individually may not be empty. NEeds a new judgment.
 
 \subsection{Literals}
 
-\TODO
-
+The source syntax in \cref{fig:srcsyn} deliberately left out literal patterns.
+Literals are very similar to nullary data constructors, with one caveat: They
+don't come with a builtin \texttt{COMPLETE} set. Before \cref{ssec:complete},
+that would have meant quite a bit of hand waving and complication to the
+$\inhabited{}{}$ judgment. Now, literals can be handled like generative pattern
+synonyms without a \texttt{COMPLETE} set. For overloaded literals, we lose
+generativity again, because we don't generally know how they are defined
+\sg{Bring |instance Num ()|}, so they behave exactly like pattern synonyms.
 
 \subsection{Newtypes}
 
@@ -1880,6 +1978,9 @@ conceptual improvement.}
 the inhabitation check on a subset of all variables. Namely those that aren't
 obviously of plain old ADT type. But the implementation doesn't currently do
 that hack, so it's a bit of a moot point.}
+
+\sg{We should talk about how we efficiently represent residual COMPLETE sets.
+And maybe how we represent Delta in general.}
 
 %\listoftodos\relax
 
