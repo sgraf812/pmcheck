@@ -1802,6 +1802,7 @@ generativity again, because we don't generally know how they are defined
 
 
 \section{Implementation}
+\label{sec:impl}
 
 The implementation of our algorithm in GHC accumulates quite a few tricks that
 go beyond the pure formalism. This section is dedicated to describing these.
@@ -1813,9 +1814,9 @@ checker is between type-checking and desugaring to GHC Core, a typed
 intermediate representation lacking the connection to source syntax.
 We perform pattern match checking in the same tree traversal as desugaring.
 
-\sg{New implementation has 3850 lines, out of which 1753 is code. Previous impl
-as of GHC 8.6.5 had 3118 lines, out of which 1438 were code. Not sure how to
-sell that.}
+\sg{New implementation (pre !2753) has 3850 lines, out of which 1753 is code.
+Previous impl as of GHC 8.6.5 had 3118 lines, out of which 1438 were code. Not
+sure how to sell that.}
 
 \subsection{Interleaving $\unc$ and $\ann$}
 \label{ssec:interleaving}
