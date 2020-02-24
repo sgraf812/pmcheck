@@ -815,12 +815,7 @@ predicate $\Phi$ is semantically equivalent to:
 \]
 
 Every $\vee$ disjunct corresponds to one way in which a pattern guard in the
-tree could fail. It is not obvious at all for humans to read off satisfying
-values
-\ryan{Did you mean to write ``satisfiable values'' instead of
-``satisfying values'' here? Again, the latter reads strangely to me.}
-\sg{I think I agree. I was thinking of the values that satisfy $\Phi$ and thus
-inhabit $\Theta$. Maybe ``inhabiting values'' then?}
+tree could fail. It is not obvious at all for humans to read off inhbaitants
 from this representation, but we will give an intuitive treatment of how
 to do so in the next subsection.
 
@@ -1237,57 +1232,74 @@ pattern vectors. \sg{Currently, $\expand$ will only expand positive constraints
 and not produce multiple pattern vectors for a $\nabla$ with negative info (see
 the TODO comment attached to $\expand$'s definition)}
 
-But what \emph{is} $\nabla$? To a first approximation, it is a set of mutually
-compatible constraints $\delta$ (or a proven incomatibility $\false$ between
-them). It is also a unifier to the particular $\Phi$ it is constructed for, in
-that the recorded constraints are valid assignments for the variables occuring
-in the orginal predicate \sg{This is not true of $\false$, but maybe we can
-gloss over that fact?}. Each $\nabla$ is the trace of commitments to a left or
-right disjunct in a $\Phi$ \sg{Not sure how to say this more accurately}, which
-are checked in isolation. So in contrast to $\Phi$, there is no disjunction in
-$\Delta$, which makes it easy to check if a new constraint is compatible with
-the existing ones without any backtracking. Another fundamental difference is
-that $\delta$ has no binding constructs (so every variable has to be bound in
-the $\Gamma$ part of $\nabla$), whereas pattern bindings in $\varphi$ bind
-constructor arguments.
-
-$\construct$ is the function that breaks down a $\Phi$ into multiple $\nabla$s.
-At the heart of $\construct$ is adding a $\varphi$ literal to the $\nabla$
-under construction via $\!\addphi\!$ and filtering out any unsuccessful attempts
-(via intercepting the $\false$ failure mode) to do so. Conjunction is handled
-by the equivalent of a |concatMap|, whereas a disjunction corresponds to a
-plain union.
-
-\sg{$\expand$ undoubtly needs some love, but that's a TODO for later.}
-Expanding a $\nabla$ to a pattern vector in $\expand$ is syntactically heavy, but
-straightforward: When there is a positive constraint like
-$x \termeq |Just y|$ in $\Delta$ for the head $x$ of the variable vector of
-interest, expand $y$ in addition to the other variables and wrap it in a |Just|.
-Only that it's not plain $x \termeq |Just y|$, but $\Delta(x) \termeq |Just
-y|$. That's because $\Delta$ is in \emph{triangular form} (alluding to
-\emph{triangular substitutions}, as opposed to an idempotent substitution): We
-have to follow $x \termeq y$ constraints in $\Delta$ until we find the
-representative of its equality class, to which all constraints apply. Note that
-a $x \termeq y$ constraint implies absence of any other constraints mentioning
-$x$ in its left-hand side ($x \termeq y \in \Delta \Rightarrow (\Delta\,\cap\,x
-= x \termeq y)$, foreshadowing notation from \cref{fig:add}). For $\expand$ to
-be well-defined, there needs to be at most one positive constraint in $\Delta$.
-
-\noindent
-Thus, constraints within $\nabla$s constructed by $\!\addphi\!$ satisfy a
-number of well-formedness constraints:
+But what \emph{is} $\nabla$? It's a pair of a type context $\Gamma$ and a
+$\Delta$, a set of mutually compatible constraints $\delta$, or a proven
+incomatibility $\false$ between such a set of constraints. $\construct$ will
+arrange it that every constructed $\nabla$ satisfies a number of
+well-formedness constraints:
 
 \begin{enumerate}
-  \item[\inert{1}] \emph{Mutual compatibility}: No two constraints in $\nabla$ should
-    conflict with each other.
-  \item[\inert{2}] \emph{Triangular form}: A $x \termeq y$ constraint implies absence
-    of any other constraints mentioning |x| in its left-hand side.
+  \item[\inert{1}] \emph{Mutual compatibility}: No two constraints in $\nabla$
+    should conflict with each other.
+  \item[\inert{2}] \emph{Triangular form}: A $x \termeq y$ constraint implies
+    absence of any other constraints mentioning |x| in its left-hand side.
+  \item[\inert{3}] \emph{Single solution}: There is at most one constraint of
+    the form $x \termeq \mathunderscore$.
 \end{enumerate}
 
-We refer to such $\nabla$s as an \emph{inert set}, in the sense that its
-constraints are of canonical form and already checked for mutual compatibility,
-in analogy to a typechecker's implementation.
-\sg{Feel free to flesh out or correct this analogy}
+\sg{We don't maintain \inert{3} in \cref{fig:add} as is, because we might
+have $x \termeq \bot$ and $x \termeq |Nothing|$. Maybe relax it to apply only
+to data constructor solutions?}
+We refer to such a $\nabla$ as an \emph{inert set}, in the sense that its
+constraints are of canonical form and already checked for mutual compatibility
+(\inert{1}), in analogy to a typechecker's implementation.
+
+It is helpful at times to think of a $\Delta$ as a partial function from |x|
+to its \emph{solution}, informed by the single positive constraint $x \termeq
+\mathunderscore \in \Delta$, if it exists. For example, $x \termeq |Nothing|$
+can be understood as a function mapping |x| to |Nothing|. This reasoning is
+justified by \inert{3}. Under this view, $\Delta$ looks like a substitution. As
+we'll see later in \cref{ssec:extinert}, this view is supported by immense
+overlap with unification algorithms.
+
+\inert{2} is actually a condition on the represented substitution. Whenever we
+find out that $x \termeq y$, for example when matching a variable pattern |y|
+against a match variable |x|, we have to merge all the other constraints on |x|
+into |y| and say that |y| is the representative of |x|'s equivalence class.
+This is so that every new constraint we record on |y| also affects |x| and vice
+versa. The process of finding the solution of |x| in $x \termeq y, y \termeq
+|Nothing|$ then entails \emph{walking} the substitution, because we have to look
+up (in the sense of understanding $\Delta$ as a partial function) twice: The
+first lookup will find |x|'s representative |y|, the second lookup on |y| will
+then find the solution |Nothing|.
+
+In denoting looking up the representative by $\Delta(x)$ (\cf \cref{fig:gen}),
+we can assert that |x| has |Nothing| as a solution simply by writing $\Delta(x)
+\termeq |Nothing| \in \Delta$.
+
+Each $\Delta$ is one of possibly many valid variable assignments of the particular $\Phi$ it is
+constructed for. In contrast to $\Phi$, there is no disjunction in $\Delta$,
+which makes it easy to check if a new constraint is compatible with the
+existing ones without any backtracking. Another fundamental difference is that
+$\delta$ has no binding constructs (so every variable has to be bound in the
+$\Gamma$ part of $\nabla$), whereas pattern bindings in $\varphi$ bind
+constructor arguments.
+
+$\construct$ is the function that breaks down a $\Phi$ into multiple $\nabla$s,
+maintaining the invariant that no such $\nabla$ is $\false$.
+At the heart of $\construct$ is adding a $\varphi$ literal to the $\nabla$
+under construction via $\!\addphi\!$ and filtering out any unsuccessful
+attempts (via intercepting the $\false$ failure mode of $\!\addphi\!$) to do
+so. Conjunction is handled by the equivalent of a |concatMap|, whereas a
+disjunction corresponds to a plain union.
+
+\sg{$\expand$ undoubtly needs some love, but that's a TODO for later.}
+Expanding a $\nabla$ to a pattern vector in $\expand$ is syntactically heavy,
+but straightforward: When there is a solution like $\Delta(x) \termeq |Just y|$
+in $\Delta$ for the head $x$ of the variable vector of interest, expand $y$ in
+addition to the rest of the vector and wrap it in a |Just|. \inert{3}
+guarantees that there is at most one such solution and $\expand$ is
+well-defined.
 
 \subsection{Extending the inert set}
 \label{ssec:extinert}
@@ -1407,41 +1419,20 @@ The unification procedure will first look for any positive constructor constrain
 involving the representative of $x$ with \emph{that same constructor}. Let's say
 there is $\Delta(x) = z$ and $z \termeq |Just u| \in \Delta$. Then
 $\!\adddelta\!$ decomposes the new constraint just like a classic unification
-algorithm, by equating type and term variables with new constraints, \ie $y
-\termeq u$. The original constraint, although not conflicting (thus maintaining
+algorithm operating on the transitively implied equality $|Just y| \termeq
+|Just u|$, by equating type and term variables with new constraints, \ie $|y|
+\termeq |u|$. The original constraint, although not conflicting (thus maintaining
 wellformed-ness condition \inert{1}), is not added to the inert set because of
 \inert{2}.
 
 If there was no positive constructor constraint with the same constructor, it
 will look for such a constraint involving a different constructor, like $x
-\termeq |Nothing|$. In this case the new constraint is incompatible by
-\emph{generativity} of data constructors \cite{eisenberg:dependent}.
-\sg{We can also cite injectivity to justify decomposition above, but that would
-serve no other purpose than sounding smart?!}
-\ryan{Do we even need to cite anything at all here? As far as I understand it,
-generativity is a specific property of type constructors with respect to type
-inference. In other words, I don't think it applies here. Personally, I would
-just say something about |Just|/|Nothing| being a mistmatch and move on.}
-\sg{True, but later on in the extensions section we will have Pattern Synonyms
-which specifically \emph{lack} generativity (at least without doing any
-reasoning about their defn). For example
-\begin{code}
-pattern P
-pattern Q
-case P 15 of
-  Q _  -> ...
-  P 15 ->
-\end{code}
-The first clause shouldn't be flagged as redundant, because Q and P might have
-the same defns. But arguably we could bring that point when we need it in the
-extensions section. Or not argue in terms of generativity at all, but it's
-quite similar to how type inference works: We discard |x ~ Q y| from the fact
-that we know |x ~ P z|, inferring that |x| must be a |P|.}
-There are two other ways in which the constraint can be incompatible: If there
-was a negative constructor constraint $x \ntermeq |Just|$ or if any of the
-fields were not inhabited, which is checked by the $\inhabited{\nabla}{x}$
-judgment in \cref{fig:inh}. Otherwise, the constraint is compatible and is
-added to $\Delta$.
+\termeq |Nothing|$, in which case the new constraint is incompatible with the
+existing solution. There are two other ways in which the constraint can be
+incompatible: If there was a negative constructor constraint $x \ntermeq
+|Just|$ or if any of the fields were not inhabited, which is checked by the
+$\inhabited{\nabla}{x}$ judgment in \cref{fig:inh}. Otherwise, the constraint
+is compatible and is added to $\Delta$.
 
 Adding a negative constructor constraint $x \ntermeq Just$ is quite
 similar, as is handling of positive and negative constraints involving $\bot$.
@@ -1450,18 +1441,17 @@ contradict with positive constraints, we still have to test if there are any
 inhabitants left.
 
 \sg{Maybe move down the type constraint case in the definition?}
-Adding a type constraint drives this paranoia to a maximum: After calling out
-to the type-checker (the logic of which we do not and would not replicate in
-this paper or our implementation) to assert that the constraint is consistent
-with the inert set, we have to test \emph{all} variables in the domain of
-$\Gamma$ for inhabitants, because the new type constraint could have rendered
-a type empty. To demonstrate why this is necessary, imagine we have $\ctxt{x :
-a}{x \ntermeq \bot}$ and try to add $a \typeeq |Void|$. Although the type
-constraint is consistent, $x$ in $\ctxt{x : a}{x \ntermeq \bot, a \typeeq
+Adding a type constraint $\gamma$ drives this paranoia to a maximum: After
+calling out to the type-checker (the logic of which we do not and would not
+replicate in this paper or our implementation) to assert that the constraint is
+consistent with the inert set, we have to test \emph{all} variables in the
+domain of $\Gamma$ for inhabitants, because the new type constraint could have
+rendered a type empty. To demonstrate why this is necessary, imagine we have
+$\ctxt{x : a}{x \ntermeq \bot}$ and try to add $a \typeeq |Void|$. Although the
+type constraint is consistent, $x$ in $\ctxt{x : a}{x \ntermeq \bot, a \typeeq
 |Void|}$ is no longer inhabited. There is room for being smart about which
 variables we have to re-check: For example, we can exclude variables whose type
-is a non-GADT data type. \sg{That trick probably belongs in the implementation
-section. Although it's quite boring and ad-hoc.}
+is a non-GADT data type.
 
 The last case of $\!\adddelta\!$ equates two variables ($x \termeq y$) by
 merging their equivalence classes. Consider the case where $x$ and $y$ don't
@@ -1473,6 +1463,23 @@ have to be removed and renamed in terms of $\Delta(y)$ and then re-added to
 $\Delta$. That might fail, because $\Delta(x)$ might have a constraint that
 conflicts with constraints on $\Delta(y)$, so it is better to use $\!\adddelta\!$ rather
 than to add it blindly to $\Delta$.
+
+\sg{We need to brag about how this representation is better than GMTMs. Example:
+
+\begin{code}
+data T = A1 | ... | A1000
+f :: T -> T -> ()
+f A1 _  = ()
+f _  A1 = ()
+\end{code}
+
+This will split (a term which is introduced in \cref{sec:impl}) into a million
+value vectors in GMTMs model, whereas there will only be ever fall through one
+$\nabla$ from one equation to the next because of negative constraints.
+
+Also GMTM comitting to a particular COMPLETE set the first time it splits on a
+constructor pattern means buggy COMPLETE pragma handling. I think this
+comparison should go into Related Work.}
 
 
 \subsection{Inhabitation Test}
@@ -1727,7 +1734,9 @@ With long distance information from the scrutinee expression, the checker will
 mark the first case alternative as redundant, which clearly is unsound given
 the overlapping definitions of |P| and |Q|! In general, we cannot assume that
 arbitrary pattern synonym definitions are generative. That is in stark contrast
-to data constructors, which never overlap. 
+to data constructors, which never overlap.
+
+\emph{generativity} of data constructors \cite{eisenberg:dependent}.
 
 The solution is to tweak the clause of $\!\adddelta\!$ dealing with positive
 ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
@@ -1743,8 +1752,9 @@ ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
 \]
 
 Where the suggestive notation $C \cap C' = \emptyset$ is only true if $C$ and
-$C'$ don't overlap, if both are data constructors, for example. 
+$C'$ don't overlap, if both are data constructors, for example.
 
+\sg{We need to fix \inert{3}}
 
 \subsection{\extension{COMPLETE} pragmas}
 \label{ssec:complete}
