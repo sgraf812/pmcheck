@@ -1731,7 +1731,7 @@ then introduce the new syntactic variant in the first place? Consider
 \begin{code}
 pattern P = ()
 pattern Q = ()
-b = case P of Q -> 1; P -> 2
+n = case P of Q -> 1; P -> 2
 \end{code}
 
 Knowing that the definitions of |P| and |Q| completely overlap, we can see that
@@ -1828,14 +1828,28 @@ computationally intractable. We will worry about that in \cref{sec:impl}.
 
 \subsection{Literals}
 
-The source syntax in \cref{fig:srcsyn} deliberately left out literal patterns.
-Literals are very similar to nullary data constructors, with one caveat: They
-don't come with a builtin \texttt{COMPLETE} set. Before \cref{ssec:complete},
-that would have meant quite a bit of hand waving and complication to the
-$\inhabited{}{}$ judgment. Now, literals can be handled like disjunct pattern
-synonyms without a \texttt{COMPLETE} set. Overloaded literals \emph{may}
-overlap, because we don't generally know how they are defined \sg{Bring
-|instance Num ()|}, so they behave exactly like pattern synonyms.
+The source syntax in \cref{fig:srcsyn} deliberately left out literal patterns
+$l$. Literals are very similar to nullary data constructors, with one caveat:
+They don't come with a builtin \texttt{COMPLETE} set. Before
+\cref{ssec:complete}, that would have meant quite a bit of hand waving and
+complication to the $\inhabited{}{}$ judgment. Now, literals can be handled
+like disjunct pattern synonyms (\ie $l_1 \cap l_2 = \emptyset$ for any two
+literals $l_1, l_2$) without a \texttt{COMPLETE} set!
+
+We can even handle overloaded literals, but will find ourselves in a similar
+situation as with pattern synonyms:
+\begin{code}
+instance Num () where
+  fromInteger _ = ()
+n = case (0 :: ()) of 1 -> 1; 0 -> 2
+\end{code}
+
+\noindent
+Considering overloaded literals to be disjunct would mean marking the first
+alternative as redundant, which is unsound. Hence we regard overloaded literals
+as possibly overlapping, so they behave exactly like nullary pattern synonyms
+without a \extension{COMPLETE} set.
+
 
 \subsection{Newtypes}
 
