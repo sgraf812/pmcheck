@@ -1858,8 +1858,29 @@ without a \extension{COMPLETE} set.
 
 \subsection{Strictness}
 
-\TODO
+Instead of extending the source language, let's discuss ripping out a language
+feature, for a change! So far, we have focused on Haskell as the source
+language of the checking process, which is lazy by default. Although the
+desugaring function makes sure that the difference in evaluation strategy of
+the source language quickly becomes irrelevant, it raises the question of how
+much our approach could be simplified if we targeted a source language that was
+strict by default, such as OCaml or Idris.
 
+First off, both languages offer language support for laziness and lazy pattern
+matches \sg{Cite something?}, so the question rather becomes whether the
+gained simplification is actually worth risking unusable or even unsound
+warning messages when making use of laziness. If the answer is ``No'', then
+there isn't anything to simplify, just relatively more $x \termeq \bot$
+constraints to handle.
+
+Otherwise, in a completely eager language we could simply drop $\grdbang{x}$
+from $\Grd$ and $\antdiv{}$ from $\Ant$. Actually, $\Ant$ and $\red$ could go
+altogether and $\ann$ could just collect the redundant GRHS directly!
+
+Since there wouldn't be any bang guards, there is no reason to have $x \termeq
+\bot$ and $x \ntermeq \bot$ constraints either. Most importantly, the
+\inhabitedbot judgment form has to go, because $\bot$ does not inhabit any
+types anymore.
 
 \sg{Treat type information as an extension?}
 
