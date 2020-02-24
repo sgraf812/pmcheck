@@ -528,14 +528,6 @@ The |Just| case in |v'| is unreachable for the same reasons that the |SJust| cas
 algorithm must be consider the effects of strictness on any possible pattern,
 not just those arising from matching on data constructors with strict fields.
 
-\subsubsection{Newtypes}
-
-\TODO
-
-\subsection{Term and type constraints}
-
-\TODO
-
 \subsection{A solved problem?}
 
 We are not the first to tackle the problem of coverage checking.
@@ -545,7 +537,48 @@ section. For the sake of brevity, we will refer to their algorithm
 as \gmtm (an abbreviation of ``GADTs Meet Their Match'', the name of the
 corresponding paper).
 
-\ryan{more details pls}
+\gmtm's \emph{raison d'\^{e}tre} is that it accounts for GADTs, guards, and
+laziness during coverage checking. Despite this, the \gmtm algorithm gives
+incorrect warnings in all three of these categories.
+
+\subsubsection{\gmtm does not consider laziness in its full glory}
+
+The formalism in \citet{gadtpm} incorporates strictness constraints, but
+these constraints can only arise from matching against data constructors.
+\gmtm does not consider strict matches that arise from strict fields of
+data constructors or bang patterns. A consequence of this is that \gmtm
+would incorrectly warn that |v| is missing a case for |SJust|, even though
+such a case is unreachable.
+
+\subsubsection{\gmtm's treatment of guards is shallow}
+
+\gmtm can only reason about guards through an abstract term oracle.
+Although the algorithm is parametric over the choice of oracle, in practice
+the implementation of \gmtm in GHC uses an extremely simple oracle that can
+only reason about trivial guards. More sophisticated uses of guards will
+cause \gmtm to emit erroneous warnings. For instance, consider the following
+two functions
+
+\begin{code}
+data SBool (a :: Bool) where
+  STrue :: SBool True
+  SFalse :: SBool False
+
+h :: () -> SBool False
+h _ = SFalse
+
+g :: () -> ()
+g _ | SFalse <- h () = ()
+\end{code}
+
+The |g| function uses GADT pattern matching inside of a pattern guard.
+|g| is completely exhaustive because the type |SBool False| cannot be inhabited
+by |STrue|. Despite this, GHC's implementation of \gmtm incorrectly warns
+about a missing case.
+
+We could envision making the term oracle in \gmtm more intelligent, but in
+many cases we can actually get away without needing one. \ryan{Sebastian:
+please go over this. Also, which section to cite?}
 
 \begin{figure}
 \centering
