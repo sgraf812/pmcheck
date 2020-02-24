@@ -417,17 +417,16 @@ Just like with overloaded literals, view patterns desugar to guards when compile
 As a result, the coverage checker can cope with view patterns provided that they
 desugar to guards that are not too complex. For instance, \sysname would not be
 able to conclude that |length| is exhaustive, but it would be able to conclude
-that this reimplementation of |not| is exhaustive:
+that this reimplementation of |safeLast| is exhaustive:
 
 \begin{code}
-not :: Bool -> Bool
-not (id -> False) = True
-not (id -> True) = False
+safeLast :: [a] -> Maybe a
+safeLast (reverse -> [])       = Nothing
+safeLast (reverse -> (x : _))  = Just x
 \end{code}
 
-\ryan{Different example, perhaps?}
-
 \subsubsection{Pattern synonyms}
+\label{ssec:patsyn}
 
 Pattern synonyms~\cite{patsyns} allow abstraction over patterns themselves.
 Pattern synonyms and view patterns can be useful in tandem, as the pattern
@@ -459,6 +458,8 @@ Intuitively, |Text.null| and |Text.uncons| are obviously exhaustive. GHC allows
 programmers to communicate this sort of intuition to the coverage checker in the
 form of |COMPLETE| sets.
 \ryan{Cite the |COMPLETE| section of the users guide.}
+\sg{I'm using \extension{COMPLETE} for marking up COMPLETE pragmas. But I'm not
+sold on either way.}
 A |COMPLETE| set is a combination of data constructors
 and pattern synonyms that should be regarded as exhaustive when a function matches
 on all of them.
@@ -1499,10 +1500,10 @@ comparison should go into Related Work.}
     \inhabitedbot
   \endprooftree
 
-  \quad
+  \qquad
 
   \prooftree
-    {x:\tau \in \Gamma \quad \cons{\ctxt{\Gamma}{\Delta}}{\tau} = \bot}
+    {x:\tau \in \Gamma \quad \cons(\ctxt{\Gamma}{\Delta}, \tau) = \bot}
   \justifies
     \inhabited{\ctxt{\Gamma}{\Delta}}{x}
   \using
@@ -1514,8 +1515,8 @@ comparison should go into Related Work.}
 
   % TODO: Maybe inline Inst into this rule?
   \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons{\ctxt{\Gamma}{\Delta}}{\tau}}
-                {\inst{\ctxt{\Gamma}{\Delta}}{x}{K} \not= \false}}
+    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons(\ctxt{\Gamma}{\Delta}, \tau)}
+                {\inst(\ctxt{\Gamma}{\Delta}, x, K) \not= \false}}
   \justifies
     \inhabited{\ctxt{\Gamma}{\Delta}}{x}
   \using
@@ -1526,11 +1527,11 @@ comparison should go into Related Work.}
 \]
 
 \[ \textbf{Find data constructors of $\tau$} \]
-\[ \ruleform{ \cons{\ctxt{\Gamma}{\Delta}}{\tau} = \overline{K}} \]
+\[ \ruleform{ \cons(\ctxt{\Gamma}{\Delta}, \tau) = \overline{K}} \]
 \[
 \begin{array}{c}
 
-  \cons{\ctxt{\Gamma}{\Delta}}{\tau} = \begin{cases}
+  \cons(\ctxt{\Gamma}{\Delta}, \tau) = \begin{cases}
     \overline{K} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ data type with constructors $\overline{K}$ \\ (after normalisation according to the type constraints in $\Delta$)} \\
     % TODO: We'd need a cosntraint like \delta's \false here... Or maybe we
     % just omit this case and accept that the function is partial
@@ -1542,11 +1543,11 @@ comparison should go into Related Work.}
 
 % This is mkOneConFull
 \[ \textbf{Instantiate $x$ to data constructor $K$} \]
-\[ \ruleform{ \inst{\nabla}{x}{K} = \nabla } \]
+\[ \ruleform{ \inst(\nabla, x, K) = \nabla } \]
 \[
 \begin{array}{c}
 
-  \inst{\ctxt{\Gamma}{\Delta}}{x}{K} =
+  \inst(\ctxt{\Gamma}{\Delta}, x, K) =
     \ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta}
       \adddelta \tau_x \typeeq \tau
       \adddelta \overline{\gamma}
@@ -1701,10 +1702,9 @@ information (\cf \cref{ssec:ldi}).
 \subsection{Pattern Synonyms}
 \label{ssec:extpatsyn}
 
-\sg{Write some motivation}
-
-First, we have to extend the source syntax and IR syntax to account for pattern
-synonyms $P$, by adding the syntactic concept of a \emph{ConLike}:
+To accomodate checking of pattern synonyms $P$, we first have to extend the
+source syntax and IR syntax by adding the syntactic concept of a
+\emph{ConLike}:
 \[
 \begin{array}{cc}
 \begin{array}{rcl}
@@ -1719,24 +1719,33 @@ synonyms $P$, by adding the syntactic concept of a \emph{ConLike}:
 \end{array}
 \]
 
+\sg{For pattern-match checking purposes, we assume that pattern synonym matches
+are strict, just like data constructor matches. This is not generally true, but
+\ticket{17357} has a discussion of why being conservative is too disruptive to
+be worth the trouble. Should we talk about that? It concerns the definition of
+$\ds$, namely whether to add a $\grdbang{x}$ on the match var or not.}
+
 Assuming every definition encountered so far is changed to handle ConLikes $C$
 now instead of data constructors $K$, everything should work almost fine. Why
 then introduce the new syntactic variant in the first place? Consider
 \begin{code}
 pattern P = ()
 pattern Q = ()
-b = case P of Q -> (); P -> ()
+b = case P of Q -> 1; P -> 2
 \end{code}
 
-\sg{caveat about completeness and soundness -- which warnings to expect}
+Knowing that the definitions of |P| and |Q| completely overlap, we can see that
+|Q| will cover all values that could reach |P|, so clearly |P| is redundant.
+A sound approximation to that would be not to warn at all. And that's reasonable,
+after all we established in \cref{ssec:patsyn} that reasoning about pattern
+synonym definitions is undesirable.
 
-With long distance information from the scrutinee expression, the checker will
-mark the first case alternative as redundant, which clearly is unsound given
-the overlapping definitions of |P| and |Q|! In general, we cannot assume that
-arbitrary pattern synonym definitions are generative. That is in stark contrast
-to data constructors, which never overlap.
-
-\emph{generativity} of data constructors \cite{eisenberg:dependent}.
+But equipped with long distance information from the scrutinee expression, the
+checker would mark the \emph{first case alternative} as redundant, which
+clearly is unsound! Deleting the first alternative would change its semantics
+from returning 1 to returning 2. In general, we cannot assume that arbitrary
+pattern synonym definitions are disjunct. That is in stark contrast to data
+constructors, which never overlap.
 
 The solution is to tweak the clause of $\!\adddelta\!$ dealing with positive
 ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
@@ -1754,28 +1763,68 @@ ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
 Where the suggestive notation $C \cap C' = \emptyset$ is only true if $C$ and
 $C'$ don't overlap, if both are data constructors, for example.
 
-\sg{We need to fix \inert{3}}
+Note that the slight relaxation means that the constructed $\nabla$ might
+violate $\inert{3}$, specifically when $C \cap C' \not= \emptyset$. In practice
+that condition only matters for the well-definedness of $\expand$, which in
+case of multiple solutions (\ie $x \termeq P, x\termeq Q$) has to commit to one
+them for the purposes of reporting warnings. Fixing that requires a bit of
+boring engineering.
 
 \subsection{\extension{COMPLETE} pragmas}
 \label{ssec:complete}
 
-\extension{COMPLETE} pragmas allow users to specify a set of data constructors
-or pattern synonyms which constitute a total match. This sole reason for this
-extension is to communicate to the pattern match checker when \emph{not} to
-warn about an inexhaustive pattern match and blindly trust that the users
-assertion that the match is in fact exhaustive.
-
 In a sense, every algebraic data type defines its own builtin
-\extension{COMPLETE} pragma, consisting of all its data constructors. And we
-have \inhabitedinst currently making sure that this \extension{COMPLETE} set is
-in fact inhabited. We also have \inhabitednocpl that handles the case when
-we can't \emph{any} \extension{COMPLETE} set for the given type (think |x : Int
--> Int|).
+\extension{COMPLETE} set, consisting of all its data constructors, so the
+coverage checker already manages a single \extension{COMPLETE} set.
 
-The obvious way to generalise this is by looking up all \extension{COMPLETE} sets
-attached to a type and deem
+We have \inhabitedinst from \cref{fig:inh} currently making sure that this
+\extension{COMPLETE} set is in fact inhabited. We also have \inhabitednocpl
+that handles the case when we can't find \emph{any} \extension{COMPLETE} set
+for the given type (think |x : Int -> Int|). The obvious way to generalise this
+is by looking up all \extension{COMPLETE} sets attached to a type and check
+that none of them is completely covered:
+\[
+\begin{array}{cc}
+  \prooftree
+    (\ctxt{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false
+  \justifies
+    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+  \using
+    \inhabitedbot
+  \endprooftree
 
-5. Now for COMPLETE sets: Modify \inhabitedinst to use new function |Cpls(..,..)| returning a set of COMPLETE sets, where each set individually may not be empty. NEeds a new judgment.
+  &
+
+  \prooftree
+    \Shortstack{{x:\tau \in \Gamma \quad \cons(\ctxt{\Gamma}{\Delta}, \tau)=\highlight{\overline{C_1,...,C_{n_i}}^i}}
+                {\highlight{\overline{\inst(\ctxt{\Gamma}{\Delta}, x, C_j) \not= \false}^i}}}
+  \justifies
+    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+  \using
+    \inhabitedinst
+  \endprooftree
+\end{array}
+\]
+\[
+\begin{array}{c}
+  \cons(\ctxt{\Gamma}{\Delta}, \tau) = \begin{cases}
+    \highlight{\overline{C_1,...,C_{n_i}}^i} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ \highlight{\text{type constructor with \extension{COMPLETE} sets $\overline{C_1,...,C_{n_i}}^i$}} \\ (after normalisation according to the type constraints in $\Delta$)} \\
+    \highlight{\epsilon} & \text{otherwise} \\
+  \end{cases}
+\end{array}
+\]
+
+\sg{What do you think of the indexing on $C_i$? It's not entirely accurate, but do we want to cloud the presentation with \ie $\overline{C_{i,1},...,C_{i,n_i}}^i$?}
+
+$\cons$ was changed to return a list of all available \extension{COMPLETE} sets,
+and \inhabitedinst tries to find an inhabiting ConLike in each one of them in
+turn. Note that \inhabitednocpl is gone, because it coincides with
+\inhabitedinst for the case where the list returned by $\cons$ was empty. The
+judgment has become simpler and and more general at the same time!
+
+Note that checking against multiple \extension{COMPLETE} sets so frequently is
+computationally intractable. We will worry about that in \cref{sec:impl}.
+
 
 \subsection{Literals}
 
@@ -1783,10 +1832,10 @@ The source syntax in \cref{fig:srcsyn} deliberately left out literal patterns.
 Literals are very similar to nullary data constructors, with one caveat: They
 don't come with a builtin \texttt{COMPLETE} set. Before \cref{ssec:complete},
 that would have meant quite a bit of hand waving and complication to the
-$\inhabited{}{}$ judgment. Now, literals can be handled like generative pattern
-synonyms without a \texttt{COMPLETE} set. For overloaded literals, we lose
-generativity again, because we don't generally know how they are defined
-\sg{Bring |instance Num ()|}, so they behave exactly like pattern synonyms.
+$\inhabited{}{}$ judgment. Now, literals can be handled like disjunct pattern
+synonyms without a \texttt{COMPLETE} set. Overloaded literals \emph{may}
+overlap, because we don't generally know how they are defined \sg{Bring
+|instance Num ()|}, so they behave exactly like pattern synonyms.
 
 \subsection{Newtypes}
 
