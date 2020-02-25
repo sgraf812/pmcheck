@@ -359,56 +359,56 @@ are exhaustive, and indeed, \sysname does so. We explore the subset of guards th
 \subsection{Programmable patterns}
 
 Expressions in guards are far from the only source of undecidability that the
-coverage checker must cope with. Both Haskell and GHC offer patterns that are
-impossible to check in the general case. We consider three such patterns
-here: overloaded literals, view patterns, and pattern synonyms.
+coverage checker must cope with. GHC extends the pattern language in ways
+that are also impossible to check in the general case.
+We consider two such extensions here: view patterns and pattern synonyms.
 
-\subsubsection{Overloaded literals}
-
-Numeric literals in Haskell can be used at multiple types by virtue of being
-overloaded. For example, the literal |0|, when used as an expression, has
-|Num a => a| as its most general type. The |Num| class, in turn, has instances
-for |Int|, |Double|, and many other numeric data types, allowing |0|
-to inhabit those types with little fuss.
-
-In addition to their role as expressions, overloaded literals can also be used
-as patterns. The |isZero| function below, for instance, can check whether any
-numeric value is equal to zero:
-
-\begin{code}
-isZero :: (Eq a, Num a) => a -> Bool
-isZero 0 = True
-isZero n = False
-\end{code}
-
-Why does |isZero| require an |Eq| constraint on top of a |Num| constraint? This
-is because when compiled, overloaded literal patterns essentially desugar to
-guards. As one example, |isZero| can be rewritten to use guards like so:
-
-\begin{code}
-isZero :: (Eq a, Num a) => a -> Bool
-isZero n | n == 0 = True
-isZero n = False
-\end{code}
-
-Desugaring overloaded literal patterns to guards directly like this is perhaps
-not always desirable, however, since that can make the coverage checker's job
-more difficult.
-\sg{Fun fact: I think this desugaring + GVN from \cref{ssec:extviewpat} would
-be enough to handle this desugaring of overloaded literals. I think it's still
-worthwhile to handle them similarly to PatSyns for efficiency and similarity
-reasons. But it renders the point we are trying to make here somewhat moot.}
-For instance, if the |isZero n = False| clause were omitted,
-concluding that |isZero| is non-exhaustive would require reasoning about
-properties of the |Eq| and |Num| classes. For this reason, it can be worthwhile
-to have special checking treatment for common numeric types such as |Int| or
-|Double|. In general, however, coverage checking patterns with overloaded
-literals is undecidable.
+% \subsubsection{Overloaded literals}
+%
+% Numeric literals in Haskell can be used at multiple types by virtue of being
+% overloaded. For example, the literal |0|, when used as an expression, has
+% |Num a => a| as its most general type. The |Num| class, in turn, has instances
+% for |Int|, |Double|, and many other numeric data types, allowing |0|
+% to inhabit those types with little fuss.
+%
+% In addition to their role as expressions, overloaded literals can also be used
+% as patterns. The |isZero| function below, for instance, can check whether any
+% numeric value is equal to zero:
+%
+% \begin{code}
+% isZero :: (Eq a, Num a) => a -> Bool
+% isZero 0 = True
+% isZero n = False
+% \end{code}
+%
+% Why does |isZero| require an |Eq| constraint on top of a |Num| constraint? This
+% is because when compiled, overloaded literal patterns essentially desugar to
+% guards. As one example, |isZero| can be rewritten to use guards like so:
+%
+% \begin{code}
+% isZero :: (Eq a, Num a) => a -> Bool
+% isZero n | n == 0 = True
+% isZero n = False
+% \end{code}
+%
+% Desugaring overloaded literal patterns to guards directly like this is perhaps
+% not always desirable, however, since that can make the coverage checker's job
+% more difficult.
+% \sg{Fun fact: I think this desugaring + GVN from \cref{ssec:extviewpat} would
+% be enough to handle this desugaring of overloaded literals. I think it's still
+% worthwhile to handle them similarly to PatSyns for efficiency and similarity
+% reasons. But it renders the point we are trying to make here somewhat moot.}
+% For instance, if the |isZero n = False| clause were omitted,
+% concluding that |isZero| is non-exhaustive would require reasoning about
+% properties of the |Eq| and |Num| classes. For this reason, it can be worthwhile
+% to have special checking treatment for common numeric types such as |Int| or
+% |Double|. In general, however, coverage checking patterns with overloaded
+% literals is undecidable.
 
 \subsubsection{View patterns}
 \label{sssec:viewpat}
 
-View patterns are a GHC extension that allow arbitrary computation to be performed
+View patterns allow arbitrary computation to be performed
 while pattern matching. When a value |v| is matched against a view pattern |f -> p|,
 the match is successful when |f v| successfully matches against the pattern |p|.
 For example, one can use view patterns to succintly define a function that computes
@@ -422,25 +422,35 @@ Text.uncons :: Text -> Maybe (Char, Text)
   -- where x is the first character and xs is the rest of the Text
 
 length :: Text -> Int
-length (Text.null -> True) = 0
-length (Text.uncons -> Just (x, xs)) = 1 + length xs
+length (Text.null -> True)            = 0
+length (Text.uncons -> Just (_, xs))  = 1 + length xs
 \end{code}
 
-View patterns can be thought of as a generalization of overloaded literals. For
-example, the |isZero| function in \ryan{cite section} can be rewritten to
-use view patterns like so:
+% View patterns can be thought of as a generalization of overloaded literals. For
+% example, the |isZero| function in \ryan{cite section} can be rewritten to
+% use view patterns like so:
+%
+% \begin{code}
+% isZero :: (Eq a, Num a) => a -> Bool
+% isZero ((==) 0 -> True) = True
+% isZero n = False
+% \end{code}
+
+When compiled, a view pattern desugars into a pattern guard. The desugared version
+of |length|, for instance, would look like this:
+\ryan{Consider putting these versions of |length| side-by-side to save space}
 
 \begin{code}
-isZero :: (Eq a, Num a) => a -> Bool
-isZero ((==) 0 -> True) = True
-isZero n = False
+length' :: Text -> Int
+length' t  | True <- Text.null t            = True
+           | Just (_, xs) <- Text.uncons t  = False
 \end{code}
 
-Just like with overloaded literals, view patterns desugar to guards when compiled.
-As a result, the coverage checker can cope with view patterns provided that they
-desugar to guards that are not too complex. For instance, \sysname would not be
+As a result, any coverage-checking algoritm that can handle guards can also
+handle view patterns, provided that the view patterns desugar to guards that
+are not too complex. For instance, \sysname would not be
 able to conclude that |length| is exhaustive, but it would be able to conclude
-that this reimplementation of |safeLast| is exhaustive:
+that the |safeLast| function below is exhaustive:
 
 \begin{code}
 safeLast :: [a] -> Maybe a
