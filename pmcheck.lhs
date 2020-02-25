@@ -269,12 +269,6 @@ We discuss the wealth of related work in \Cref{sec:related}.
 
 \section{The problem we want to solve} \label{sec:problem}
 
-\begin{figure}
-
-\caption{Definitions used in the text}
-\label{fig:definitions}
-\end{figure}
-
 What makes coverage checking so difficult in a language like Haskell? At first
 glance, implementing a coverage checking algorithm might appear simple: just
 check that every function matches on every possible combination of data
@@ -316,14 +310,13 @@ guardDemo c1 c2
   | otherwise                            = 3
 \end{code}
 
-The first guard is a \emph{boolean guard} that evaluates its right-hand side if
+The first guard is a \emph{boolean guard} that succeeds
+(i.e., evaluates its right-hand side) if
 the expression in the guard returns |True|. The second guard is a \emph{pattern
-guard} that evaluates its right-hand side if the pattern in the guard
+guard} that succeeds if the pattern in the guard
 successfully matches.
-\sg{``right-hand side'' can easily be misunderstood to mean the scrutinised
-expression here.}
 Moreover, a guard can have |let| bindings or even
-multiple checks, as the third guard demonstrates. Tahe fourth guard
+multiple checks, as the third guard demonstrates. The fourth guard
 uses |otherwise|, which is simply defined as |True|.
 
 Guards can be thought of as a generalization of patterns, and we would like to
@@ -344,7 +337,7 @@ Intuitively, |signum| is exhaustive since the combination of |(>)|, |(==)|, and
 however, since that would require knowledge about the properties of |Int|
 inequalities. In fact, coverage checking for guards in the general case is an
 undecidable problem. While we cannot accurately check \emph{all} uses of guards,
-we can at least give decent warnings for some common use-cases for guards.
+we can at least give decent warnings for some common use cases for guards.
 For instance, take the following functions: \simon{can one of you work out how to typeset these side-by-side instead of above each other?}
 \begin{code}
 not :: Bool -> Bool
@@ -378,7 +371,7 @@ overloaded. For example, the literal |0|, when used as an expression, has
 for |Int|, |Double|, and many other numeric data types, allowing |0|
 to inhabit those types with little fuss.
 
-In addition to their role as expression, overloaded literals can also be used
+In addition to their role as expressions, overloaded literals can also be used
 as patterns. The |isZero| function below, for instance, can check whether any
 numeric value is equal to zero:
 
@@ -484,7 +477,7 @@ like to avoid leaking the implementation details of abstract pattern synonyms, a
 challenging to automatically check that the combination of |Text.null| and
 |Text.uncons| is exhaustive.
 
-Intuitively, |Text.null| and |Text.uncons| are obviously exhaustive. GHC allows
+Intuitively, |Text.null| and |Text.uncons| together are exhaustive. GHC allows
 programmers to communicate this sort of intuition to the coverage checker in the
 form of |COMPLETE| sets.
 \ryan{Cite the |COMPLETE| section of the users guide.}
@@ -504,7 +497,7 @@ the programmer to ensure that this invariant is upheld.
 The evaluation order of pattern matching can impact whether a pattern is
 reachable or not. While Haskell is a lazy language, programmers can opt
 into extra strict evaluation by giving the fields of a data type strict fields,
-such as in this example: \ryan{Consider moving some of this code to the figure}
+such as in this example:
 \ryan{There is an erroneous space between the |!| and the |a|}
 
 \begin{code}
@@ -526,25 +519,24 @@ v (SJust _) = 1
 \end{code}
 
 It turns out, however, that the RHS of this case can never be
-reached. The only way to use |SJust| to construct a value of type |SMaybe Void|
+reached. The only way to use |SJust| is to construct a value of type |SMaybe Void|
 is |SJust| $\bot$, since |Void| has no data constructors. Because |SJust| is
 strict in its field, matching on |SJust| will cause |SJust| $\bot$ to diverge,
 since matching on a data constructor evaluates it to WHNF. As a result, there
 is no argument one could pass to |v| to make it return |1|, which makes the
 |SJust| case unreachable.
 
-Although \citet{gadtpm} incorporates strictness constraints into their algorithm,
-it does not consider constraints that arise from strict fields.
-\ryan{Say more here?}
+% Although \citet{gadtpm} incorporates strictness constraints into their algorithm,
+% it does not consider constraints that arise from strict fields.
 
 \subsubsection{Bang patterns}
 
-Strict fields are the primary mechanism for adding extra strictness in Haskell, but
+Strict fields are the primary mechanism for adding extra strictness in ordinary Haskell, but
 GHC adds another mechanism in the form of \emph{bang patterns}. A bang pattern
-such as |!pat| indicates that matching against |pat| \emph{always} evaluates it to
+such as |!pat| indicates that matching against |pat| always evaluates it to
 WHNF. While data constructor matches are normally the only patterns that match
 strictly, bang patterns extend this treatment to other patterns. For example,
-one can rewrite the earlier |v| example to use the ordinary, lazy |Maybe| data
+one can rewrite the earlier |v| example to use the standard, lazy |Maybe| data
 type: \ryan{I actually wanted to write Just !\_, but LaTeX won't parse that :(}
 
 \begin{code}
@@ -554,7 +546,7 @@ v' (Just !x) = 1
 \end{code}
 
 The |Just| case in |v'| is unreachable for the same reasons that the |SJust| case in
-|v| is unreachable. Due to bang patterns, a strictness-aware coverage-checking
+|v| is unreachable. Due to the presence of bang patterns, a strictness-aware coverage-checking
 algorithm must be consider the effects of strictness on any possible pattern,
 not just those arising from matching on data constructors with strict fields.
 
@@ -587,7 +579,7 @@ Although the algorithm is parametric over the choice of oracle, in practice
 the implementation of \gmtm in GHC uses an extremely simple oracle that can
 only reason about trivial guards. More sophisticated uses of guards will
 cause \gmtm to emit erroneous warnings. For instance, consider the following
-two functions
+two functions:
 
 \begin{code}
 data SBool (a :: Bool) where
