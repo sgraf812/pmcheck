@@ -220,7 +220,6 @@ In this paper we propose a new, compositional coverage-checking algorithm, calle
 is much simpler, more modular, \emph{and} more powerful than \gmtm.
 We make the
 following contributions:
-\ryan{Cite section numbers in the list below.}
 
 \begin{itemize}
 \item
@@ -244,7 +243,7 @@ following contributions:
   \Cref{sec:formalism}.
 
 \item
-  We have implemented \sysname in GHC. \ryan{More details.}
+  We have implemented \sysname in GHC (\Cref{sec:impl}). \ryan{More details.}
 \end{itemize}
 
 We discuss the wealth of related work in \Cref{sec:related}.
@@ -297,11 +296,11 @@ constructor, which makes coverage checking in the presence of pattern synonyms
 challenging.
 
 Prior work on coverage checking (which we will expound upon further in
-\ryan{Cite related work section}) accounts for some of these nuances, but
+\Cref{sec:related}) accounts for some of these nuances, but
 not all of them. In this section we identify all of the language features that
 complicate coverage checking. While these features may seem disparate at first,
-we will later show in \ryan{Cite the relevant section}\sg{That's probably
-section 4/5} that these ideas can all fit into a unified framework.
+we will later show in \Cref{sec:formalism} that these ideas can all fit
+into a unified framework.
 
 \subsection{Guards}
 
