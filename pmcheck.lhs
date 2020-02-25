@@ -595,8 +595,12 @@ even though it does not match on all of |T|'s data constructors.
 
 The same engine that typechecks GADT pattern matches is
 also used to rule out cases made unreachable by type equalities.
-There are a variety of coverage checking algorithms that account for GADTs
-(\ryan{What to cite here?}), and \sysname continues this tradition.
+There are a variety of coverage checking algorithms that account for GADTs,
+including the checkers for
+OCaml \cite{ocamlgadts},
+Dependent ML \cite{deadcodexi,xithesis,dependentxi}, and
+Stardust \cite{dunfieldthesis},
+and \sysname continues this tradition.
 See \ryan{What section?} for \sysname's take on GADTs.
 
 \begin{figure}
