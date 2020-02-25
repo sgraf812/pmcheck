@@ -177,9 +177,12 @@ defined. Attempting to invoke |f 1|, for instance, will fail.
 
 To avoid these mishaps, compilers for languages with pattern matching often
 emit warnings whenever a programmer misuses patterns. Such warnings indicate
-if a function is missing clauses (i.e., if it is \emph{non-exhaustive}) or if
-a function has overlapping clauses (i.e., if it is \emph{redundant}). We refer
-to the combination of checking for exhaustivity and redundancy as
+if a function is missing clauses (i.e., if it is \emph{non-exhaustive}), if
+a function has completely overlapping clauses (i.e., if it is \emph{redundant}),
+or if a function has a right-hand side that cannot be reached (i.e., if it is
+\emph{inaccessible}).
+We refer
+to the combination of checking for exhaustivity, redundancy, and accessibility as
 \emph{pattern-match coverage checking}. Coverage checking is the first line
 of defence in catching programmer mistakes when defining code that uses
 pattern matching.
@@ -205,7 +208,8 @@ scope by pattern matching \cite{outsideinx}.
 % with all of these features is no small task.
 
 The current state of the art for coverage checking in a richer language of this sort
-is \citet{gadtpm}, or \gmtm{} for short.  It presents an algorithm that handles the intricacies of
+is GADTs Meet Their Match \cite{gadtpm}, or \gmtm{} for short.
+It presents an algorithm that handles the intricacies of
 checking GADTs, lazy patterns, and pattern guards. We argue that this
 algorithm is insufficient in a number of key ways. It does not account for a number of
 important language features and even gives incorrect results in certain cases.
@@ -213,7 +217,7 @@ Moreover, the implementation of this algorithm in GHC is inefficient and has
 proved to be difficult to maintain due to its complexity.
 
 In this paper we propose a new, compositional coverage-checking algorithm, called Lower Your Guards (\sysname), that
-is \emph{both} much simpler and more modular, \emph{and} more powerful than \gmtm.
+is much simpler, more modular, \emph{and} more powerful than \gmtm.
 We make the
 following contributions:
 \ryan{Cite section numbers in the list below.}
@@ -221,7 +225,7 @@ following contributions:
 \begin{itemize}
 \item
   We characterise the nuances of coverage checking that not even the
-  algorithm in \cite{gadtpm} handles (\Cref{sec:problem}). We also identify issues in GHC's
+  algorithm in \citet{gadtpm} handles (\Cref{sec:problem}). We also identify issues in GHC's
   implementation of this algorithm.
 
 \item
