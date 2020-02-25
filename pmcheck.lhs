@@ -195,7 +195,7 @@ raft of innovations that have become part of a modern programming language
 like Haskell, including: view patterns, pattern guards, pattern synonyms,
 overloaded literals, bang patterns, lazy patterns, as-patterns, strict data contructors,
 empty case expressions, and long-distance effects (\Cref{sec:long-distance}).
-Particularly tricky are GADTs \cite{gadts}, where the \emph{type} of a match can determine
+Particularly tricky are GADTs \cite{recdatac}, where the \emph{type} of a match can determine
 what \emph{values} can possibly appear; and local type-equality constraints brought into
 scope by pattern matching \cite{outsideinx}.
 
@@ -446,7 +446,7 @@ length' t  | True <- Text.null t            = True
            | Just (_, xs) <- Text.uncons t  = False
 \end{code}
 
-As a result, any coverage-checking algoritm that can handle guards can also
+As a result, any coverage-checking algorithm that can handle guards can also
 handle view patterns, provided that the view patterns desugar to guards that
 are not too complex. For instance, \sysname would not be
 able to conclude that |length| is exhaustive, but it would be able to conclude
