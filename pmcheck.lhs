@@ -254,7 +254,7 @@ We discuss the wealth of related work in \TODO.
 \end{figure}
 
 What makes coverage checking so difficult in a language like Haskell? At first
-glance, implementing a coverage checker algorithm might appear simple: just
+glance, implementing a coverage checking algorithm might appear simple: just
 check that every function matches on every possible combination of data
 constructors exactly once. A function must match on every possible combination
 of constructors in order to be exhaustive, and it must must on them exactly
@@ -277,8 +277,8 @@ Prior work on coverage checking (which we will expound upon further in
 \ryan{Cite related work section}) accounts for some of these nuances, but
 not all of them. In this section we identify all of the language features that
 complicate coverage checking. While these features may seem disparate at first,
-we will later show in \ryan{Cite the relevant section} that these ideas can all
-fit into a unified framework.
+we will later show in \ryan{Cite the relevant section}\sg{That's probably
+section 4/5} that these ideas can all fit into a unified framework.
 
 \subsection{Guards}
 
@@ -294,12 +294,15 @@ guardDemo c1 c2
   | otherwise = 3
 \end{code}
 
-The first guard is a boolean-valued guard that evaluates its right-hand side if
-the expression in the guard returns |True|. The second guard is
-a \emph{pattern guard} that evaluates its right-hand side if the pattern in
-the guard successfully matches. Moreover, a guard can have |let| bindings or
-even multiple checks, as the third guard demonstrates. Note that the fourth
-guard uses |otherwise|, a boolean guard that is guaranteed to match successfully.
+The first guard is a \emph{boolean guard} that evaluates its right-hand side if
+the expression in the guard returns |True|. The second guard is a \emph{pattern
+guard} that evaluates its right-hand side if the pattern in the guard
+successfully matches.
+\sg{``right-hand side'' can easily be misunderstood to mean the scrutinised
+expression here.}
+Moreover, a guard can have |let| bindings or even
+multiple checks, as the third guard demonstrates. Note that the fourth guard
+uses |otherwise|, which is simply defined as |True|.
 
 Guards can be thought of as a generalization of patterns, and we would like to
 include them as part of coverage checking. Checking guards is significantly more
@@ -320,8 +323,8 @@ Intuitively, |signum| is exhaustive since the combination of |(>)|, |(==)|, and
 however, since that would require knowledge about the properties of |Int|
 inequalities. In fact, coverage checking for guards in the general case is an
 undecidable problem. While we cannot accurately check \emph{all} uses of guards,
-we can at least give decent warnings for some commonly use cases for guards.
-For instance, take the following function that only uses pattern guards:
+we can at least give decent warnings for some common use cases for guards. For
+instance, take the following function that only uses pattern guards:
 
 \begin{code}
 not :: Bool -> Bool
@@ -380,7 +383,12 @@ isZero n = False
 
 Desugaring overloaded literal patterns to guards directly like this is perhaps
 not always desirable, however, since that can make the coverage checker's job
-more difficult. For instance, if the |isZero n = False| clause were omitted,
+more difficult.
+\sg{Fun fact: I think this desugaring + GVN from \cref{ssec:extviewpat} would
+be enough to handle this desugaring of overloaded literals. I think it's still
+worthwhile to handle them similarly to PatSyns for efficiency and similarity
+reasons.}
+For instance, if the |isZero n = False| clause were omitted,
 concluding that |isZero| is non-exhaustive would require reasoning about
 properties of the |Eq| and |Num| classes. For this reason, it can be worthwhile
 to have special checking treatment for common numeric types such as |Int| or
@@ -1738,6 +1746,7 @@ information (\cf \cref{ssec:ldi}).
 
 
 \subsection{View Patterns}
+\label{ssec:extviewpat}
 
 Extending source syntax for view patterns is straight-forward, so is its
 desugaring in terms of $\Grd$:
