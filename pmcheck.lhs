@@ -560,6 +560,45 @@ The |Just| case in |v'| is unreachable for the same reasons that the |SJust| cas
 algorithm must be consider the effects of strictness on any possible pattern,
 not just those arising from matching on data constructors with strict fields.
 
+\subsection{Type-equality constraints}
+
+Besides strictness, another way for pattern matches to be rendered unreachable
+is by way of \emph{equality constraints}. A popular method for introducing
+equalities between types is matching on GADTs \cite{recdatac}. Here is one example that
+demonstrates the interaction between GADTs and coverage checking:
+\ryan{Lay these out side by side with an array or something}
+
+\begin{code}
+data T a b where
+  T1 :: T Bool Int
+  T2 :: T Char Int
+
+s :: T Bool b -> b
+s T1 = 42
+\end{code}
+
+When |s| matches against |T1|, the |b| in the type |T Bool b| is known to be an |Int|
+on the right-hand side of the clause, which is why the use of |42| typechecks.
+Phrased differently, matching against
+|T1| brings into scope an \emph{equality constraint} between the types
+|b| and |Int|. GHC has a powerful type inference engine that is equipped to
+reason about type equalities of this sort \cite{outsideinx}.
+
+Just as important as the code used in the |s| function is the code that is
+\emph{not} used in |s|. One might wonder if |s| not matching on the |T2|
+constructor is an oversight. In fact, the exact opposite is true: matching
+on |s| in |T2| would be rejected by the typechecker. This is because |T2|
+is of type |T Char Int|, but the argument to |s| must be of type |T Bool b|.
+Matching against |T2| would be tantamount to saying that |Bool| and |Char|
+are the same type, which is not the case. As a result, |s| is exhaustive
+even though it does not match on all of |T|'s data constructors.
+
+The same engine that typechecks GADT pattern matches is
+also used to rule out cases made unreachable by type equalities.
+There are a variety of coverage checking algorithms that account for GADTs
+(\ryan{What to cite here?}), and LYG continues this tradition.
+See \ryan{What section?} for LYG's take on GADTs.
+
 \begin{figure}
 \centering
 \begin{verbatim}
