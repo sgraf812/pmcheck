@@ -577,9 +577,12 @@ The |g| function uses GADT pattern matching inside of a pattern guard.
 by |STrue|. Despite this, GHC's implementation of \gmtm incorrectly warns
 about a missing case.
 
-We could envision making the term oracle in \gmtm more intelligent, but in
-many cases we can actually get away without needing one. \ryan{Sebastian:
-please go over this. Also, which section to cite?}
+In fact, our new approach was a result of improving the oracle implementation
+to a point where it was able to cope with more complex guards, only then to
+realise that we could drastically simplify the treatment of patterns by
+desugaring to guards. The takeaway here is that although \gmtm can be
+arbitrarily smart about guards by harnessing a clever term oracle, the
+existence of such an oracle renders the developments of \gmtm redundant.
 
 \begin{figure}
 \centering
