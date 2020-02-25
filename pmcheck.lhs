@@ -184,47 +184,66 @@ to the combination of checking for exhaustivity and redundancy as
 of defence in catching programmer mistakes when defining code that uses
 pattern matching.
 
-If coverage checking catches mistakes in pattern matches, then who checks for
-mistakes in the coverage checker itself? It is a surprisingly frequent
-occurrence for coverage checkers to contain bugs that impact correctness.
-This is especially true in Haskell, which has a rich pattern language, and the
-Glasgow Haskell Compiler (GHC) complicates the story further by adding
-pattern-related language extensions. Designing a coverage checker that can cope
-with all of these features is no small task.
+Coverage checking for a set of equations matching on algebraic data
+types is a well studied (although still surprisingly tricky) problem -- see
+\Cref{sec:related} for this related work.
+But the coverage-checking problem becomes \emph{much} harder when one includes the
+raft of innovations that have become part of a modern programming language
+like Haskell, including: view patterns, pattern guards, pattern synonyms,
+overloaded literals, bang patterns, lazy patterns, as-patterns, strict data contructors,
+and long-distance effects (\Cref{sec:long-distance}).
+Particularly tricky are GADTs \cite{gadts}, where the \emph{type} of a match can determine
+what \emph{values} can possibly appear; and local type-equality constraints brought into
+scope by pattern matching \cite{outsideinx}.
 
-The current state of the art for coverage checking GHC is
-\citet{gadtpm}, which presents an algorithm that handles the intricacies of
+% If coverage checking catches mistakes in pattern matches, then who checks for
+% mistakes in the coverage checker itself? It is a surprisingly frequent
+% occurrence for coverage checkers to contain bugs that impact correctness.
+% This is especially true in Haskell, which has a rich pattern language, and the
+% Glasgow Haskell Compiler (GHC) complicates the story further by adding
+% pattern-related language extensions. Designing a coverage checker that can cope
+% with all of these features is no small task.
+
+The current state of the art for coverage checking in a richer language of this sort
+is \citet{gadtpm}, or \gmtm{} for short.  It presents an algorithm that handles the intricacies of
 checking GADTs, lazy patterns, and pattern guards. We argue that this
 algorithm is insufficient in a number of key ways. It does not account for a number of
 important language features and even gives incorrect results in certain cases.
 Moreover, the implementation of this algorithm in GHC is inefficient and has
 proved to be difficult to maintain due to its complexity.
 
-In this paper we propose a new algorithm, called \sysname, that addresses the
-deficiencies of \citet{gadtpm}. The key insight of \sysname is to condense all
-of the complexities of pattern matching into just three constructs:
-|let| bindings, pattern guards, and bang guards. We make the
+In this paper we propose a new, compositional coverage-checking algorithm, called \sysname, that
+is \emph{both} much simpler and more modular, \emph{and} more powerful than \gmtm.
+We make the
 following contributions:
 \ryan{Cite section numbers in the list below.}
 
 \begin{itemize}
 \item
   We characterise the nuances of coverage checking that not even the
-  algorithm in \cite{gadtpm} handles. We also identify issues in GHC's
+  algorithm in \cite{gadtpm} handles (\Cref{sec:problem}). We also identify issues in GHC's
   implementation of this algorithm.
 
 \item
-  We break down coverage checking into a pipeline of individually
-  straight-forward translation steps between multiple intermediate
-  representations. \Cref{sec:overview} introduces the new syntax while building
-  up an intuition of the checking process for \cref{sec:checking}, which gives
-  a formal treatment of the latter.
+  We given an overview of our new algorithm \sysname{} in \Cref{sec:overview}.
+  The key insight is to abandon the notion of structural pattern
+  matching altogether, and instead desugar all
+  the complexities of pattern matching into a very simple language
+  of \emph{guard trees}, with just three constructs (\Cref{sec:desugar}).
+  Coverage checking on these guard trees becomes remarkably simple,
+  returning an \emph{annotated tree} (\Cref{sec:check}) decorated with
+  \emph{refinement types}.
+  Finally, provided we have access to a suitable way to find inhabitants
+  of a refinement type, we can report accurate coverage errors (\Cref{sec:inhabitants}).
+
+\item We shore up the intuitions of \Cref{sec:overview} with a formal treatment in
+  \Cref{sec:formalism}.
 
 \item
   We have implemented \sysname in GHC. \ryan{More details.}
 \end{itemize}
 
-We discuss the wealth of related work in \TODO.
+We discuss the wealth of related work in \Cref{sec:related}.
 
 % Contributions from our call:
 % \begin{itemize}
@@ -245,7 +264,7 @@ We discuss the wealth of related work in \TODO.
 % \end{itemize}
 
 
-\section{The problem we want to solve}
+\section{The problem we want to solve} \label{sec:problem}
 
 \begin{figure}
 
@@ -324,7 +343,7 @@ however, since that would require knowledge about the properties of |Int|
 inequalities. In fact, coverage checking for guards in the general case is an
 undecidable problem. While we cannot accurately check \emph{all} uses of guards,
 we can at least give decent warnings for some common use-cases for guards.
-For instance, take the following functions:
+For instance, take the following functions: \simon{can one of you work out how to typeset these side-by-side instead of above each other?}
 \begin{code}
 not :: Bool -> Bool
 not b
@@ -610,7 +629,7 @@ existence of such an oracle renders the developments of \gmtm redundant.
   expr        &\text{Expressions} \\
 \end{array} &
 \begin{array}{rcl}
-  defn   &\Coloneqq& \overline{clause} \\
+  \mathit{defn}   &\Coloneqq& \overline{clause} \\
   clause &\Coloneqq&  f \; \overline{pat} \; \overline{match} \\
   pat    &\Coloneqq& x \mid |_| \mid K \; \overline{pat} \mid x|@|pat \mid |!|pat \mid |~|pat \mid x \, \mathtt{+} \, l \\
   match  &\Coloneqq& \mathtt{=} \; expr \mid \overline{grhs} \\
@@ -706,7 +725,7 @@ $\red$. $\unc$ on the other hand returns a \emph{refinement type} representing
 the set of \emph{uncovered values}, for which $\generate$ can generate the
 inhabiting patterns to show to the user.
 
-\subsection{Desugaring to Guard Trees}
+\subsection{Desugaring to Guard Trees} \label{sec:desugar}
 
 \begin{figure}
 \[
@@ -837,7 +856,7 @@ captured by $\gdtguard{}{\hspace{-0.6em}}$, whereas top-to-bottom backtracking
 is expressed by sequence ($\gdtseq{}{}$). The leaves in a guard tree each
 correspond to a GRHS.
 
-\subsection{Checking Guard Trees}
+\subsection{Checking Guard Trees} \label{sec:check}
 
 Pattern match checking works by gradually refining the set of reaching values
 \ryan{Did you mean to write ``reachable values'' here? ``Reaching values''
@@ -939,7 +958,7 @@ redundant ($\times$).
 Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
 inaccessible) when it reaches a particular GRHS.
 
-\subsection{Generating Inhabitants of a Refinement Type}
+\subsection{Generating Inhabitants of a Refinement Type} \label{sec:inhabitants}
 
 The predicate literals $\varphi$ of refinement types look quite similar to the
 original $\Grd$ language, so how is checking them for emptiness an improvement
@@ -1000,7 +1019,7 @@ important to test guard-bound variables for inhabitants, too.
 \sg{GMTM goes into detail about type constraints, term constraints and
 worst-case complexity here. That feels a bit out of place.}
 
-\section{Formalism}
+\section{Formalism} \label{sec:formalism}
 
 The previous section gave insights into how we represent pattern match checking
 problems as guard trees and provided an intuition for how to check them for
@@ -2193,6 +2212,10 @@ And maybe how we represent Delta in general.}
 %\listoftodos\relax
 
 %\nocite{*}
+
+\section{Related work} \label{sec:related}
+
+\simon{Ryan/Sebastian: needs writing!}
 
 \bibliography{references}
 
