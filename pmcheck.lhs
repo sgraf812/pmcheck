@@ -92,8 +92,8 @@
 \setlength{\pdfpageheight}{\paperheight}
 \setlength{\pdfpagewidth}{\paperwidth}
 
-\title{GADTs Meet Their Match:}
-\subtitle{Pattern-Matching Warnings That Account for GADTs, Guards, and Laziness}
+\title{Lower Your Guards}
+\subtitle{A Compositional Pattern-Match Coverage Checker}
 
 \author{Sebastian Graf}
 \affiliation{%
@@ -212,7 +212,7 @@ important language features and even gives incorrect results in certain cases.
 Moreover, the implementation of this algorithm in GHC is inefficient and has
 proved to be difficult to maintain due to its complexity.
 
-In this paper we propose a new, compositional coverage-checking algorithm, called \sysname, that
+In this paper we propose a new, compositional coverage-checking algorithm, called Lower Your Guards (\sysname), that
 is \emph{both} much simpler and more modular, \emph{and} more powerful than \gmtm.
 We make the
 following contributions:
