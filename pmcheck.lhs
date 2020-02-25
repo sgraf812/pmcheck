@@ -187,10 +187,10 @@ pattern matching.
 If coverage checking catches mistakes in pattern matches, then who checks for
 mistakes in the coverage checker itself? It is a surprisingly frequent
 occurrence for coverage checkers to contain bugs that impact correctness.
-This is especially true in Haskell, which has an especially rich pattern
-language, and the Glasgow Haskell Compiler (GHC) complicates the story further
-by adding pattern-related language extensions. Designing a coverage
-checker that can cope with all of these features is no small task.
+This is especially true in Haskell, which has a rich pattern language, and the
+Glasgow Haskell Compiler (GHC) complicates the story further by adding
+pattern-related language extensions. Designing a coverage checker that can cope
+with all of these features is no small task.
 
 The current state of the art for coverage checking GHC is
 \citet{gadtpm}, which presents an algorithm that handles the intricacies of
@@ -214,7 +214,11 @@ following contributions:
   implementation of this algorithm.
 
 \item
-  \ryan{Describe the "Overview Over Our Solution" section and "Formalism" sections.}
+  We break down coverage checking into a pipeline of individually
+  straight-forward translation steps between multiple intermediate
+  representations. \Cref{sec:overview} introduces the new syntax while building
+  up an intuition of the checking process for \cref{sec:checking}, which gives
+  a formal treatment of the latter.
 
 \item
   We have implemented \sysname in GHC. \ryan{More details.}
@@ -615,7 +619,9 @@ existence of such an oracle renders the developments of \gmtm redundant.
 \label{fig:srcsyn}
 \end{figure}
 
+
 \section{Overview of Our Solution}
+\label{sec:overview}
 
 \begin{figure}
 \includegraphics{pipeline.eps}
