@@ -384,6 +384,7 @@ to have special checking treatment for common numeric types such as |Int| or
 literals is undecidable.
 
 \subsubsection{View patterns}
+\label{sssec:viewpat}
 
 View patterns are a GHC extension that allow arbitrary computation to be performed
 while pattern matching. When a value |v| is matched against a view pattern |f -> p|,
@@ -1726,10 +1727,65 @@ $\unc(\Theta \andtheta (x \ntermeq \bot), \gdtempty)$, where $\Theta$ is the
 context-sensitive set of reaching values, possibly enriched with long distance
 information (\cf \cref{ssec:ldi}).
 
-\subsection{Identifying Semantically Equivalent Expressions}
 
-\sg{Or just ``View Patterns'' for a catchier title?}
-\TODO
+\subsection{View Patterns}
+
+Extending source syntax for view patterns is straight-forward, so is its
+desugaring in terms of $\Grd$:
+\[
+\begin{array}{cc}
+\begin{array}{c}
+  pat    \Coloneqq \highlight{expr \rightarrow pat} \mid ...
+\end{array} &
+\begin{array}{c}
+  \highlight{\ds(x, expr \rightarrow pat) = \grdlet{|y|}{expr \; x}, \ds(y, pat)}
+\end{array}
+\end{array}
+\]
+
+\sg{Should we also generate a $\grdbang{x}$? That wouldn't be true for |const
+False -> True|. I'm not sure if there's a conservative way to handle that
+case!}
+Where |y| is a fresh variable. But this alone is insufficient for the checker
+to conclude that |safeLast| from \cref{sssec:viewpat} is an exhaustive
+definition! To see why, let's look at its guard tree:
+
+\begin{forest}
+  grdtree,
+  [
+    [{$\grdlet{|y_1|}{|reverse x_1|}, \grdbang{|y_1|}, \grdcon{|Nothing|}{|y_1|}$} [1]]
+    [{$\grdlet{|y_2|}{|reverse x_1|}, \grdbang{|y_2|}, \grdcon{|Just t_1|}{|y_2|}, \grdbang{|t_1|}, \grdcon{|(t_2, t_3)|}{|t_1|}$} [2]]]
+\end{forest}
+
+Although |y_1| and |y_2| bind syntactically equivalent expressions, our simple
+desugaring function doesn't see that and allocated fresh names for each of
+them. That in turn means that both the match on |y_1| and |y_2| by itself are
+inexhaustive. But due to referential transparency, the result of |reverse x_1|
+doesn't change! By making the connection between |y_1| and |y_2|, the checker
+could infer that the match was exhaustive.
+
+This can be fixed at any level of abstraction (\ie in $\ds$ or $\!\addphi\!$)
+by maintaining equivalence classes of semantically equivalent expressions. For
+the example above, handling $\grdlet{|y_2|}{|reverse x_1|}$ in the second
+branch would entail looking up the equivalence class of |reverse x_1| and
+finding out that it is also bound by |y_1|, so we can handle
+$\grdlet{|y_2|}{|y_1|}$ instead and make sense of the $|y_1| \ntermeq
+|Nothing|$ constraint that fell through from the first branch to conclude
+that the match is exhaustive.
+
+In fact, that is just like performing an on-the-fly global value numbering
+(GVN) of expression~\cite{gvn}! We decided to perform (an approximation to) GVN
+at the level of $\!\addphi\!$, because it is more broadly applicable there and
+a very localised change:
+\[
+\begin{array}{r@@{\,}c@@{\,}lcl}
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \highlight{\ctxt{\Gamma}{\Delta} \addphi \ctlet{x:\tau}{r_i} \quad \text{where $i$ is global value number of |e|}} \\
+\end{array}
+\]
+
+Where |r_i| is the representative of the equivalence class of expressions with
+global value number $i$. Thus, our implementation will not emit any warning for
+a definition like |safeLast|.
 
 
 \subsection{Pattern Synonyms}
@@ -1742,12 +1798,12 @@ source syntax and IR syntax by adding the syntactic concept of a
 \begin{array}{cc}
 \begin{array}{rcl}
   cl     &\Coloneqq& K \mid P \\
-  pat    &\Coloneqq& x \mid |_| \mid \highlightchange{$cl$} \; \overline{pat} \mid x|@|pat \mid ... \\
+  pat    &\Coloneqq& x \mid |_| \mid \highlight{cl} \; \overline{pat} \mid x|@|pat \mid ... \\
 \end{array} &
 \begin{array}{rlcl}
   P \in           &\PS \\
   C \in           &\CL  &\Coloneqq& K \mid P \\
-  p \in           &\Pat &\Coloneqq& \_ \mid \highlightchange{C} \; \overline{p} \mid ... \\
+  p \in           &\Pat &\Coloneqq& \_ \mid \highlight{C} \; \overline{p} \mid ... \\
 \end{array}
 \end{array}
 \]
@@ -1756,7 +1812,8 @@ source syntax and IR syntax by adding the syntactic concept of a
 are strict, just like data constructor matches. This is not generally true, but
 \ticket{17357} has a discussion of why being conservative is too disruptive to
 be worth the trouble. Should we talk about that? It concerns the definition of
-$\ds$, namely whether to add a $\grdbang{x}$ on the match var or not.}
+$\ds$, namely whether to add a $\grdbang{x}$ on the match var or not. Maybe a
+footnote?}
 
 Assuming every definition encountered so far is changed to handle ConLikes $C$
 now instead of data constructors $K$, everything should work almost fine. Why
@@ -1786,7 +1843,7 @@ ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
 \begin{array}{r@@{\,}c@@{\,}lcl}
 \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{C}{a}{y} &=& \begin{cases}
     \ctxt{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C}{b}{z} \in \Delta$ } \\
-    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C'}{b}{z} \in \Delta$ \highlightchange{and $C \cap C' = \emptyset$}} \\
+    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C'}{b}{z} \in \Delta$ \highlight{\text{and $C \cap C' = \emptyset$}}} \\
     \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{C}{a}{y})} & \text{if $\rep{\Delta}{x} \ntermeq C \not\in \Delta$ and $\overline{\inhabited{\ctxt{\Gamma}{\Delta}}{\Delta(y)}}$} \\
     \false & \text{otherwise} \\
   \end{cases} \\
@@ -2097,6 +2154,12 @@ we throttle, so that the same four $\nabla$s reaching the third equation also
 reach the fourth equation, and so on. Basically, every equation is checked for
 overlaps \emph{as if} it was the third equation, because we keep on forgetting
 what was matched beyond that.
+
+
+\subsection{Maintaining residual \extension{COMPLETE} sets}
+
+\TODO
+
 
 \sg{I'm not sure what other hacks we should mention beyond this. I don't think
 we want to write about ad-hoc details like 6.2 in GMTM, because they are
