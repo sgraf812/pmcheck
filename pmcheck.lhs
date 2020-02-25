@@ -288,10 +288,10 @@ demonstrates various capabilities of guards:
 \begin{code}
 guardDemo :: Char -> Char -> Int
 guardDemo c1 c2
-  | c1 == 'a' = 0
-  | 'b' <- c1 = 1
-  | let c1' = c1, 'c' <- c1', c2 == 'd' = 2
-  | otherwise = 3
+  | c1 == 'a'                            = 0
+  | 'b' <- c1                            = 1
+  | let c1' = c1, 'c' <- c1', c2 == 'd'  = 2
+  | otherwise                            = 3
 \end{code}
 
 The first guard is a \emph{boolean guard} that evaluates its right-hand side if
@@ -301,7 +301,7 @@ successfully matches.
 \sg{``right-hand side'' can easily be misunderstood to mean the scrutinised
 expression here.}
 Moreover, a guard can have |let| bindings or even
-multiple checks, as the third guard demonstrates. Note that the fourth guard
+multiple checks, as the third guard demonstrates. Tahe fourth guard
 uses |otherwise|, which is simply defined as |True|.
 
 Guards can be thought of as a generalization of patterns, and we would like to
@@ -313,9 +313,9 @@ function:
 \begin{code}
 signum :: Int -> Int
 signum x
-  | x > 0 = 1
-  | x == 0 = 0
-  | x < 0 = -1
+  | x > 0   = 1
+  | x == 0  = 0
+  | x < 0   = -1
 \end{code}
 
 Intuitively, |signum| is exhaustive since the combination of |(>)|, |(==)|, and
@@ -323,27 +323,24 @@ Intuitively, |signum| is exhaustive since the combination of |(>)|, |(==)|, and
 however, since that would require knowledge about the properties of |Int|
 inequalities. In fact, coverage checking for guards in the general case is an
 undecidable problem. While we cannot accurately check \emph{all} uses of guards,
-we can at least give decent warnings for some common use cases for guards. For
-instance, take the following function that only uses pattern guards:
-
+we can at least give decent warnings for some common use-cases for guards.
+For instance, take the following functions:
 \begin{code}
 not :: Bool -> Bool
 not b
-  | False <- b = True
-  | True <- b = False
+  | False <- b  = True
+  | True <- b   = False
+
+not2 :: Bool -> Bool
+not2 False = True
+not2 True = False
+
+not3 :: Bool -> Bool
+not3 x | x <- False  = True
+not3 True            = False
 \end{code}
-
-|not| is clearly equivalent to the following function that matches on its argument
-without guards:
-
-\begin{code}
-not' :: Bool -> Bool
-not' False = True
-not' True = False
-\end{code}
-
-We would like our coverage checking algorithm to mark both |not| and |not'|
-as exhaustive, and \sysname does so. We explore the subset of guards that
+Clearly all are equivalent.  Our coverage checking algorithm should find that all three
+are exhaustive, and indeed, \sysname does so. We explore the subset of guards that
 \sysname can check in more detail in \ryan{Cite relevant section}.
 
 \subsection{Programmable patterns}
