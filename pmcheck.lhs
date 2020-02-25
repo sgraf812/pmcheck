@@ -188,7 +188,7 @@ of defence in catching programmer mistakes when defining code that uses
 pattern matching.
 
 Coverage checking for a set of equations matching on algebraic data
-types is a well studied (although still surprisingly tricky) problem -- see
+types is a well studied (although still surprisingly tricky) problem---see
 \Cref{sec:related} for this related work.
 But the coverage-checking problem becomes \emph{much} harder when one includes the
 raft of innovations that have become part of a modern programming language
