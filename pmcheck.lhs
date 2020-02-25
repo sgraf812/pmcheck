@@ -401,7 +401,7 @@ more difficult.
 \sg{Fun fact: I think this desugaring + GVN from \cref{ssec:extviewpat} would
 be enough to handle this desugaring of overloaded literals. I think it's still
 worthwhile to handle them similarly to PatSyns for efficiency and similarity
-reasons.}
+reasons. But it renders the point we are trying to make here somewhat moot.}
 For instance, if the |isZero n = False| clause were omitted,
 concluding that |isZero| is non-exhaustive would require reasoning about
 properties of the |Eq| and |Num| classes. For this reason, it can be worthwhile
@@ -1098,6 +1098,7 @@ f (Just (!xs,_))  ys@Nothing  = 1
 f Nothing         zs          = 2
 \end{code}
 
+\noindent
 Under $\ds$, this desugars to
 
 \begin{forest}
@@ -1218,8 +1219,7 @@ uninteresting to the checking process, but making sense of them is important
 for the precision of the emptiness check involving $\generate$. Of course,
 ``making sense'' of an expression is an open-ended endeavour, but we'll
 see a few reasonable ways to improve precision considerably at almost no cost,
-both in \cref{ssec:extinert} and \sg{TODO: Reference CoreMap/semantic equality
-extension, and possibly an extension for linear arithmetic or boolean logic}.
+both in \cref{ssec:extinert} and \cref{ssec:extviewpat}.
 
 
 \subsection{Generating Inhabitants of a Refinement Type}
@@ -1475,7 +1475,7 @@ a pattern binding, if only for the difference in binding semantics!), we add
 appropriate positive constructor and type constraints, as well as recurse into
 the field expressions, which might in turn contain nested constructor
 applications. All other let bindings are simply discarded. We'll see an
-extension \sg{TODO reference CoreMap} which will expand here. The last case of
+extension in \cref{ssec:extviewpat} which will expand here. The last case of
 $\!\addphi\!$ turns the syntactically and semantically identical subset of
 $\varphi$ into $\delta$ and adds that constraint via $\!\adddelta\!$.
 
