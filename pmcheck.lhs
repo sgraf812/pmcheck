@@ -191,7 +191,7 @@ But the coverage-checking problem becomes \emph{much} harder when one includes t
 raft of innovations that have become part of a modern programming language
 like Haskell, including: view patterns, pattern guards, pattern synonyms,
 overloaded literals, bang patterns, lazy patterns, as-patterns, strict data contructors,
-and long-distance effects (\Cref{sec:long-distance}).
+empty case expressions, and long-distance effects (\Cref{sec:long-distance}).
 Particularly tricky are GADTs \cite{gadts}, where the \emph{type} of a match can determine
 what \emph{values} can possibly appear; and local type-equality constraints brought into
 scope by pattern matching \cite{outsideinx}.
@@ -331,10 +331,9 @@ function:
 
 \begin{code}
 signum :: Int -> Int
-signum x
-  | x > 0   = 1
-  | x == 0  = 0
-  | x < 0   = -1
+signum x  | x > 0   = 1
+          | x == 0  = 0
+          | x < 0   = -1
 \end{code}
 
 Intuitively, |signum| is exhaustive since the combination of |(>)|, |(==)|, and
@@ -346,9 +345,8 @@ we can at least give decent warnings for some common use-cases for guards.
 For instance, take the following functions: \simon{can one of you work out how to typeset these side-by-side instead of above each other?}
 \begin{code}
 not :: Bool -> Bool
-not b
-  | False <- b  = True
-  | True <- b   = False
+not b  | False <- b  = True
+       | True <- b   = False
 
 not2 :: Bool -> Bool
 not2 False = True
