@@ -596,8 +596,8 @@ even though it does not match on all of |T|'s data constructors.
 The same engine that typechecks GADT pattern matches is
 also used to rule out cases made unreachable by type equalities.
 There are a variety of coverage checking algorithms that account for GADTs
-(\ryan{What to cite here?}), and LYG continues this tradition.
-See \ryan{What section?} for LYG's take on GADTs.
+(\ryan{What to cite here?}), and \sysname continues this tradition.
+See \ryan{What section?} for \sysname's take on GADTs.
 
 \begin{figure}
 \centering
@@ -693,8 +693,8 @@ See \ryan{What section?} for LYG's take on GADTs.
 \label{fig:syn}
 \end{figure}
 
-In this section, we aim to provide an intuitive understanding of our pattern
-match checking algorithm, by way of deriving the intermediate representations
+In this section, we aim to provide an intuitive understanding of \sysname
+by way of deriving the intermediate representations
 of the pipeline step by step from motivating examples.
 
 %TODO: Not sure how I can tell ipe (the program from which I exported the
@@ -708,7 +708,7 @@ tree is then processed by two different functions, $\ann$ and $\unc$, which
 compute redundancy information and uncovered patterns, respectively. $\ann$
 boils down this information into an annotated tree $\Ant$, for which the set of
 redundant and inaccessible right-hand sides can be computed in a final pass of
-$\red$. $\unc$ on the other hand returns a \emph{refinement type} representing
+$\red$. $\unc$, on the other hand, returns a \emph{refinement type} representing
 the set of \emph{uncovered values}, for which $\generate$ can generate the
 inhabiting patterns to show to the user.
 
@@ -812,7 +812,7 @@ convenient uniformity for our purposes: after the successful match on the first
 two guards left-to-right, we try to match each of the GRHSs in turn,
 top-to-bottom (and their individual guards left-to-right).
 
-Hence our algorithm desugars the source syntax to the following \emph{guard
+Hence \sysname desugars the source syntax to the following \emph{guard
 tree} (see \cref{fig:syn} for the full syntax and \cref{fig:grphnot} the
 corresponding graphical notation):
 
@@ -832,8 +832,11 @@ guards}. By analogy with bang patterns, |!x| evaluates $x$ to WHNF, which will
 either succeed or diverge. Moreover, the pattern guards in $\Grd$ only
 scrutinise variables (and only one level deep), so the comparison in the
 boolean guard's scrutinee had to be bound to an auxiliary variable in a let
-binding. Note that |otherwise| is an external identifier which we can assume to
-be bound to |True|, which is in fact how it defined.
+binding.
+
+% \ryan{|otherwise| was introduced earlier, so commenting this out.}
+% Note that |otherwise| is an external identifier which we can assume to
+% be bound to |True|, which is in fact how it defined.
 
 Pattern guards in $\Grd$ are the only guards that can possibly fail to match,
 in which case the value of the scrutinee was not of the shape of the
@@ -845,7 +848,7 @@ correspond to a GRHS.
 
 \subsection{Checking Guard Trees} \label{sec:check}
 
-Pattern match checking works by gradually refining the set of reaching values
+Coverage checking works by gradually refining the set of reaching values
 \ryan{Did you mean to write ``reachable values'' here? ``Reaching values''
 reads strangely to me.}
 \sg{I was thinking ``reaching values'' as in ``reaching definitions'': The set
@@ -955,10 +958,7 @@ non-local}! Left-to-right and top-to-bottom match semantics means that it is
 hard to view $\Grd$s in isolation; we always have to reason about whole
 $\Gdt$s. By contrast, refinement types are self-contained, which means the
 process of generating inhabitants can be treated separately from the process
-of pattern match checking
-\ryan{We inconsistently switch between calling it ``pattern match checking''
-and ``coverage checking'' in the prose. We should adopt one term and stick with it.}
-\sg{I think I like ``coverage checking'' (after introducing it as ``pattern match coverage checking'' better, provided the term subsumes both exhaustivity and overlap checking.}
+of coverage checking.
 
 Apart from generating inhabitants of the final uncovered set for non-exhaustive
 match warnings, there are two points at which we have to check whether
@@ -1008,13 +1008,13 @@ worst-case complexity here. That feels a bit out of place.}
 
 \section{Formalism} \label{sec:formalism}
 
-The previous section gave insights into how we represent pattern match checking
+The previous section gave insights into how we represent coverage checking
 problems as guard trees and provided an intuition for how to check them for
 exhaustiveness and redundancy. This section formalises these intuitions in
 terms of the syntax (\cf \cref{fig:syn}) we introduced earlier.
 
 As in the previous section, we divide this section into three main parts:
-desugaring, pattern match checking and finding inhabitants of the resulting
+desugaring, coverage checking, and finding inhabitants of the resulting
 refinement types. The latter subtask proves challenging enough to warrant two
 additional subsections.
 
@@ -1164,7 +1164,7 @@ than this by looking at the pattern (which might be a variable match or
 \end{array}
 \]
 
-\caption{Pattern match checking}
+\caption{Coverage checking}
 \label{fig:check}
 \end{figure}
 
@@ -1450,7 +1450,7 @@ well-defined.
 \end{figure}
 
 After tearing down abstraction after abstraction in the previous sections we
-are nearly at the kernel of our algorithm: \Cref{fig:add} depicts how to add a
+are nearly at the heart of \sysname: \Cref{fig:add} depicts how to add a
 $\varphi$ constraint to an inert set $\nabla$.
 
 It does so by expressing a $\varphi$ in terms of once again simpler constraints
@@ -1670,7 +1670,7 @@ supplementing that with a simple termination analysis in the future.
 \sg{This currently doesn't mention the term ``long distance information'' even
 once...}
 
-Pattern match checking as described also works for |case| expressions (with the
+Coverage checking as described also works for |case| expressions (with the
 appropriate desugaring function) and nested function definitions, like in the
 following example:
 \begin{code}
@@ -1681,13 +1681,13 @@ f x@(Just 15) = ... (case x of
   Just _  -> 4) ...
 \end{code}
 
-The pattern match checking algorithm as is will not produce any warnings for
+\sysname as is will not produce any warnings for
 this definition. But for the reader it is as plain as it can be that the |case|
 expression has two redundant GRHSs! That simply follows by context-sensitive
 reasoning, knowing that |x| was successfully matched to |Just 15| in the
 outer match.
 
-In fact, the checking algorithm does exactly the same kind of reasoning when
+In fact, \sysname does exactly the same kind of reasoning when
 checking |f|! Specifically, the set of values reaching the second GRHS (which
 we test for inhabitants to determine whether the GRHS is accessible)
 $\Theta_{rhs2}$ encodes the information we are after. We just have to start
@@ -1712,7 +1712,7 @@ Clearly, neither option is satisfactory to implement |absurd|: The first one
 would actually return |undefined| when called with $\bot$, thus masking the
 original $\bot$ with the error thrown by |undefined|. The second one would
 diverge alright, but it is unfortunate that we still have to provide a RHS that
-we know will never be entered. In fact, our checking algorithm will mark the
+we know will never be entered. In fact, \sysname will mark the
 second option as having an inaccessible RHS!
 
 GHC provides an extension, called \extension{EmptyCase}, that introduces the
@@ -1829,7 +1829,7 @@ source syntax and IR syntax by adding the syntactic concept of a
 \end{array}
 \]
 
-\sg{For pattern-match checking purposes, we assume that pattern synonym matches
+\sg{For coverage checking purposes, we assume that pattern synonym matches
 are strict, just like data constructor matches. This is not generally true, but
 \ticket{17357} has a discussion of why being conservative is too disruptive to
 be worth the trouble. Should we talk about that? It concerns the definition of
@@ -1999,15 +1999,17 @@ types anymore.
 \section{Implementation}
 \label{sec:impl}
 
-The implementation of our algorithm in GHC accumulates quite a few tricks that
+The implementation of \sysname in GHC accumulates quite a few tricks that
 go beyond the pure formalism. This section is dedicated to describing these.
 
 Warning messages need to reference source syntax in order to be comprehensible
-by the user. At the same time, completeness checks involving GADTs need a
-type-checked program, so the only reasonable phase to run the Pattern match
-checker is between type-checking and desugaring to GHC Core, a typed
+by the user. At the same time, completeness checks
+\ryan{I'm not sure what is meant by ``completeness'' here.}
+involving GADTs need a
+type-checked program, so the only reasonable design to run the coverage
+checker between type-checking and desugaring to GHC Core, a typed
 intermediate representation lacking the connection to source syntax.
-We perform pattern match checking in the same tree traversal as desugaring.
+We perform coverage checking in the same tree traversal as desugaring.
 
 \sg{New implementation (pre !2753) has 3850 lines, out of which 1753 is code.
 Previous impl as of GHC 8.6.5 had 3118 lines, out of which 1438 were code. Not
@@ -2047,7 +2049,7 @@ sure how to sell that.}
 \end{array}
 \]
 
-\caption{Fast pattern match checking}
+\caption{Fast coverage checking}
 \label{fig:fastcheck}
 \end{figure}
 
@@ -2087,7 +2089,7 @@ syntactically comparing it to the empty vector, $\epsilon$.
 Even with the tweaks from \cref{ssec:interleaving}, checking certain pattern
 matches remains NP-hard \sg{Cite something here or earlier, bring an example}.
 Naturally, there will be cases where we have to conservatively approximate in
-order not to slow down compilation too much. After all, pattern match checking
+order not to slow down compilation too much. After all, coverage checking
 is just a static analysis pass without any effect on the produced binary!
 Consider the following example:
 \begin{code}
