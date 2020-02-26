@@ -2418,6 +2418,18 @@ easily be extended, as \sysname's treatment of pattern synonyms
 improved to accomplish the same thing, it is unlikely to be as
 straightforward of a process as extending $\addphi$.
 
+\subsection{Comparison with similar coverage checkers}
+
+\subsubsection{Structural and semantic pattern matching analysis in Haskell}
+
+\citet{kalvoda2019structural} implement a variation of \gmtm that leverages an
+SMT solver to give more accurate coverage warnings for programs that use
+guards. For instance, their implementation can conclude that
+the |signum| function from \ryan{Which section?} is exhaustive. This is something
+that \sysname cannot do out of the box, although it would be possible to
+extend $\addphi$ with SMT-like reasoning about booleans and integer arithmetic.
+\ryan{Sebastian: is this the thing that would need to be extended?}
+
 \subsection{Other related work}
 
 \ryan{Fill me in! Some possible candidates:
@@ -2434,9 +2446,6 @@ straightforward of a process as extending $\addphi$.
 
   \item
     Compare to refinement types
-
-  \item
-    Compare to "Structural and semantic pattern matching analysis in Haskell" \cite{kalvoda2019structural}, which uses an SMT solver as the oracle in the GMTM formalism. We could extend nabla with reasoning about booleans and arithmetic to achieve something similar
 
   \item
     Sestofts negative constraints \cite{sestoft1996ml}
