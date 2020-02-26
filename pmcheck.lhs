@@ -338,20 +338,34 @@ however, since that would require knowledge about the properties of |Int|
 inequalities. In fact, coverage checking for guards in the general case is an
 undecidable problem. While we cannot accurately check \emph{all} uses of guards,
 we can at least give decent warnings for some common use cases for guards.
-For instance, take the following functions: \simon{can one of you work out how to typeset these side-by-side instead of above each other?}
+For instance, take the following functions:
+\begin{minipage}{\textwidth}
+\begin{minipage}{0.33\textwidth}
+\centering
 \begin{code}
 not :: Bool -> Bool
 not b  | False <- b  = True
        | True <- b   = False
-
+\end{code}
+\end{minipage}
+\begin{minipage}{0.33\textwidth}
+\centering
+\begin{code}
 not2 :: Bool -> Bool
 not2 False = True
 not2 True = False
-
+\end{code}
+\end{minipage}
+\begin{minipage}{0.33\textwidth}
+\centering
+\begin{code}
 not3 :: Bool -> Bool
 not3 x | x <- False  = True
 not3 True            = False
 \end{code}
+\end{minipage}
+\end{minipage}
+
 Clearly all are equivalent.  Our coverage checking algorithm should find that all three
 are exhaustive, and indeed, \sysname does so. We explore the subset of guards that
 \sysname can check in more detail in \ryan{Cite relevant section}.
@@ -467,17 +481,25 @@ synonym can present an abstract interface to a view pattern that does
 complicated things under the hood. For example, one can define
 |length| with pattern synonyms like so:
 
+\begin{minipage}{\textwidth}
+\begin{minipage}[t]{0.5\textwidth}
+\centering
 \begin{code}
 pattern Nil :: Text
 pattern Nil <- (Text.null -> True)
-
 pattern Cons :: Char -> Text -> Text
 pattern Cons x xs <- (Text.uncons -> Just (x, xs))
-
+\end{code}
+\end{minipage}%
+\begin{minipage}[t]{0.5\textwidth}
+\centering
+\begin{code}
 length :: Text -> Int
 length Nil = 0
 length (Cons x xs) = 1 + length xs
 \end{code}
+\end{minipage}
+\end{minipage}
 
 How should a coverage checker handle pattern synonyms? One idea is to simply look
 through the definitions of each pattern synonym and verify whether the underlying
@@ -567,14 +589,23 @@ equalities between types is matching on GADTs \cite{recdatac}. Here is one examp
 demonstrates the interaction between GADTs and coverage checking:
 \ryan{Lay these out side by side with an array or something}
 
+\begin{minipage}{\textwidth}
+\begin{minipage}[t]{0.25\textwidth}
+\centering
 \begin{code}
 data T a b where
   T1 :: T Bool Int
   T2 :: T Char Int
-
+\end{code}
+\end{minipage}%
+\begin{minipage}[t]{0.2\textwidth}
+\centering
+\begin{code}
 s :: T Bool b -> b
 s T1 = 42
 \end{code}
+\end{minipage}
+\end{minipage}
 
 When |s| matches against |T1|, the |b| in the type |T Bool b| is known to be an |Int|
 on the right-hand side of the clause, which is why the use of |42| typechecks.
@@ -919,24 +950,27 @@ language extension that does not fit into this framework.
 
 Why not compute the redundant GRHSs directly instead of building up a whole new
 tree? Because determining inaccessibility \vs redundancy is a non-local
-problem. Consider this example: \sg{I think this kind of detail should be
-motivated in a prior section and then referenced here for its solution.}
+problem. Consider this example and its corresponding annotated tree after
+checking:
+\sg{I think this kind of detail should be motivated in a prior section and then
+referenced here for its solution.}
 
+\begin{minipage}{\textwidth}
+\begin{minipage}{0.22\textwidth}
+\centering
 \begin{code}
 g :: () -> Int
 g ()   | False   = 1
        | True    = 2
 g _              = 3
 \end{code}
-
-Is the first GRHS just inaccessible or even redundant? Although the match on
-|()| forces the argument, we can delete the first GRHS without changing program
-semantics, so clearly it is redundant.
-But that wouldn't be true if the second GRHS wasn't there to ``keep alive'' the
-|()| pattern!
-
-Here is the corresponding annotated tree after checking:
-
+\end{minipage}%
+\begin{minipage}{0.05\textwidth}
+\centering
+\[ \leadsto \]
+\end{minipage}%
+\begin{minipage}{0.2\textwidth}
+\centering
 \begin{forest}
   anttree
   [
@@ -945,6 +979,14 @@ Here is the corresponding annotated tree after checking:
       [2,acc]]
     [3,acc]]
 \end{forest}
+\end{minipage}
+\end{minipage}
+
+Is the first GRHS just inaccessible or even redundant? Although the match on
+|()| forces the argument, we can delete the first GRHS without changing program
+semantics, so clearly it is redundant.
+But that wouldn't be true if the second GRHS wasn't there to ``keep alive'' the
+|()| pattern!
 
 In general, at least one GRHS under a \lightning{} may not be flagged as
 redundant ($\times$).
@@ -2018,7 +2060,7 @@ without a \extension{COMPLETE} set.
 Newtypes have strange semantics. Here are two key examples that distinguish
 it from data types:
 \begin{minipage}{\textwidth}
-\begin{minipage}{0.5\textwidth}
+\begin{minipage}[t]{0.5\textwidth}
 \centering
 \begin{code}
 newtype N a = N a
@@ -2027,7 +2069,7 @@ g !!(N _)   True = 1
 g   (N !_)  True = 2
 \end{code}
 \end{minipage}
-\begin{minipage}{0.5\textwidth}
+\begin{minipage}[t]{0.5\textwidth}
 \centering
 \begin{code}
 f :: N Void -> Bool -> Int
