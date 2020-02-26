@@ -1073,29 +1073,33 @@ additional subsections.
 \begin{array}{lcl}
 
 \ds(clause_1\,...\,clause_n) &=&
-  \vcenter{\hbox{\begin{forest}
+  \raisebox{3px}{\begin{forest}
+    baseline,
     grdtree,
     grhs/.style={tier=rhs,edge={-}},
     [ [{$\ds(clause_1)$}] [...] [{$\ds(clause_n)$}] ] ]
-  \end{forest}}} \\
+  \end{forest}} \\
 \\
 \ds(f \; pat_1\,...\,pat_n \; \mathtt{=} \; expr) &=&
-  \vcenter{\hbox{\begin{forest}
+  \raisebox{3px}{\begin{forest}
+    baseline,
     grdtree,
     [ [{$\ds(x_1, pat_1)\,...\,\ds(x_n, pat_n)$} [{$k$}] ] ]
-  \end{forest}}} \\
+  \end{forest}} \\
 \ds(f \; pat_1\,...\,pat_n \; grhs_1\,...\,grhs_m) &=&
-  \vcenter{\hbox{\begin{forest}
+  \raisebox{3px}{\begin{forest}
+    baseline,
     grdtree,
     grhs/.style={tier=rhs,edge={-}},
     [ [{$\ds(x_1, pat_1)\,...\,\ds(x_n, pat_n)$} [{$\ds(grhs_1)$}] [...] [{$\ds(grhs_m)$}] ] ]
-  \end{forest}}} \\
+  \end{forest}} \\
 \\
 \ds(\mathtt{\mid} \; guard_1\,...\,guard_n \; \mathtt{=} \; expr) &=&
-  \vcenter{\hbox{\begin{forest}
+  \raisebox{3px}{\begin{forest}
+    baseline,
     grdtree,
     [ [{$\ds(guard_1)\,...\,\ds(guard_n)$} [{$k$}] ] ]
-  \end{forest}}} \\
+  \end{forest}} \\
 \\
 %TODO: Maybe make it explicit that we desugar to core here?
 \ds(pat \leftarrow expr) &=& \grdlet{x}{expr}, \ds(x, pat) \\
