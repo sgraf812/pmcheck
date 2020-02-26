@@ -2347,22 +2347,50 @@ what was matched beyond that.
 
 \subsection{Maintaining residual \extension{COMPLETE} sets}
 
-\TODO
+Our implementation applies a few hacks to make the inhabitation test as
+efficient as possible. For example, we represent $\Delta$s by a mapping from
+variables to their positive and negative constraints for easier indexing.
+But there are also asymptotical improvements. Consider the following function:
 
+\begin{code}
+data T = A1 | ... | A1000
+pattern P = ...
+{-# COMPLETE A1, P #-}
+f :: T -> Int
+f A1 = 1
+f A2 = 2
+...
+f A1000 = 1000
+\end{code}
+
+|f| is exhaustively defined. For that we need to perform an inhabitation test
+for the match variable |x| after the last clause. The test will conclude that
+the builtin \extension{COMPLETE} set was completely overlapped. But in order
+to conclude that, our algorithm tries to instantiate |x| (\inhabitedinst) to
+each of its 1000 constructors and try to add a positive constructor constraint!
+What a waste of time, given that we could just look at the negative constraints
+on |x| \emph{before} trying to instantiate |x|! But asymptotically it shouldn't
+matter much, since we're doing this only once at the end.
+
+Except that is not true, because we also perform redundancy checking! At any
+point in |f|'s definition there might be a match on |P|, after which all
+remaining clauses would be redundant by the user-supplied \extension{COMPLETE}
+set. Therefore, we have to perform the expensive inhabitation test \emph{after
+every clause}, involving $\mathcal{O}(n)$ instantiations each.
+
+Cleary, we can be smarter about that! Indeed, we cache \emph{residual
+\extension{COMPLETE} sets} in our implementation: Starting from the full
+\extension{COMPLETE} sets, we delete ConLike from them whenever we add a new
+negative constructor constraint, making sure that each of the sets is inhabited
+by at least one constructor. Note how we never need to check the same
+constructor twice, thus we have an amortised $\mathcal{O}(n)$ instantiations
+for the whole checking process.
 
 \sg{I'm not sure what other hacks we should mention beyond this. I don't think
 we want to write about ad-hoc details like 6.2 in GMTM, because they are
 specific to how $\Delta$ is represented (solved, canonical type constraints in
 particular). That's of limited value for other implementations and not a
 conceptual improvement.}
-
-\sg{We could talk about when adding a type constraint, we only need to perform
-the inhabitation check on a subset of all variables. Namely those that aren't
-obviously of plain old ADT type. But the implementation doesn't currently do
-that hack, so it's a bit of a moot point.}
-
-\sg{We should talk about how we efficiently represent residual COMPLETE sets.
-And maybe how we represent Delta in general.}
 
 %\listoftodos\relax
 
