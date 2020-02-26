@@ -2418,6 +2418,8 @@ easily be extended, as \sysname's treatment of pattern synonyms
 improved to accomplish the same thing, it is unlikely to be as
 straightforward of a process as extending $\addphi$.
 
+\ryan{Should we mention something about the performance of \gmtm here?}
+
 \subsection{Comparison with similar coverage checkers}
 
 \subsubsection{Structural and semantic pattern matching analysis in Haskell}
