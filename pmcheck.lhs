@@ -508,11 +508,10 @@ The evaluation order of pattern matching can impact whether a pattern is
 reachable or not. While Haskell is a lazy language, programmers can opt
 into extra strict evaluation by giving the fields of a data type strict fields,
 such as in this example:
-\ryan{There is an erroneous space between the |!| and the |a|}
 
 \begin{code}
 data Void -- No data constructors
-data SMaybe a = SJust !a | SNothing
+data SMaybe a = SJust !!a | SNothing
 
 v :: SMaybe Void -> Int
 v SNothing = 0
@@ -547,12 +546,12 @@ such as |!pat| indicates that matching against |pat| always evaluates it to
 WHNF. While data constructor matches are normally the only patterns that match
 strictly, bang patterns extend this treatment to other patterns. For example,
 one can rewrite the earlier |v| example to use the standard, lazy |Maybe| data
-type: \ryan{I actually wanted to write Just !\_, but LaTeX won't parse that :(}
+type:
 
 \begin{code}
 v' :: Maybe Void -> Int
 v' Nothing = 0
-v' (Just !x) = 1
+v' (Just !_) = 1
 \end{code}
 
 The |Just| case in |v'| is unreachable for the same reasons that the |SJust| case in
@@ -1709,8 +1708,8 @@ at least one clause. That leads to an awkward situation when pattern matching
 on empty data types, like |Void|:
 \begin{code}
 absurd :: Void -> a
-absurd  x    = undefined
-absurd (!x)  = undefined
+absurd _   = undefined
+absurd !_  = undefined
 \end{code}
 
 \noindent
