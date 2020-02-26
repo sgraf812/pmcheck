@@ -2432,33 +2432,32 @@ extend $\addphi$ with SMT-like reasoning about booleans and integer arithmetic.
 
 \subsubsection{Warnings for pattern matching}
 
-\citet{maranget:warnings} presents a coverage checker algorithm for OCaml. While
+\citet{maranget:warnings} presents a coverage checking algorithm for OCaml. While
 OCaml is a strict language, the algorithm claims to be general enough to handle
 languages with non-strict semantics such as Haskell. However, we have found that
 this algorithm actually handles laziness incorrectly.
 \ryan{I need Sebastian to fill in the rest...}
 
-\subsection{Other related work}
+\subsubsection{Elaborating dependent (co)pattern matching}
 
-\ryan{Fill me in! Some possible candidates:
+\citet{dependent-copattern} design a coverage checking algorithm for a dependently
+typed language with both pattern matching and \emph{copattern} matching, which is
+a feature that GHC lacks. While the source language for their algorithm is much more
+sophisticated than GHC's, their algorithm is similar to \sysname in that it first
+desugars definitions by clauses to \emph{case trees}. Case trees present a simplified
+form of pattern matching that is easier to check for coverage, much like guard trees
+in \sysname. Guard trees could take inspiration from case trees should a future
+version of GHC add dependent types or copatterns.
 
-\begin{itemize}
-  \item
-    \gmtm (mine their Related Work)
+\subsection{Refinement types}
 
-  \item
-    Compare to "Elaborating dependent (co)pattern matching" \cite{dependent-copattern}, which is essentially GADTs MTM with more type foo going on
+\ryan{TODO}
 
-  \item
-    Compare to refinement types
+\subsection{Negative constraints}
 
-  \item
-    Sestofts negative constraints \cite{sestoft1996ml}
+\ryan{TODO: Something about Sestoft's negative constraints \cite{sestoft1996ml}}
 
-  \item
-    OCaml: |SMaybe Void|
-\end{itemize}
-}
+\ryan{Other things from GMTM's related work?}
 
 \bibliography{references}
 
