@@ -1421,7 +1421,6 @@ well-defined.
   \end{cases} \\
   \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq y &=& \begin{cases}
     \ctxt{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
-    % TODO: Write the function that adds a Delta to a nabla
     \ctxt{\Gamma}{((\Delta \setminus \rep{\Delta}{x}), \rep{\Delta}{x} \termeq \rep{\Delta}{y})} \adddelta ((\Delta \cap \rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
   \end{cases} \\
 \end{array}
@@ -1666,7 +1665,11 @@ supplementing that with a simple termination analysis in the future.
 
 \section{Possible Extensions}
 
-
+\sysname is well equipped to handle the fragment of Haskell it was designed to
+handle. But GHC (and other languages, for that matter) extends Haskell in
+non-trivial ways. This section exemplifies how our solution can be easily
+supplemented to deal with new language features or measures for increasing
+the precision of the checking process.
 
 \subsection{Long Distance Information}
 \label{ssec:ldi}
@@ -1968,7 +1971,123 @@ without a \extension{COMPLETE} set.
 
 \subsection{Newtypes}
 
-\TODO
+\begin{figure}
+\[
+\begin{array}{cc}
+\begin{array}{c}
+  pat  \Coloneqq \highlight{N \; pat} \mid ... \\
+\end{array} &
+\begin{array}{rlcl}
+  N  \in &\NT \\
+  co \in &\Co   &\Coloneqq& \cosym co \mid \corefl{\tau} \mid co_1 \coseq co_2 \mid \conewt N \\
+  e  \in &\Expr &\Coloneqq& \highlight{|x ||> co|} \mid \expconapp{K}{\tau}{\sigma}{\gamma}{e} \mid ... \\
+\end{array}
+\end{array}
+\]
+\[
+  \ds(x, N \; pat) = \grdlet{x}{|y ||> conewt N|}, \ds(|y|, pat)
+\]
+\[
+\begin{array}{cc}
+\begin{array}{c}
+  \delta \Coloneqq ... \mid \highlight{x \termeq |y ||> co|} \\
+\end{array} &
+\begin{array}{c}
+  \ctxt{\Gamma}{\Delta} \addphi \ctlet{x:\tau}{\highlight{|y ||> co|}} = \ctxt{\Gamma,x:\tau}{\Delta} \adddelta x \termeq \highlight{|y ||> co|} \\
+\end{array}
+\end{array}
+\]
+\[
+\begin{array}{lcl}
+  \rep{\ctxt{\highlight{\Gamma}}{\Delta}}{x} &=& \begin{cases}
+    (z, \highlight{co_1 \coseq co_2}) & x \termeq |y ||> co_1| \in \Delta, (z, co_2) = \nabla(|y|) \\
+    (x, \highlight{\corefl{\tau}}) & \text{where $x:\tau \in \Gamma$} \\
+  \end{cases} \\
+\end{array}
+\]
+\[
+  \ctxt{\Gamma}{\Delta} \adddelta x \termeq \highlight{|y ||> co|} = \begin{cases}
+    \ctxt{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x}_1 = \rep{\Delta}{y}_1$} \\
+    \ctxt{\Gamma}{((\Delta \setminus \rep{\Delta}{x}_1), \rep{\Delta}{x}_1 \termeq \rep{\Delta}{y}_1\highlight{| ||> co'|})} \adddelta ((\Delta \cap \rep{\Delta}{x}_1)[\rep{\Delta}{y}_1 / \rep{\Delta}{x}_1]) & \text{if $x:\tau \in \Gamma$ } \\
+    \text{and \highlight{co' = \cosym \rep{\Delta}{x}_2 \coseq co \coseq \rep{\Delta}{y}_2}} \\
+  \end{cases}
+\]
+\caption{Extending coverage checking to handle Newtypes}
+\label{fig:newtypes}
+\end{figure}
+
+Newtypes have strange semantics. Here are two key examples that distinguish
+it from data types:
+\begin{minipage}{\textwidth}
+\begin{minipage}{0.5\textwidth}
+\centering
+\begin{code}
+newtype N a = N a
+g :: N () -> Bool -> Int
+g !!(N _)   True = 1
+g   (N !_)  True = 2
+\end{code}
+\end{minipage}
+\begin{minipage}{0.5\textwidth}
+\centering
+\begin{code}
+f :: N Void -> Bool -> Int
+f _      True   = 1
+f (N _)  True   = 2
+f !_     True   = 3
+\end{code}
+\end{minipage}
+\end{minipage}
+
+The definition of |f| is subtle. Contrary to the situation with data
+constructors, the second GRHS is \emph{redundant}: The pattern match on the
+Newtype constructor is a no-op. Conversely, the bang pattern in the third GRHS
+forces not only the Newtype constructor, but also its wrapped thing. That could
+lead to divergence, so the third GRHS is \emph{inaccessible} (because every
+value it could cover was already covered by the first GRHS), but not redundant.
+A perhaps surprising consequence is that the definition of |f| is exhaustive,
+because after |N Void| was deprived of its sole inhabitant $\bot \equiv
+N\;\bot$, there is nothing left to match on.
+
+If it was only for |f|, we could express this semantics simply by desugaring
+Newtype pattern matches as lazy (so we wouldn't generate a $\grdbang{x}$ on the
+match var |x| in $\ds$), but treat $N$ as if it had a strict field in $\cons$.
+
+|g| crushes this simple hack. We would mark its second GRHS as inaccessible
+when it is clearly redundant: The inner bang pattern has nothing to evaluate.
+This is arguably a small downside and doesn't even regress in terms of
+soundness.
+
+We'll show how to fix this infelicity by treating Newtype wrappers as
+coercions. That entails a slew of modifications, the gist of which is depicted
+in \cref{fig:newtypes}. We have to extend source syntax in a similar manner as
+for pattern synonyms (\cref{ssec:extpatsyn}) and add coercions to IR
+expressions. Then we can desugar Newtype matches to coercions on a fresh match
+variable, which ultimately turns into an extended $\delta$ constraint $x
+\termeq |y ||> co|$ via $\!\addphi\!$.
+
+Before we finally talk about $\!\adddelta\!$, we have to change the definition
+of $\rep{\Delta}{x}$ to also return the coercion along the transitive chain of
+$x \termeq |y ||> co|$ constraints it had to follow to find the representative.
+Since that will now return a pair, many definitions change in syntactically
+drastic, but semantically non-meaningful way. The only exception is the last
+clause of $\!\adddelta\!$, where we have to build the proper coercion $co'$
+when adding the new $\rep{\Delta}{x}_1 \termeq \rep{\Delta}{y}_1| ||> co'|$
+constraint. \sg{TODO: the defn still uses $\rep{\Delta}{x}$ instead of
+$\rep{\nabla}{x}$ all over the place. yuck}
+
+Surprisingly, no more coercion handling is needed! We can see that
+$\rep{\Delta}{x} \termeq |y ||> co| \in \Delta$ is impossible for all |x| and
+|y|. So all representatives either don't have a solution (in which case $\Delta
+\cap \rep{\Delta}{x}_1$ is empty) or are representatives of a data constructor
+solution or $\bot$ themselves, so can be trivially renamed with the
+$[\rep{\Delta}{y}_1 / \rep{\Delta}{x}_1]$ suffix.
+
+Other than that, $\expand$ (which for the purposes of this paper is just
+concerned with presenting uncovered patterns to the user) will have to turn
+the sequence of coercions back into source-level Newtype applications.
+
+\sg{I'm no longer convinced that we want to have this in the paper.}
 
 
 \subsection{Strictness}
