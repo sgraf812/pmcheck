@@ -1816,7 +1816,7 @@ a definition like |safeLast|.
 \subsection{Pattern Synonyms}
 \label{ssec:extpatsyn}
 
-To accomodate checking of pattern synonyms $P$, we first have to extend the
+To accommodate checking of pattern synonyms $P$, we first have to extend the
 source syntax and IR syntax by adding the syntactic concept of a
 \emph{ConLike}:
 \[
@@ -2208,22 +2208,13 @@ And maybe how we represent Delta in general.}
 
 \section{Related work} \label{sec:related}
 
-\ryan{Put a snappy intro here}
-
 \subsection{Comparison with GADTs Meet Their Match}
 
-We are not the first to tackle the problem of coverage checking in the
-context of Haskell.
-\citet{gadtpm} develop a checking algorithm that handles many of the
+\citet{gadtpm} present GADTs Meet Their Match (\gmtm), an algorithm which
+handles many of the
 subtleties of GADTs, guards, and laziness mentioned earlier in this
-section. For the sake of brevity, we will refer to their algorithm
-as \gmtm (an abbreviation of ``GADTs Meet Their Match'', the name of the
-corresponding paper).
-
-\gmtm's \emph{raison d'\^{e}tre} is that it accounts for GADTs, guards, and
-laziness during coverage checking. Despite this, the \gmtm algorithm gives
-incorrect warnings in all three of these categories.
-\ryan{This part of the paper could use a do-over.}
+section. Despite this, the \gmtm algorithm still gives incorrect warnings
+in many cases.
 
 \subsubsection{\gmtm does not consider laziness in its full glory}
 
@@ -2231,41 +2222,39 @@ The formalism in \citet{gadtpm} incorporates strictness constraints, but
 these constraints can only arise from matching against data constructors.
 \gmtm does not consider strict matches that arise from strict fields of
 data constructors or bang patterns. A consequence of this is that \gmtm
-would incorrectly warn that |v| is missing a case for |SJust|, even though
-such a case is unreachable.
+would incorrectly warn that |v| (\ryan{Cite the section!}) is missing a
+case for |SJust|, even though such a case is unreachable. \sysname,
+on the other hand, more thoroughly tracks strictness when desugaring
+Haskell programs.
 
 \subsubsection{\gmtm's treatment of guards is shallow}
 
 \gmtm can only reason about guards through an abstract term oracle.
 Although the algorithm is parametric over the choice of oracle, in practice
 the implementation of \gmtm in GHC uses an extremely simple oracle that can
-only reason about trivial guards. More sophisticated uses of guards will
-cause \gmtm to emit erroneous warnings. For instance, consider the following
-two functions:
+only reason about guards in a limited fashion.
+More sophisticated uses of guards, such
+as in the |safeLast| function from \ryan{Cite the section!}, will
+cause \gmtm to emit erroneous warnings.
 
-\begin{code}
-data SBool (a :: Bool) where
-  STrue :: SBool True
-  SFalse :: SBool False
+While \gmtm's term oracle is customizable, it is not as simple to customize
+as one might hope. The formalism in \citet{gadtpm} represents all guards as
+|p <- e|, where |p| is a pattern and |e| is an expression. This is a
+straightforward, syntactic representation, but it also makes it more difficult to
+analyse when |e| is a complicated expression. This is one of the reasons why
+it is difficult for \gmtm to accurately give warnings for the |safeLast|
+function, since it would require recognizing that both clauses scrutinise
+the same expression in their view patterns.
 
-h :: () -> SBool False
-h _ = SFalse
-
-g :: () -> ()
-g _ | SFalse <- h () = ()
-\end{code}
-
-The |g| function uses GADT pattern matching inside of a pattern guard.
-|g| is completely exhaustive because the type |SBool False| cannot be inhabited
-by |STrue|. Despite this, GHC's implementation of \gmtm incorrectly warns
-about a missing case.
-
-In fact, our new approach was a result of improving the oracle implementation
-to a point where it was able to cope with more complex guards, only then to
-realise that we could drastically simplify the treatment of patterns by
-desugaring to guards. The takeaway here is that although \gmtm can be
-arbitrarily smart about guards by harnessing a clever term oracle, the
-existence of such an oracle renders the developments of \gmtm redundant.
+\sysname makes analysing term equalities simpler by first desugaring guards
+from the surface syntax to guard trees. The $\addphi$ function, which is
+roughly a counterpart to \gmtm's term oracle, can then reason
+about terms arising from patterns. While $\addphi$ is already more powerful
+than a trivial term oracle, its real strength lies in the fact that it can
+easily be extended, as \sysname's treatment of pattern synonyms
+(\cref{ssec:extpatsyn}) demonstrates. While \gmtm's term oracle could be
+improved to accomplish the same thing, it is unlikely to be as
+straightforward of a process as extending $\addphi$.
 
 \subsection{Other related work}
 
