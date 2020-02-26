@@ -2430,6 +2430,14 @@ that \sysname cannot do out of the box, although it would be possible to
 extend $\addphi$ with SMT-like reasoning about booleans and integer arithmetic.
 \ryan{Sebastian: is this the thing that would need to be extended?}
 
+\subsubsection{Warnings for pattern matching}
+
+\citet{maranget:warnings} presents a coverage checker algorithm for OCaml. While
+OCaml is a strict language, the algorithm claims to be general enough to handle
+languages with non-strict semantics such as Haskell. However, we have found that
+this algorithm actually handles laziness incorrectly.
+\ryan{I need Sebastian to fill in the rest...}
+
 \subsection{Other related work}
 
 \ryan{Fill me in! Some possible candidates:
@@ -2437,9 +2445,6 @@ extend $\addphi$ with SMT-like reasoning about booleans and integer arithmetic.
 \begin{itemize}
   \item
     \gmtm (mine their Related Work)
-
-  \item
-    Maranget's work \cite{maranget:warnings}; tries to account for laziness, but wrongly so
 
   \item
     Compare to "Elaborating dependent (co)pattern matching" \cite{dependent-copattern}, which is essentially GADTs MTM with more type foo going on
