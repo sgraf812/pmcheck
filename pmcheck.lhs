@@ -2126,13 +2126,11 @@ The implementation of \sysname in GHC accumulates quite a few tricks that
 go beyond the pure formalism. This section is dedicated to describing these.
 
 Warning messages need to reference source syntax in order to be comprehensible
-by the user. At the same time, completeness checks
-\ryan{I'm not sure what is meant by ``completeness'' here.}
-involving GADTs need a
-type-checked program, so the only reasonable design to run the coverage
-checker between type-checking and desugaring to GHC Core, a typed
-intermediate representation lacking the connection to source syntax.
-We perform coverage checking in the same tree traversal as desugaring.
+by the user. At the same time, coverage checks involving GADTs need a
+type-checked program, so the only reasonable design to run the coverage checker
+between type-checking and desugaring to GHC Core, a typed intermediate
+representation lacking the connection to source syntax. We perform coverage
+checking in the same tree traversal as desugaring.
 
 \sg{New implementation (pre !2753) has 3850 lines, out of which 1753 is code.
 Previous impl as of GHC 8.6.5 had 3118 lines, out of which 1438 were code. Not
