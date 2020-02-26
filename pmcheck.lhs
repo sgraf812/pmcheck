@@ -2396,6 +2396,44 @@ conceptual improvement.}
 
 %\nocite{*}
 
+\subsection{GHC issues}
+
+Implementing \sysname in GHC has fixed a litany of bug reports related
+to coverage checking. These include:
+
+\begin{itemize}
+  \item
+    Better compile-time performance
+    \cite{gitlab:11528,gitlab:17096,gitlab:17264}
+    \ryan{Sebastian, you cited GHC\#11195 as a perf ticket, although that
+          hasn't been closed. Do you still want to include this?}
+
+  \item
+    More accurate warnings for empty |case| expressions
+    \cite{gitlab:10746,gitlab:13717,gitlab:14813,gitlab:15450,gitlab:17376}
+
+  \item
+    More accurate warnings due to \sysname's desugaring
+    \cite{gitlab:11984,gitlab:12949,gitlab:14098,gitlab:15385,gitlab:17646}
+
+  \item
+    More accurate warnings due to improved term-level reasoning
+    \cite{gitlab:12957,gitlab:14546,gitlab:14667,gitlab:15713,gitlab:15753,gitlab:15884,gitlab:16129,gitlab:16289,gitlab:17251}
+
+  \item
+    More accurate warnings due to tracking long-distance information
+    \cite{gitlab:17465,gitlab:17703,gitlab:17783}
+
+  \item
+    Improved treatment of \extension{COMPLETE} sets
+    \cite{gitlab:13021,gitlab:13363,gitlab:13965,gitlab:14059,gitlab:14253,gitlab:14851,gitlab:17112,gitlab:17149,gitlab:17386}
+
+  \item
+    Better treatment of strictness, bang patterns, and newtypes
+    \cite{gitlab:15305,gitlab:15584,gitlab:17234,gitlab:17248}
+
+\end{itemize}
+
 \section{Related work} \label{sec:related}
 
 \subsection{Comparison with GADTs Meet Their Match}
