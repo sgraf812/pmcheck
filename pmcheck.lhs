@@ -2404,9 +2404,10 @@ to coverage checking. These include:
 \begin{itemize}
   \item
     Better compile-time performance
-    \cite{gitlab:11528,gitlab:17096,gitlab:17264}
+    \cite{gitlab:11195,gitlab:11528,gitlab:17096,gitlab:17264}
     \ryan{Sebastian, you cited GHC\#11195 as a perf ticket, although that
           hasn't been closed. Do you still want to include this?}
+    \sg{I didn't realise it wasn't closed. Just closed it and included it.}
 
   \item
     More accurate warnings for empty |case| expressions
