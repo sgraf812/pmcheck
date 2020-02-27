@@ -479,7 +479,6 @@ length (Text.uncons -> Just (_, xs))  = 1 + length xs
 
 When compiled, a view pattern desugars into a pattern guard. The desugared version
 of |length|, for instance, would look like this:
-\ryan{Consider putting these versions of |length| side-by-side to save space}
 
 \begin{code}
 length' :: Text -> Int
@@ -536,17 +535,16 @@ challenging to automatically check that the combination of |Text.null| and
 
 Intuitively, |Text.null| and |Text.uncons| together are exhaustive. GHC allows
 programmers to communicate this sort of intuition to the coverage checker in the
-form of |COMPLETE| sets.
-\ryan{Cite the |COMPLETE| section of the users guide.}
-\sg{I'm using \extension{COMPLETE} for marking up COMPLETE pragmas. But I'm not
-sold on either way.}
-A |COMPLETE| set is a combination of data constructors
+form of \extension{COMPLETE} sets
+\footnote{\url{https://downloads.haskell.org/~ghc/8.8.3/docs/html/users\_guide/glasgow\_exts.html\#pragma-COMPLETE}}
+.
+A \extension{COMPLETE} set is a combination of data constructors
 and pattern synonyms that should be regarded as exhaustive when a function matches
 on all of them.
-For example, declaring |{-# COMPLETE Nil, Cons #-}| is sufficient to make
+For example, declaring \texttt{\{-\# COMPLETE Nil, Cons \#-\}} is sufficient to make
 the definition of |length| above compile without any exhaustivity warnings.
 Since GHC does not (and cannot, in general) check that all of the members of
-a |COMPLETE| actually comprise a complete set of patterns, the burden is on
+a \extension{COMPLETE} set actually comprise a complete set of patterns, the burden is on
 the programmer to ensure that this invariant is upheld.
 
 \subsection{Strictness}
@@ -613,7 +611,6 @@ Besides strictness, another way for pattern matches to be rendered unreachable
 is by way of \emph{equality constraints}. A popular method for introducing
 equalities between types is matching on GADTs \cite{recdatac}. Here is one example that
 demonstrates the interaction between GADTs and coverage checking:
-\ryan{Lay these out side by side with an array or something}
 
 \begin{minipage}{\textwidth}
 \begin{minipage}[t]{0.25\textwidth}
