@@ -720,6 +720,7 @@ Stardust \cite{dunfieldthesis}.
 \[
 \begin{array}{cc}
 \begin{array}{rlcl}
+  k,n,m       \in &\mathbb{N}&    & \\
   K           \in &\Con &         & \\
   x,y,a,b     \in &\Var &         & \\
   \tau,\sigma \in &\Type&         & \\
@@ -728,8 +729,6 @@ Stardust \cite{dunfieldthesis}.
                   &     &\mid     & ... \\
 \end{array} &
 \begin{array}{rlcl}
-  k,n,m  \in      &\mathbb{N}&    & \\
-
   \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
 
   p \in           &\Pat &\Coloneqq& \_ \\
@@ -2003,43 +2002,65 @@ without a \extension{COMPLETE} set.
 \[
 \begin{array}{cc}
 \begin{array}{c}
-  pat  \Coloneqq \highlight{N \; pat} \mid ... \\
+  cl \Coloneqq K \mid P \mid \highlight{N} \\
 \end{array} &
 \begin{array}{rlcl}
   N  \in &\NT \\
-  co \in &\Co   &\Coloneqq& \cosym co \mid \corefl{\tau} \mid co_1 \coseq co_2 \mid \conewt N \\
-  e  \in &\Expr &\Coloneqq& \highlight{|x ||> co|} \mid \expconapp{K}{\tau}{\sigma}{\gamma}{e} \mid ... \\
+  C  \in &K \mid P \mid \highlight{N} \\
 \end{array}
 \end{array}
 \]
 \[
-  \ds(x, N \; pat) = \grdlet{x}{|y ||> conewt N|}, \ds(|y|, pat)
+  \ds(x, N \; pat_1\,...\,pat_n) = \grdcon{N \; y_1\,...\,y_n}{x}, \ds(y_1, pat_1), ..., \ds(y_n, pat_n)
 \]
 \[
 \begin{array}{cc}
-\begin{array}{c}
-  \delta \Coloneqq ... \mid \highlight{x \termeq |y ||> co|} \\
-\end{array} &
-\begin{array}{c}
-  \ctxt{\Gamma}{\Delta} \addphi \ctlet{x:\tau}{\highlight{|y ||> co|}} = \ctxt{\Gamma,x:\tau}{\Delta} \adddelta x \termeq \highlight{|y ||> co|} \\
-\end{array}
+  \prooftree
+    \Shortstack{{(\ctxt{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false}
+                {\highlight{x:\tau \in \Gamma \quad \text{$\tau$ not a Newtype}}}}
+  \justifies
+    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+  \using
+    \inhabitedbot
+  \endprooftree
+
+  &
+
+  \prooftree
+    \Shortstack{{x:\tau \in \Gamma \quad \cons(\ctxt{\Gamma}{\Delta}, \tau)=\overline{C_1,...,C_{n_i}}^i}
+                {\overline{\inst(\ctxt{\Gamma}{\Delta}, x, C_j) \not= \false}^i \quad \highlight{\text{$\tau$ not a Newtype}}}}
+  \justifies
+    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+  \using
+    \inhabitedinst
+  \endprooftree \\
+
+  \highlight{\prooftree
+    \Shortstack{{\text{$\tau$ Newtype with constructor |N| wrapping $\sigma$}}
+                {x:\tau \in \Gamma \quad y\#\Gamma \quad \inhabited{\ctxt{\Gamma,y:\sigma}{\Delta} \adddelta x \termeq |N y|}{|y|}}}
+  \justifies
+    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+  \using
+    \inhabitedinst
+  \endprooftree}
 \end{array}
 \]
 \[
-\begin{array}{lcl}
-  \rep{\ctxt{\highlight{\Gamma}}{\Delta}}{x} &=& \begin{cases}
-    (z, \highlight{co_1 \coseq co_2}) & x \termeq |y ||> co_1| \in \Delta, (z, co_2) = \nabla(|y|) \\
-    (x, \highlight{\corefl{\tau}}) & \text{where $x:\tau \in \Gamma$} \\
+\begin{array}{r@@{\,}c@@{\,}lcl}
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
+    \false & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
+    \highlight{\ctxt{\Gamma}{\Delta} \adddelta x \termeq |N y| \adddelta y \termeq \bot} & \text{if $x:\tau \in \Gamma$, $\tau$ Newtype with constructor |N| wrapping $\sigma$} \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
+  \end{cases} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
+    \false & \text{if $\rep{\Delta}{x} \termeq \bot \in \Delta$} \\
+    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
+    \highlight{\ctxt{\Gamma}{\Delta} \adddelta x \termeq |N y| \adddelta y \ntermeq \bot} & \text{if $x:\tau \in \Gamma$, $\tau$ Newtype with constructor |N| wrapping $\sigma$} \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
   \end{cases} \\
 \end{array}
 \]
-\[
-  \ctxt{\Gamma}{\Delta} \adddelta x \termeq \highlight{|y ||> co|} = \begin{cases}
-    \ctxt{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x}_1 = \rep{\Delta}{y}_1$} \\
-    \ctxt{\Gamma}{((\Delta \setminus \rep{\Delta}{x}_1), \rep{\Delta}{x}_1 \termeq \rep{\Delta}{y}_1\highlight{| ||> co'|})} \adddelta ((\Delta \cap \rep{\Delta}{x}_1)[\rep{\Delta}{y}_1 / \rep{\Delta}{x}_1]) & \text{if $x:\tau \in \Gamma$ } \\
-    \text{and \highlight{co' = \cosym \rep{\Delta}{x}_2 \coseq co \coseq \rep{\Delta}{y}_2}} \\
-  \end{cases}
-\]
+
 \caption{Extending coverage checking to handle Newtypes}
 \label{fig:newtypes}
 \end{figure}
@@ -2047,16 +2068,24 @@ without a \extension{COMPLETE} set.
 Newtypes have strange semantics. Here are two key examples that distinguish
 it from data types:
 \begin{minipage}{\textwidth}
-\begin{minipage}[t]{0.5\textwidth}
+\begin{minipage}[b]{0.33\textwidth}
 \centering
 \begin{code}
 newtype N a = N a
-g :: N () -> Bool -> Int
-g !!(N _)   True = 1
-g   (N !_)  True = 2
+g1 :: N () -> Bool -> Int
+g1 !!(N _)   True = 1
+g1   (N !_)  True = 2
 \end{code}
-\end{minipage}
-\begin{minipage}[t]{0.5\textwidth}
+\end{minipage}%
+\begin{minipage}[b]{0.33\textwidth}
+\centering
+\begin{code}
+g2 :: N () -> Bool -> Int
+g2   (N !_)  True = 2
+g2 !!(N _)   True = 1
+\end{code}
+\end{minipage}%
+\begin{minipage}[b]{0.33\textwidth}
 \centering
 \begin{code}
 f :: N Void -> Bool -> Int
@@ -2075,47 +2104,35 @@ lead to divergence, so the third GRHS is \emph{inaccessible} (because every
 value it could cover was already covered by the first GRHS), but not redundant.
 A perhaps surprising consequence is that the definition of |f| is exhaustive,
 because after |N Void| was deprived of its sole inhabitant $\bot \equiv
-N\;\bot$, there is nothing left to match on.
+N\,\bot$, there is nothing left to match on.
 
-If it was only for |f|, we could express this semantics simply by desugaring
-Newtype pattern matches as lazy (so we wouldn't generate a $\grdbang{x}$ on the
-match var |x| in $\ds$), but treat $N$ as if it had a strict field in $\cons$.
+\Cref{fig:newtypes} outlines a solution that handles |f| correctly. The idea
+is to treat Newtype pattern matches lazily (so compared to data constructor
+matches, $\ds$ omits the $\grdbang{x}$). The other significant change is
+to the $\inhabited{}{}$ judgment form, where we introduce a new rule
+\inhabitednt that is specific to Newtypes, which can no longer be proven
+inhabited by either \inhabitedinst or \inhabitedbot.
 
-|g| crushes this simple hack. We would mark its second GRHS as inaccessible
-when it is clearly redundant: The inner bang pattern has nothing to evaluate.
-This is arguably a small downside and doesn't even regress in terms of
-soundness.
+But |g1| crushes this simple hack. We would mark its second GRHS as
+inaccessible when it is clearly redundant, because the $x \ntermeq \bot$
+constraint on the match variable |x| wasn't propagated to the wrapped |()|.
+The inner bang pattern has nothing to evaluate. This is arguably a small
+downside and doesn't even regress in terms of soundness.
 
-We'll show how to fix this infelicity by treating Newtype wrappers as
-coercions. That entails a slew of modifications, the gist of which is depicted
-in \cref{fig:newtypes}. We have to extend source syntax in a similar manner as
-for pattern synonyms (\cref{ssec:extpatsyn}) and add coercions to IR
-expressions. Then we can desugar Newtype matches to coercions on a fresh match
-variable, which ultimately turns into an extended $\delta$ constraint $x
-\termeq |y ||> co|$ via $\!\addphi\!$.
+We counter that with another refinement: We just add $|x| \termeq N y$ and $|y|
+\ntermeq \bot$ constraints (similarly for $|y| \termeq \bot$) whenever we add
+$|x| \ntermeq \bot$ constraints when we know that |x| is a Newtype with
+constructor |N|. Both |g1| and |g2| will be handled correctly.
 
-Before we finally talk about $\!\adddelta\!$, we have to change the definition
-of $\rep{\Delta}{x}$ to also return the coercion along the transitive chain of
-$x \termeq |y ||> co|$ constraints it had to follow to find the representative.
-Since that will now return a pair, many definitions change in syntactically
-drastic, but semantically non-meaningful way. The only exception is the last
-clause of $\!\adddelta\!$, where we have to build the proper coercion $co'$
-when adding the new $\rep{\Delta}{x}_1 \termeq \rep{\Delta}{y}_1| ||> co'|$
-constraint. \sg{TODO: the defn still uses $\rep{\Delta}{x}$ instead of
-$\rep{\nabla}{x}$ all over the place. yuck}
+\sg{Needless to say, we won't propagate $\bot$ constraints when we only find
+out (by additional type info) that something is a Newtype \emph{after} adding
+the constraints (think |SMaybe a| and we later find that $a \typeeq N Void$),
+but let's call it a day.}
 
-Surprisingly, no more coercion handling is needed! We can see that
-$\rep{\Delta}{x} \termeq |y ||> co| \in \Delta$ is impossible for all |x| and
-|y|. So all representatives either don't have a solution (in which case $\Delta
-\cap \rep{\Delta}{x}_1$ is empty) or are representatives of a data constructor
-solution or $\bot$ themselves, so can be trivially renamed with the
-$[\rep{\Delta}{y}_1 / \rep{\Delta}{x}_1]$ suffix.
-
-Other than that, $\expand$ (which for the purposes of this paper is just
-concerned with presenting uncovered patterns to the user) will have to turn
-the sequence of coercions back into source-level Newtype applications.
-
-\sg{I'm no longer convinced that we want to have this in the paper.}
+An alternative, less hacky solution would be treating Newtype wrappers as
+coercions and at the level of $\Delta$ consider equivalence classes modulo
+coercions. That entails a slew of modifications and has deep ramifications
+throughout the presentation.
 
 
 \subsection{Strictness}
