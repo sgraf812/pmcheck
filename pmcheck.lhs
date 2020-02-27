@@ -780,7 +780,9 @@ tree is then processed by two different functions, $\ann$ and $\unc$, which
 compute redundancy information and uncovered patterns, respectively. $\ann$
 boils down this information into an annotated tree $\Ant$, for which the set of
 redundant and inaccessible right-hand sides can be computed in a final pass of
-$\red$. $\unc$, on the other hand, returns a \emph{refinement type} representing
+$\red$. $\unc$, on the other hand, returns a \emph{refinement type}
+\cite{rushby1998subtypes,boundschecking}
+representing
 the set of \emph{uncovered values}, for which $\generate$ can generate the
 inhabiting patterns to show to the user.
 
