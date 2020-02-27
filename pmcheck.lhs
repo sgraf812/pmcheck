@@ -2470,6 +2470,11 @@ the |signum| function from \ryan{Which section?} is exhaustive. This is somethin
 that \sysname cannot do out of the box, although it would be possible to
 extend $\addphi$ with SMT-like reasoning about booleans and integer arithmetic.
 \ryan{Sebastian: is this the thing that would need to be extended?}
+\sg{Yes, I imagine that $\addphi$ would match on arithmetic expressions and then
+add some kind of new $\delta$ constraint to $\Delta$. $\adddelta$ would then
+have to do the actual linear arithmetic reasoning, \eg conclude from
+$x \not< e, x \ntermeq e, x \not> e$ (and $x \ntermeq \bot$) that $x$ is not
+inhabited, quite similar to a \extension{COMPLETE} set.}
 
 \subsubsection{Warnings for pattern matching}
 
