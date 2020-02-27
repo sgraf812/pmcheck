@@ -2343,6 +2343,7 @@ what was matched beyond that.
 
 
 \subsection{Maintaining residual \extension{COMPLETE} sets}
+\label{ssec:residual-complete}
 
 Our implementation applies a few hacks to make the inhabitation test as
 efficient as possible. For example, we represent $\Delta$s by a mapping from
@@ -2450,6 +2451,7 @@ to coverage checking. These include:
 \section{Related work} \label{sec:related}
 
 \subsection{Comparison with GADTs Meet Their Match}
+\label{ssec:gmtm}
 
 \citet{gadtpm} present GADTs Meet Their Match (\gmtm), an algorithm which
 handles many of the
@@ -2517,6 +2519,7 @@ $x \not< e, x \ntermeq e, x \not> e$ (and $x \ntermeq \bot$) that $x$ is not
 inhabited, quite similar to a \extension{COMPLETE} set.}
 
 \subsubsection{Warnings for pattern matching}
+\label{ssec:maranget}
 
 \citet{maranget:warnings} presents a coverage checking algorithm for OCaml. While
 OCaml is a strict language, the algorithm claims to be general enough to handle
@@ -2534,6 +2537,27 @@ desugars definitions by clauses to \emph{case trees}. Case trees present a simpl
 form of pattern matching that is easier to check for coverage, much like guard trees
 in \sysname. Guard trees could take inspiration from case trees should a future
 version of GHC add dependent types or copatterns.
+
+\subsection{Positive and negative information}
+
+\sysname's use of positive and negative constructor constraints inert sets is
+inspired by \citet{sestoft1996ml}, which uses positive and negative information
+to implement a pattern-match compiler for ML. Sestoft utilises positive and
+negative information to generate decision trees that avoid
+scrutinizing the same terms repeatedly. This insight is equally applicable to
+coverage checking and is one of the primary reasons for \sysname's efficiency.
+For instance, tracking negative constructor constraints allows \sysname
+to check \extension{COMPLETE} sets while avoiding quadratic blowup
+(\cref{ssec:residual-complete}).
+
+Other coverage checkers for Haskell, such as those of
+\citet{gadtpm} (\cref{ssec:gmtm})
+and
+\citet{maranget:warnings} (\cref{ssec:maranget}),
+only track positive constructor constraints.
+Not tracking negative constructor constraints makes them more susceptible
+to \ryan{Bugs? Efficiency problems? Not sure how to best finish this
+sentence...}
 
 \subsection{Refinement types in coverage checking}
 
@@ -2564,11 +2588,11 @@ use |fibPartial| in a proof will yield an inconsistent environment (and therefor
 fail to verify) unless the user can
 prove that |fibPartial| is only ever invoked with the arguments |0| or |1|.
 
-\subsection{Negative constraints}
-
-\ryan{TODO: Something about Sestoft's negative constraints \cite{sestoft1996ml}}
-
 \ryan{Other things from GMTM's related work?}
+
+\section{Conclusion}
+
+\TODO
 
 \bibliography{references}
 
