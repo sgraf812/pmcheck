@@ -662,7 +662,7 @@ Stardust \cite{dunfieldthesis}.
 \end{figure}
 
 
-\section{Overview of Our Solution}
+\section{Overview of our solution}
 \label{sec:overview}
 
 \begin{figure}
@@ -743,7 +743,7 @@ $\red$. $\unc$, on the other hand, returns a \emph{refinement type} representing
 the set of \emph{uncovered values}, for which $\generate$ can generate the
 inhabiting patterns to show to the user.
 
-\subsection{Desugaring to Guard Trees} \label{sec:desugar}
+\subsection{Desugaring to guard trees} \label{sec:desugar}
 
 \begin{figure}
 \[
@@ -877,7 +877,7 @@ captured by $\gdtguard{}{\hspace{-0.6em}}$, whereas top-to-bottom backtracking
 is expressed by sequence ($\gdtseq{}{}$). The leaves in a guard tree each
 correspond to a GRHS.
 
-\subsection{Checking Guard Trees} \label{sec:check}
+\subsection{Checking guard trees} \label{sec:check}
 
 Coverage checking works by gradually refining the set of reaching values
 \ryan{Did you mean to write ``reachable values'' here? ``Reaching values''
@@ -990,7 +990,7 @@ redundant ($\times$).
 Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
 inaccessible) when it reaches a particular GRHS.
 
-\subsection{Generating Inhabitants of a Refinement Type} \label{sec:inhabitants}
+\subsection{Generating inhabitants of a refinement type} \label{sec:inhabitants}
 
 The predicate literals $\varphi$ of refinement types look quite similar to the
 original $\Grd$ language, so how is checking them for emptiness an improvement
@@ -1048,7 +1048,7 @@ desugaring, coverage checking, and finding inhabitants of the resulting
 refinement types. The latter subtask proves challenging enough to warrant two
 additional subsections.
 
-\subsection{Desugaring to Guard Trees}
+\subsection{Desugaring to guard trees}
 
 \begin{figure}
 
@@ -1137,7 +1137,7 @@ temporary variables. In practice, the implementation of $\ds$ can be smarter
 than this by looking at the pattern (which might be a variable match or
 |@|-pattern) when choosing a name for a variable.
 
-\subsection{Checking Guard Trees}
+\subsection{Checking guard trees}
 
 \begin{figure}
 \[ \textbf{Operations on $\Theta$} \]
@@ -1239,7 +1239,7 @@ see a few reasonable ways to improve precision considerably at almost no cost,
 both in \cref{ssec:extinert} and \cref{ssec:extviewpat}.
 
 
-\subsection{Generating Inhabitants of a Refinement Type}
+\subsection{Generating inhabitants of a refinement type}
 \label{ssec:gen}
 
 \begin{figure}
@@ -1563,7 +1563,7 @@ constructor pattern means buggy COMPLETE pragma handling. I think this
 comparison should go into Related Work.}
 
 
-\subsection{Inhabitation Test}
+\subsection{Inhabitation test}
 
 \begin{figure}
 \centering
@@ -1686,7 +1686,7 @@ that a variable is inhabited after $n$ such iterations and consider
 supplementing that with a simple termination analysis in the future.
 
 
-\section{Possible Extensions}
+\section{Possible extensions}
 
 \sysname is well equipped to handle the fragment of Haskell it was designed to
 handle. But GHC (and other languages, for that matter) extends Haskell in
@@ -1694,7 +1694,7 @@ non-trivial ways. This section exemplifies how our solution can be easily
 supplemented to deal with new language features or measures for increasing
 the precision of the checking process.
 
-\subsection{Long Distance Information}
+\subsection{Long distance information}
 \label{ssec:ldi}
 
 Coverage checking as described also works for |case| expressions (with the
@@ -1720,7 +1720,7 @@ checking the |case| expression starting from $\Theta_{rhs2}$ as the initial set
 of reaching values instead of $\reft{x:|Bool|}{\true}$.
 
 
-\subsection{Empty Case}
+\subsection{Empty case}
 
 As can be seen in \cref{fig:srcsyn}, Haskell function definitions need to have
 at least one clause. That leads to an awkward situation when pattern matching
@@ -1772,7 +1772,7 @@ context-sensitive set of reaching values, possibly enriched with long distance
 information (\cf \cref{ssec:ldi}).
 
 
-\subsection{View Patterns}
+\subsection{View patterns}
 \label{ssec:extviewpat}
 
 Our source syntax had support for view patterns to start with (\cf
@@ -1823,7 +1823,7 @@ global value number $i$. Thus, our implementation will not emit any warning for
 a definition like |safeLast|.
 
 
-\subsection{Pattern Synonyms}
+\subsection{Pattern synonyms}
 \label{ssec:extpatsyn}
 
 To accommodate checking of pattern synonyms $P$, we first have to extend the
@@ -2210,7 +2210,7 @@ first place, only whether there where any inhabitants at all! In this new
 representation, whether a vector of $\nabla$ is inhabited is easily seen by
 syntactically comparing it to the empty vector, $\epsilon$.
 
-\subsection{Throttling for Graceful Degradation}
+\subsection{Throttling for graceful degradation}
 
 Even with the tweaks from \cref{ssec:interleaving}, checking certain pattern
 matches remains NP-hard \sg{Cite something here or earlier, bring an example}.
