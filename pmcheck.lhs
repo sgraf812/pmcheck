@@ -693,7 +693,7 @@ Stardust \cite{dunfieldthesis}.
 \label{sec:overview}
 
 \begin{figure}
-\includegraphics{pipeline.eps}
+\includegraphics{pipeline.pdf}
 \caption{Bird's eye view of pattern match checking}
 \label{fig:pipeline}
 \end{figure}
@@ -755,8 +755,6 @@ In this section, we aim to provide an intuitive understanding of \sysname
 by way of deriving the intermediate representations
 of the pipeline step by step from motivating examples.
 
-%TODO: Not sure how I can tell ipe (the program from which I exported the
-%      graphics) to use the ACM font
 \Cref{fig:pipeline} depicts a high-level overview over this pipeline.
 Desugaring the complex source Haskell syntax to the very elementary language of
 guard trees $\Gdt$ via $\ds$ is an incredible simplification for the checking
@@ -824,7 +822,6 @@ inhabiting patterns to show to the user.
 To understand what language we should desugar to, consider the following 3am
 attempt at lifting equality over \hs{Maybe}:
 
-% TODO: Work on code style
 \begin{code}
 liftEq Nothing  Nothing  = True
 liftEq (Just x) (Just y)
@@ -1168,7 +1165,6 @@ than this by looking at the pattern (which might be a variable match or
 
 \begin{figure}
 \[ \textbf{Operations on $\Theta$} \]
-% TODO: Figure out where to move these
 \[
 \begin{array}{lcl}
 \reft{\Gamma}{\Phi} \andtheta \varphi &=& \reft{\Gamma}{\Phi \wedge \varphi} \\
@@ -1275,7 +1271,7 @@ both in \cref{ssec:extinert} and \cref{ssec:extviewpat}.
 \[ \ruleform{ \generate(\Theta) = \mathcal{P}(\overline{p}) } \]
 \[
 \begin{array}{c}
-   \generate(\reft{\Gamma}{\Phi}) = \bigcup \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \construct(\ctxt{\Gamma}{\varnothing}, \Phi) \right\}
+   \generate(\reft{\Gamma}{\Phi}) = \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \construct(\ctxt{\Gamma}{\varnothing}, \Phi) \right\}
 \end{array}
 \]
 
@@ -1294,23 +1290,15 @@ both in \cref{ssec:extinert} and \cref{ssec:extviewpat}.
 \end{array}
 \]
 
-% TODO: Expand currently assumes that there are only positive assignments in
-% nabla. But that's not the case! E.g. for
-%   data T = A | B | C
-%   f A = ()
-% The nabla representing the uncovered set will only have the constraint x /~ A.
-% Currently, we will print this as _, but we want the two patterns B and C.
-% I think we should consider this an implementation detail, but should really write
-% about it later on.
 \[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
-\[ \ruleform{ \expand(\nabla, \overline{x}) = \mathcal{P}(\overline{p}) } \]
+\[ \ruleform{ \expand(\nabla, \overline{x}) = \overline{p} } \]
 \[
 \begin{array}{lcl}
 
-  \expand(\nabla, \epsilon) &=& \{ \epsilon \} \\
+  \expand(\nabla, \epsilon) &=& \epsilon \\
   \expand(\ctxt{\Gamma}{\Delta}, x_1 ... x_n) &=& \begin{cases}
-    \left\{ (K \; q_1 ... q_m) \, p_2 ... p_n \mid (q_1 ... q_m \, p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, y_1 ... y_m x_2 ... x_n) \right\} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
-    \left\{ \_ \; p_2 ... p_n \mid (p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, x_2 ... x_n) \right\} & \text{otherwise} \\
+    (K \; q_1 ... q_m) \, p_2 ... p_n & \parbox[t]{0.5\textwidth}{where $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$\\ and $(q_1 ... q_m \, p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, y_1 ... y_m x_2 ... x_n)$} \\
+    \_ \; p_2 ... p_n & \text{where $(p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, x_2 ... x_n)$} \\
   \end{cases} \\
 
 \end{array}
@@ -1338,9 +1326,7 @@ There might be multiple inhabitants, and $\construct$ will construct multiple
 $\nabla$s, each representing at least one inhabiting assignment of the
 refinement predicate $\Phi$. Each such assignment corresponds to a pattern
 vector, so $\expand$ expands the assignments in a $\nabla$ into multiple
-pattern vectors. \sg{Currently, $\expand$ will only expand positive constraints
-and not produce multiple pattern vectors for a $\nabla$ with negative info (see
-the TODO comment attached to $\expand$'s definition)}
+pattern vectors.
 
 But what \emph{is} $\nabla$? It's a pair of a type context $\Gamma$ and a
 $\Delta$, a set of mutually compatible constraints $\delta$, or a proven
@@ -1403,7 +1389,6 @@ attempts (via intercepting the $\false$ failure mode of $\!\addphi\!$) to do
 so. Conjunction is handled by the equivalent of a |concatMap|, whereas a
 disjunction corresponds to a plain union.
 
-\sg{$\expand$ undoubtly needs some love, but that's a TODO for later.}
 Expanding a $\nabla$ to a pattern vector in $\expand$ is syntactically heavy,
 but straightforward: When there is a solution like $\Delta(x) \termeq |Just y|$
 in $\Delta$ for the head $x$ of the variable vector of interest, expand $y$ in
@@ -1441,8 +1426,6 @@ well-defined.
 
   \false &\adddelta& \delta &=& \false \\
   \ctxt{\Gamma}{\Delta} &\adddelta& \gamma &=& \begin{cases}
-    % TODO: This rule can loop indefinitely for GADTs... I believe we do this
-    % only one level deep in the implementation and assume that it's inhabited otherwise
     \ctxt{\Gamma}{(\Delta,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\Delta,\gamma)}}{\rep{\Delta}{x}}$} \\
     \false & \text{otherwise} \\
   \end{cases} \\
@@ -1454,10 +1437,6 @@ well-defined.
   \end{cases} \\
   \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
-    % TODO: I'm not sure if we really need the next line. It should be covered
-    % by the following case, which will try to instantiate all constructors and
-    % see if any is still possible by the x ~ K as gammas ys case
-    % \bot & \parbox[t]{0.6\textwidth}{if $\rep{\Delta}{x}:\tau \in \Gamma$ \\ and $\forall K' \in \cons{\ctxt{\Gamma}{\Delta}}{\tau}: \rep{\Delta}{x} \ntermeq K' \in (\Delta,\rep{\Delta}{x} \ntermeq K)$} \\
     \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{\rep{\Delta}{x}}$} \\
     \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{otherwise} \\
   \end{cases} \\
@@ -1620,7 +1599,6 @@ comparison should go into Related Work.}
   \\
   \\
 
-  % TODO: Maybe inline Inst into this rule?
   \prooftree
     \Shortstack{{x:\tau \in \Gamma \quad K \in \cons(\ctxt{\Gamma}{\Delta}, \tau)}
                 {\inst(\ctxt{\Gamma}{\Delta}, x, K) \not= \false}}
@@ -1804,13 +1782,10 @@ information (\cf \cref{ssec:ldi}).
 
 Our source syntax had support for view patterns to start with (\cf
 \cref{fig:srcsyn}). And even the desugaring we gave as part of the definition
-of $\ds$ in \cref{fig:desugar} is accurate.
-\sg{Should we also generate a $\grdbang{x}$? That wouldn't be true for |const
-False -> True|. I'm not sure if there's a conservative way to handle that
-case!}
-But this desugaring alone is insufficient for the checker to conclude that
-|safeLast| from \cref{sssec:viewpat} is an exhaustive definition! To see why,
-let's look at its guard tree:
+of $\ds$ in \cref{fig:desugar} is accurate. But this desugaring alone is
+insufficient for the checker to conclude that |safeLast| from
+\cref{sssec:viewpat} is an exhaustive definition! To see why, let's look at its
+guard tree:
 
 \begin{forest}
   grdtree,
@@ -2386,6 +2361,20 @@ process.
 \label{sec:eval}
 
 \ryan{Put a snappy intro here}
+
+\subsection{Reporting uncovered patterns}
+
+Our formalism in \cref{fig:gen} is subtly buggy when it comes to presenting
+uncovered patterns to the user. Consider a definition like |f True = ()|. The
+computed uncovered set of |f| is the refinement type $\{ x:|Bool| \mid x
+\ntermeq \bot, x \ntermeq |True| \}$, which crucially contains no positive
+information! As a result, the result of expanding the resulting $\nabla$ (which
+looks quite similar) with $\expand$ just unhelpfully reports |_| as an uncovered
+pattern.
+
+Our implementation thus splits the $\nabla$ into (possibly multiple)
+sub-$\nabla$s with positive information on variables we have negative
+information on before handing off to $\expand$.
 
 \subsection{GHC issues}
 

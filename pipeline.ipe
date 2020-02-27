@@ -1,8 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE ipe SYSTEM "ipe.dtd">
 <ipe version="70206" creator="Ipe 7.2.7">
-<info created="D:20200218134542" modified="D:20200218142732"/>
-<preamble>\documentclass[acmsmall]{acmart}</preamble>
+<info created="D:20200218134542" modified="D:20200227173119"/>
 <ipestyle name="basic">
 <symbol name="arrow/arc(spx)">
 <path stroke="sym-stroke" fill="sym-stroke" pen="sym-pen">
@@ -221,13 +220,13 @@ h
 <dashstyle name="dash dotted" value="[4 2 1 2] 0"/>
 <dashstyle name="dash dot dotted" value="[4 2 1 2 1 2] 0"/>
 <textsize name="large" value="\large"/>
+<textsize name="small" value="\small"/>
+<textsize name="tiny" value="\tiny"/>
 <textsize name="Large" value="\Large"/>
 <textsize name="LARGE" value="\LARGE"/>
 <textsize name="huge" value="\huge"/>
 <textsize name="Huge" value="\Huge"/>
-<textsize name="small" value="\small"/>
 <textsize name="footnote" value="\footnotesize"/>
-<textsize name="tiny" value="\tiny"/>
 <textstyle name="center" begin="\begin{center}" end="\end{center}"/>
 <textstyle name="itemize" begin="\begin{itemize}" end="\end{itemize}"/>
 <textstyle name="item" begin="\begin{itemize}\item{}" end="\end{itemize}"/>
@@ -260,7 +259,7 @@ h
 80 752 l
 </path>
 <text matrix="1 0 0 1 6.27185 -13.4559" transformations="translations" pos="48 768" stroke="black" type="label" width="31.327" height="6.918" depth="0" valign="baseline">Haskell</text>
-<text matrix="1 0 0 1 93.9945 -13.912" transformations="translations" pos="48 768" stroke="black" type="label" width="17.227" height="6.918" depth="0" valign="baseline">Gdt</text>
+<text matrix="1 0 0 1 91.533 -12.6628" transformations="translations" pos="48 768" stroke="black" type="label" width="24.934" height="6.926" depth="1.93" valign="baseline">guard</text>
 <path matrix="1 0 0 1 96 0" stroke="black" fill="lightgray" pen="heavier" arrow="normal/normal">
 32 752 m
 80 752 l
@@ -327,7 +326,6 @@ h
 32 752 m
 56 752 l
 </path>
-<text matrix="1 0 0 1 173.368 1.87696" transformations="translations" pos="48 768" stroke="black" type="label" width="16.881" height="6.918" depth="0" valign="baseline">Adt</text>
 <text matrix="1 0 0 1 -13.912 4.428" transformations="translations" pos="328 736" stroke="black" type="minipage" width="85.584" height="6.926" depth="1.93" valign="top">uncovered patterns</text>
 <text matrix="1 0 0 1 -13.912 41.437" transformations="translations" pos="328 736" stroke="black" type="minipage" width="90.456" height="11.924" depth="6.95" valign="top">\begin{flushleft}
 redundant and inaccessible clauses
@@ -337,5 +335,8 @@ redundant and inaccessible clauses
 80 752 l
 </path>
 <text matrix="1 0 0 1 167.547 -28.629" transformations="translations" pos="48 768" stroke="black" type="label" width="29.61" height="6.812" depth="1.49" valign="baseline" style="math">\Theta_{uncov}</text>
+<text matrix="1 0 0 1 93.719 -25.155" transformations="translations" pos="48 768" stroke="black" type="label" width="20.562" height="6.128" depth="0" valign="baseline">trees</text>
+<text matrix="1 0 0 1 162.137 3.22019" transformations="translations" pos="48 768" stroke="black" type="label" width="43.725" height="6.918" depth="0" valign="baseline">annotated</text>
+<text matrix="1 0 0 1 173.719 -8.73665" transformations="translations" pos="48 768" stroke="black" type="label" width="20.562" height="6.128" depth="0" valign="baseline">trees</text>
 </page>
 </ipe>
