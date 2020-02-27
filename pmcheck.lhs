@@ -609,46 +609,65 @@ not just those arising from matching on data constructors with strict fields.
 
 Besides strictness, another way for pattern matches to be rendered unreachable
 is by way of \emph{equality constraints}. A popular method for introducing
-equalities between types is matching on GADTs \cite{recdatac}. Here is one example that
-demonstrates the interaction between GADTs and coverage checking:
+equalities between types is matching on GADTs \cite{recdatac}. The following examples
+demonstrate the interaction between GADTs and coverage checking:
 
 \begin{minipage}{\textwidth}
-\begin{minipage}[t]{0.25\textwidth}
+\begin{minipage}[t]{0.3\textwidth}
 \begin{code}
 data T a b where
-  T1 :: T Bool Int
-  T2 :: T Char Int
+  T1 :: T Int  Bool
+  T2 :: T Char Bool
 \end{code}
 \end{minipage}%
-\begin{minipage}[t]{0.2\textwidth}
+\begin{minipage}[t]{0.3\textwidth}
 \begin{code}
-s :: T Bool b -> b
-s T1 = 42
+g1 :: T Int b -> b -> Int
+g1 T1 False = 0
+g1 T1 True  = 1
+\end{code}
+\end{minipage}%
+\begin{minipage}[t]{0.3\textwidth}
+\begin{code}
+g2 :: T a b -> T a b -> Int
+g2 T1 T1 = 0
+g2 T2 T2 = 1
 \end{code}
 \end{minipage}
 \end{minipage}
 
-When |s| matches against |T1|, the |b| in the type |T Bool b| is known to be an |Int|
-on the right-hand side of the clause, which is why the use of |42| typechecks.
+When |g1| matches against |T1|, the |b| in the type |T Int b| is known to be a |Bool|,
+which is why matching the second argument against |False| or |True| will typecheck.
 Phrased differently, matching against
 |T1| brings into scope an \emph{equality constraint} between the types
-|b| and |Int|. GHC has a powerful type inference engine that is equipped to
+|b| and |Bool|. GHC has a powerful type inference engine that is equipped to
 reason about type equalities of this sort \cite{outsideinx}.
 
-Just as important as the code used in the |s| function is the code that is
-\emph{not} used in |s|. One might wonder if |s| not matching on the |T2|
-constructor is an oversight. In fact, the exact opposite is true: matching
-on |s| in |T2| would be rejected by the typechecker. This is because |T2|
-is of type |T Char Int|, but the argument to |s| must be of type |T Bool b|.
-Matching against |T2| would be tantamount to saying that |Bool| and |Char|
-are the same type, which is not the case. As a result, |s| is exhaustive
+Just as important as the code used in the |g1| function is the code that is
+\emph{not} used in |g1|. One might wonder if |g1| not matching its first argument against
+|T2| is an oversight. In fact, the exact opposite is true: matching
+on |T2| would be rejected by the typechecker. This is because |T2|
+is of type |T Char Bool|, but the first argument to |g1| must be of type |T Int b|.
+Matching against |T2| would be tantamount to saying that |Int| and |Char|
+are the same type, which is not the case. As a result, |g1| is exhaustive
 even though it does not match on all of |T|'s data constructors.
 
-The same engine that typechecks GADT pattern matches is
+The presence of type equalities is not always as clear-cut as it is in |g1|.
+Consider the more complex |g2| function, which matches on two arguments of
+the type |T a b|. While matching the arguments against |T1 T1| or |T2 T2| is possible,
+it is not possible to match against |T1 T2| or |T2 T1|. To see why, suppose the first argument
+is matched against |T1|, giving rise to an equality between |a| and |Int|. If the second
+argument were then matched against |T2|, we would have that |a| equals |Char|.
+By the transitivity of type equality, we would have that |Int| equals |Char|.
+This cannot be true, so matching against |T1 T2| is impossible (and similarly
+for |T2 T1|).
+
+Concluding that |g2| is exhaustive requires some non-trivial reasoning about
+equality constraints. In GHC, the same engine that typechecks GADT pattern matches is
 also used to rule out cases made unreachable by type equalities.
-There are a variety of coverage checking algorithms that account for GADTs,
-including GHC's current coverage checker \cite{gadtpm}, as well as the checkers for
-OCaml \cite{ocamlgadts},
+Besides GHC's current coverage checker \cite{gadtpm}, there are a variety of
+other coverage checking algorithms that account for GADTs,
+including those for OCaml \cite{ocamlgadts},
 Dependent ML \cite{deadcodexi,xithesis,dependentxi}, and
 Stardust \cite{dunfieldthesis}.
 \sysname continues this tradition---see
