@@ -482,8 +482,7 @@ complicated things under the hood. For example, one can define
 |length| with pattern synonyms like so:
 
 \begin{minipage}{\textwidth}
-\begin{minipage}[t]{0.5\textwidth}
-\centering
+\begin{minipage}[t]{0.55\textwidth}
 \begin{code}
 pattern Nil :: Text
 pattern Nil <- (Text.null -> True)
@@ -491,8 +490,7 @@ pattern Cons :: Char -> Text -> Text
 pattern Cons x xs <- (Text.uncons -> Just (x, xs))
 \end{code}
 \end{minipage}%
-\begin{minipage}[t]{0.5\textwidth}
-\centering
+\begin{minipage}[t]{0.3\textwidth}
 \begin{code}
 length :: Text -> Int
 length Nil = 0
@@ -591,7 +589,6 @@ demonstrates the interaction between GADTs and coverage checking:
 
 \begin{minipage}{\textwidth}
 \begin{minipage}[t]{0.25\textwidth}
-\centering
 \begin{code}
 data T a b where
   T1 :: T Bool Int
@@ -599,7 +596,6 @@ data T a b where
 \end{code}
 \end{minipage}%
 \begin{minipage}[t]{0.2\textwidth}
-\centering
 \begin{code}
 s :: T Bool b -> b
 s T1 = 42
@@ -2351,26 +2347,34 @@ Our implementation applies a few hacks to make the inhabitation test as
 efficient as possible. For example, we represent $\Delta$s by a mapping from
 variables to their positive and negative constraints for easier indexing.
 But there are also asymptotical improvements. Consider the following function:
-
+\begin{minipage}{\textwidth}
+\begin{minipage}[t]{0.33\textwidth}
 \begin{code}
 data T = A1 | ... | A1000
 pattern P = ...
 {-# COMPLETE A1, P #-}
-f :: T -> Int
-f A1 = 1
-f A2 = 2
-...
-f A1000 = 1000
 \end{code}
+\end{minipage}
+\begin{minipage}[t]{0.22\textwidth}
+\begin{code}
+f :: T -> Int
+f A1     = 1
+f A2     = 2
+...
+f A1000  = 1000
+\end{code}
+\end{minipage}
+\end{minipage}
 
-|f| is exhaustively defined. For that we need to perform an inhabitation test
-for the match variable |x| after the last clause. The test will conclude that
-the builtin \extension{COMPLETE} set was completely overlapped. But in order
-to conclude that, our algorithm tries to instantiate |x| (\inhabitedinst) to
-each of its 1000 constructors and try to add a positive constructor constraint!
-What a waste of time, given that we could just look at the negative constraints
-on |x| \emph{before} trying to instantiate |x|! But asymptotically it shouldn't
-matter much, since we're doing this only once at the end.
+|f| is exhaustively defined. For seeing that we need to perform an inhabitation
+test for the match variable |x| after the last clause. The test will conclude
+that the builtin \extension{COMPLETE} set was completely overlapped. But in
+order to conclude that, our algorithm tries to instantiate |x| (via
+\inhabitedinst) to each of its 1000 constructors and try to add a positive
+constructor constraint! What a waste of time, given that we could just look at
+the negative constraints on |x| \emph{before} trying to instantiate |x|. But
+asymptotically it shouldn't matter much, since we're doing this only once at
+the end.
 
 Except that is not true, because we also perform redundancy checking! At any
 point in |f|'s definition there might be a match on |P|, after which all
