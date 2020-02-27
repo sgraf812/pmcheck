@@ -213,7 +213,7 @@ But the coverage-checking problem becomes \emph{much} harder when one includes t
 raft of innovations that have become part of a modern programming language
 like Haskell, including: view patterns, pattern guards, pattern synonyms,
 overloaded literals, bang patterns, lazy patterns, as-patterns, strict data contructors,
-empty case expressions, and long-distance effects (\Cref{sec:long-distance}).
+empty case expressions, and long-distance effects (\Cref{ssec:ldi}).
 Particularly tricky are GADTs \cite{recdatac}, where the \emph{type} of a match can determine
 what \emph{values} can possibly appear; and local type-equality constraints brought into
 scope by pattern matching \cite{outsideinx}.
@@ -247,7 +247,7 @@ following contributions:
   implementation of this algorithm.
 
 \item
-  We given an overview of our new algorithm \sysname{} in \Cref{sec:overview}.
+  We give an overview of our new algorithm \sysname{} in \Cref{sec:overview}.
   The key insight is to abandon the notion of structural pattern
   matching altogether, and instead desugar all
   the complexities of pattern matching into a very simple language
@@ -258,11 +258,19 @@ following contributions:
   Finally, provided we have access to a suitable way to find inhabitants
   of a refinement type, we can report accurate coverage errors (\Cref{sec:inhabitants}).
 
-\item We shore up the intuitions of \Cref{sec:overview} with a formal treatment in
+\item
+  We shore up the intuitions of \Cref{sec:overview} with a formal treatment in
   \Cref{sec:formalism}.
 
 \item
-  We have implemented \sysname in GHC (\Cref{sec:impl}). \ryan{More details.}
+  We demonstrate the compositionality of \sysname in \Cref{sec:impl} by augmenting it with
+  several language extensions. Although these extensions can change the source
+  language in significant ways, the effort needed to incorporate them into the
+  algorithm is comparatively small.
+
+\item
+  We discuss how to optimize the performance of \sysname (\Cref{sec:impl}) and
+  implement a proof of concept in GHC (\Cref{sec:eval}).
 \end{itemize}
 
 We discuss the wealth of related work in \Cref{sec:related}.
@@ -1713,7 +1721,7 @@ non-trivial ways. This section exemplifies how our solution can be easily
 supplemented to deal with new language features or measures for increasing
 the precision of the checking process.
 
-\subsection{Long distance information}
+\subsection{Long-distance information}
 \label{ssec:ldi}
 
 Coverage checking as described also works for |case| expressions (with the
@@ -2374,6 +2382,10 @@ the same constructor twice (except after adding new type constraints), thus we
 have an amortised $\mathcal{O}(n)$ instantiations for the whole checking
 process.
 
+\section{Evaluation}
+\label{sec:eval}
+
+\ryan{Put a snappy intro here}
 
 \subsection{GHC issues}
 
