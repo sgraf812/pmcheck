@@ -523,6 +523,7 @@ a |COMPLETE| actually comprise a complete set of patterns, the burden is on
 the programmer to ensure that this invariant is upheld.
 
 \subsection{Strictness}
+\label{ssec:strictness}
 
 The evaluation order of pattern matching can impact whether a pattern is
 reachable or not. While Haskell is a lazy language, programmers can opt
@@ -1008,14 +1009,13 @@ inaccessible and whether a particular bang guard may lead to divergence and
 requires us to wrap a \lightning{}.
 
 Take the final uncovered set $\Theta_{|liftEq|}$ after checking |liftEq| above
-as an example. \sg{Do we need to give its predicate here again?}
-A bit of eyeballing |liftEq|'s definition reveals that |Nothing (Just _)| is an
-uncovered pattern, but eyeballing the constraint formula of $\Theta_{|liftEq|}$
-seems impossible in comparison. A more systematic approach is to adopt a
-generate-and-test scheme: Enumerate possible values of the data types for each
-variable involved (the pattern variables |mx| and |my|, but also possibly the
-guard-bound |x|, |y| and |t|) and test them for compatibility with the recorded
-constraints.
+as an example. A bit of eyeballing |liftEq|'s definition reveals that |Nothing
+(Just _)| is an uncovered pattern, but eyeballing the constraint formula of
+$\Theta_{|liftEq|}$ seems impossible in comparison. A more systematic approach
+is to adopt a generate-and-test scheme: Enumerate possible values of the data
+types for each variable involved (the pattern variables |mx| and |my|, but also
+possibly the guard-bound |x|, |y| and |t|) and test them for compatibility with
+the recorded constraints.
 
 Starting from |mx my|, we enumerate all possibilities for the shape of |mx|,
 and similarly for |my|. The obvious first candidate in a lazy language is
@@ -1026,26 +1026,15 @@ of the top-level $\wedge$. Trying |Just y| (|y| fresh) instead as the shape for
 a trivial inhabitant. Similarly for |(Just _) Nothing| and |(Just _) (Just _)|.
 
 Why do we have to test guard-bound variables in addition to the pattern
-variables? It is because of empty data types and strict fields:
-\sg{This example will probably move to an earlier section}
+variables? It is because of empty data types and strict fields. For example,
+|v| from \cref{ssec:strictness} does not have any uncovered patterns. And our
+approach should see that by looking at its uncovered set $\reft{x : |Maybe
+Void|}{x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}}$. Specifically, the
+candidate |SJust y| (for fresh |y|) for |x| should be rejected, because there
+is no inhabitant for |y|! $\bot$ is ruled out by the strict field and |Void|
+has no data constructors with which to instantiate |y|. Hence it is important
+to test guard-bound variables for inhabitants, too.
 
-\begin{code}
-data Void -- No data constructors
-data SMaybe a = SJust !a | SNothing
-v :: SMaybe Void -> Int
-v x@SNothing = 0
-\end{code}
-
-|v| does not have any uncovered patterns. And our approach should see that
-by looking at its uncovered set
-$\reft{x : |Maybe Void|}{x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}}$.
-Specifically, the candidate |SJust y| (for fresh |y|) for |x| should be rejected,
-because there is no inhabitant for |y|! $\bot$ is ruled out by the strict field
-and |Void| has no data constructors with which to instantiate |y|. Hence it is
-important to test guard-bound variables for inhabitants, too.
-
-\sg{GMTM goes into detail about type constraints, term constraints and
-worst-case complexity here. That feels a bit out of place.}
 
 \section{Formalism} \label{sec:formalism}
 
@@ -1116,16 +1105,12 @@ additional subsections.
 \label{fig:desugar}
 \end{figure}
 
-\sg{I find this section quite boring. There's nothing to see in \cref{fig:desugar} that wasn't already clear after reading 3.1.}
-
 \Cref{fig:desugar} outlines the desugaring step from source Haskell to our
 guard tree language $\Gdt$. It is assumed that the top-level match variables
-$x_1$ through $x_n$ in the $clause$ cases have special, fixed names. \sg{If we
-had a different font for meta variables than for object variables, we could
-make that visible in syntax. But we don't...} All other variables that aren't
-bound in arguments to $\ds$ have fresh names.
+$x_1$ through $x_n$ in the $clause$ cases have special, fixed names. All other
+variables that aren't bound in arguments to $\ds$ have fresh names.
 
-Consider this example function \sg{Maybe use the same function as in 3.1? But we already desugar it there...}:
+Consider this example function:
 
 \begin{code}
 f (Just (!xs,_))  ys@Nothing  = 1
@@ -1539,7 +1524,6 @@ The idea is that whenever we add a negative constraint that doesn't
 contradict with positive constraints, we still have to test if there are any
 inhabitants left.
 
-\sg{Maybe move down the type constraint case in the definition?}
 Adding a type constraint $\gamma$ drives this paranoia to a maximum: After
 calling out to the type-checker (the logic of which we do not and would not
 replicate in this paper or our implementation) to assert that the constraint is
@@ -1661,7 +1645,7 @@ comparison should go into Related Work.}
 \label{fig:inh}
 \end{figure}
 
-\sg{We need to find better subsection titles that clearly distinguish
+\sg{We should find better subsection titles that clearly distinguish
 "Testing ($\Theta$) for Emptiness" from "Inhabitation Test(ing a
 particular variable in $\nabla$)".}
 The process for adding a constraint to an inert set above (which turned out to
@@ -1715,32 +1699,27 @@ the precision of the checking process.
 \subsection{Long Distance Information}
 \label{ssec:ldi}
 
-\sg{This currently doesn't mention the term ``long distance information'' even
-once...}
-
 Coverage checking as described also works for |case| expressions (with the
 appropriate desugaring function) and nested function definitions, like in the
 following example:
 \begin{code}
-f Nothing    = 1
-f x@(Just 15) = ... (case x of
-  Nothing -> 2
-  Just 15 -> 3
-  Just _  -> 4) ...
+f True = 1
+f x = ... (case x of
+  False -> 2
+  True -> 3) ...
 \end{code}
 
-\sysname as is will not produce any warnings for
-this definition. But for the reader it is as plain as it can be that the |case|
-expression has two redundant GRHSs! That simply follows by context-sensitive
-reasoning, knowing that |x| was successfully matched to |Just 15| in the
-outer match.
+\sysname as is will not produce any warnings for this definition. But the
+reader can easily make the ``long distance connection'' that the last GRHS of
+the |case| expression is redundant! That simply follows by context-sensitive
+reasoning, knowing that |x| was already matched against |True|.
 
 In fact, \sysname does exactly the same kind of reasoning when
 checking |f|! Specifically, the set of values reaching the second GRHS (which
 we test for inhabitants to determine whether the GRHS is accessible)
 $\Theta_{rhs2}$ encodes the information we are after. We just have to start
 checking the |case| expression starting from $\Theta_{rhs2}$ as the initial set
-of reaching values instead of $\reft{x:|Maybe Int|}{\true}$.
+of reaching values instead of $\reft{x:|Bool|}{\true}$.
 
 
 \subsection{Empty Case}
@@ -1755,7 +1734,6 @@ absurd !_  = undefined
 \end{code}
 
 \noindent
-\sg{lhs2TeX chokes on wildcards and will format |absurd !x| as infix. Yuck}
 Clearly, neither option is satisfactory to implement |absurd|: The first one
 would actually return |undefined| when called with $\bot$, thus masking the
 original $\bot$ with the error thrown by |undefined|. The second one would
@@ -1973,7 +1951,8 @@ that none of them is completely covered:
 \end{array}
 \]
 
-\sg{What do you think of the indexing on $C_i$? It's not entirely accurate, but do we want to cloud the presentation with \ie $\overline{C_{i,1},...,C_{i,n_i}}^i$?}
+\sg{What do you think of the indexing on $C_i$? It's not entirely accurate, but
+do we want to cloud the presentation with \ie $\overline{C_{i,1},...,C_{i,n_i}}^i$?}
 
 $\cons$ was changed to return a list of all available \extension{COMPLETE} sets,
 and \inhabitedinst tries to find an inhabiting ConLike in each one of them in
@@ -2142,11 +2121,10 @@ much our approach could be simplified if we targeted a source language that was
 strict by default, such as OCaml or Idris.
 
 First off, both languages offer language support for laziness and lazy pattern
-matches \sg{Cite something?}, so the question rather becomes whether the
-gained simplification is actually worth risking unusable or even unsound
-warning messages when making use of laziness. If the answer is ``No'', then
-there isn't anything to simplify, just relatively more $x \termeq \bot$
-constraints to handle.
+matches, so the question rather becomes whether the gained simplification is
+actually worth risking unusable or even unsound warning messages when making
+use of laziness. If the answer is ``No'', then there isn't anything to
+simplify, just relatively more $x \termeq \bot$ constraints to handle.
 
 Otherwise, in a completely eager language we could simply drop $\grdbang{x}$
 from $\Grd$ and $\antdiv{}$ from $\Ant$. Actually, $\Ant$ and $\red$ could go
@@ -2156,8 +2134,6 @@ Since there wouldn't be any bang guards, there is no reason to have $x \termeq
 \bot$ and $x \ntermeq \bot$ constraints either. Most importantly, the
 \inhabitedbot judgment form has to go, because $\bot$ does not inhabit any
 types anymore.
-
-\sg{Treat type information as an extension?}
 
 
 \section{Implementation}
@@ -2384,21 +2360,13 @@ every clause}, involving $\mathcal{O}(n)$ instantiations each.
 
 Cleary, we can be smarter about that! Indeed, we cache \emph{residual
 \extension{COMPLETE} sets} in our implementation: Starting from the full
-\extension{COMPLETE} sets, we delete ConLike from them whenever we add a new
-negative constructor constraint, making sure that each of the sets is inhabited
-by at least one constructor. Note how we never need to check the same
-constructor twice, thus we have an amortised $\mathcal{O}(n)$ instantiations
-for the whole checking process.
+\extension{COMPLETE} sets, we delete ConLikes from them whenever we add a new
+negative constructor constraint, maintaining the invariant that each of the
+sets is inhabited by at least one constructor. Note how we never need to check
+the same constructor twice (except after adding new type constraints), thus we
+have an amortised $\mathcal{O}(n)$ instantiations for the whole checking
+process.
 
-\sg{I'm not sure what other hacks we should mention beyond this. I don't think
-we want to write about ad-hoc details like 6.2 in GMTM, because they are
-specific to how $\Delta$ is represented (solved, canonical type constraints in
-particular). That's of limited value for other implementations and not a
-conceptual improvement.}
-
-%\listoftodos\relax
-
-%\nocite{*}
 
 \subsection{GHC issues}
 
