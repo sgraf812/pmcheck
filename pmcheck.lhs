@@ -685,7 +685,7 @@ Stardust \cite{dunfieldthesis}.
 \label{sec:overview}
 
 \begin{figure}
-\includegraphics{pipeline.eps}
+\includegraphics{pipeline.pdf}
 \caption{Bird's eye view of pattern match checking}
 \label{fig:pipeline}
 \end{figure}
@@ -1774,13 +1774,10 @@ information (\cf \cref{ssec:ldi}).
 
 Our source syntax had support for view patterns to start with (\cf
 \cref{fig:srcsyn}). And even the desugaring we gave as part of the definition
-of $\ds$ in \cref{fig:desugar} is accurate.
-\sg{Should we also generate a $\grdbang{x}$? That wouldn't be true for |const
-False -> True|. I'm not sure if there's a conservative way to handle that
-case!}
-But this desugaring alone is insufficient for the checker to conclude that
-|safeLast| from \cref{sssec:viewpat} is an exhaustive definition! To see why,
-let's look at its guard tree:
+of $\ds$ in \cref{fig:desugar} is accurate. But this desugaring alone is
+insufficient for the checker to conclude that |safeLast| from
+\cref{sssec:viewpat} is an exhaustive definition! To see why, let's look at its
+guard tree:
 
 \begin{forest}
   grdtree,
