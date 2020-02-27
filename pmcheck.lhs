@@ -2384,7 +2384,7 @@ remaining clauses would be redundant by the user-supplied \extension{COMPLETE}
 set. Therefore, we have to perform the expensive inhabitation test \emph{after
 every clause}, involving $\mathcal{O}(n)$ instantiations each.
 
-Cleary, we can be smarter about that! Indeed, we cache \emph{residual
+Clearly, we can be smarter about that! Indeed, we cache \emph{residual
 \extension{COMPLETE} sets} in our implementation: Starting from the full
 \extension{COMPLETE} sets, we delete ConLikes from them whenever we add a new
 negative constructor constraint, maintaining the invariant that each of the
