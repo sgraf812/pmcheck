@@ -2535,9 +2535,34 @@ form of pattern matching that is easier to check for coverage, much like guard t
 in \sysname. Guard trees could take inspiration from case trees should a future
 version of GHC add dependent types or copatterns.
 
-\subsection{Refinement types}
+\subsection{Refinement types in coverage checking}
 
-\ryan{TODO}
+In addition to \sysname, Liquid Haskell uses refinement types to perform a limited form of
+exhaustivity checking \cite{liquidhaskell,refinement-reflection}.
+While exhaustiveness checks are optional in ordinary
+Haskell, they are mandatory for Liquid Haskell, as proofs written in Liquid
+Haskell require user-defined functions to be total (and therefore exhaustive)
+in order to be sound. For example, consider this non-exhaustive function:
+
+\begin{code}
+fibPartial :: Integer -> Integer
+fibPartial 0 = 0
+fibPartial 1 = 1
+\end{code}
+
+When compiled, GHC fills out this definition by adding an extra
+|fibPartial _ = error "undefined"| clause.
+Liquid Haskell leverages this by
+giving |error| the refinement type:
+
+\begin{code}
+error :: { v:String | false } -> a
+\end{code}
+
+As a result, attempting to
+use |fibPartial| in a proof will yield an inconsistent environment (and therefore
+fail to verify) unless the user can
+prove that |fibPartial| is only ever invoked with the arguments |0| or |1|.
 
 \subsection{Negative constraints}
 
