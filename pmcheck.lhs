@@ -422,11 +422,11 @@ We consider two such extensions here: view patterns and pattern synonyms.
 \subsubsection{View patterns}
 \label{sssec:viewpat}
 
-View patterns allow arbitrary computation to be performed
-while pattern matching. When a value |v| is matched against a view pattern |f -> p|,
-the match is successful when |f v| successfully matches against the pattern |p|.
-For example, one can use view patterns to succintly define a function that computes
-the length of Haskell's opaque |Text| data type:
+View patterns allow arbitrary computation to be performed while pattern
+matching. When a value |v| is matched against a view pattern |f -> p|, the
+match is successful when |f v| successfully matches against the pattern |p|.
+For example, one can use view patterns to succintly define a function that
+computes the length of Haskell's opaque |Text| data type:
 
 \begin{code}
 Text.null :: Text -> Bool
@@ -649,7 +649,7 @@ Stardust \cite{dunfieldthesis}.
 \begin{array}{rcl}
   \mathit{defn}   &\Coloneqq& \overline{clause} \\
   clause &\Coloneqq&  f \; \overline{pat} \; \overline{match} \\
-  pat    &\Coloneqq& x \mid |_| \mid K \; \overline{pat} \mid x|@|pat \mid |!|pat \mid |~|pat \mid x \, \mathtt{+} \, l \\
+  pat    &\Coloneqq& x \mid |_| \mid K \; \overline{pat} \mid x|@|pat \mid |!|pat \mid expr \rightarrow pat \\
   match  &\Coloneqq& \mathtt{=} \; expr \mid \overline{grhs} \\
   grhs   &\Coloneqq& \mathtt{\mid} \; \overline{guard} \; \mathtt{=} \; expr \\
   guard  &\Coloneqq& pat \leftarrow expr \mid expr \mid \mathtt{let} \; x \; \mathtt{=} \; expr \\
@@ -1096,9 +1096,7 @@ additional subsections.
 \ds(x, K \; pat_1\,...\,pat_n) &=& \grdbang{x}, \grdcon{K \; y_1\,...\,y_n}{x}, \ds(y_1, pat_1), ..., \ds(y_n, pat_n) \\
 \ds(x, y|@|pat) &=& \grdlet{y}{x}, \ds(y, pat) \\
 \ds(x, |!|pat) &=& \grdbang{x}, \ds(x, pat) \\
-\ds(x, |~|pat) &=& \epsilon \\
-\ds(x, y\,\mathtt{+}\,l) &=& \ds(|x >= l|), \grdlet{y}{|x - l|} \\
-
+\ds(x, expr \rightarrow pat) &=& \grdlet{|y|}{expr \; x}, \ds(y, pat) \\
 \end{array}
 \]
 \caption{Desugaring Haskell to $\Gdt$}
@@ -1113,8 +1111,8 @@ variables that aren't bound in arguments to $\ds$ have fresh names.
 Consider this example function:
 
 \begin{code}
-f (Just (!xs,_))  ys@Nothing  = 1
-f Nothing         zs          = 2
+f (Just (!xs,_))  ys@Nothing   = 1
+f Nothing         (g -> True)  = 2
 \end{code}
 
 \noindent
@@ -1124,7 +1122,7 @@ Under $\ds$, this desugars to
   grdtree,
   [
     [{$\grdbang{x_1}, \grdcon{|Just t_1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{xs}{t_2}, \grdlet{ys}{x_2}, \grdbang{ys}, \grdcon{|Nothing|}{ys}$} [1]]
-    [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{zs}{x_2}$} [2]]]
+    [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_3}{|g x_2|}, \grdbang{y}, \grdcon{|True|}{t_3}$} [2]]]
 \end{forest}
 
 The definition of $\ds$ is straight-forward, but a little expansive because of
@@ -1777,25 +1775,15 @@ information (\cf \cref{ssec:ldi}).
 \subsection{View Patterns}
 \label{ssec:extviewpat}
 
-Extending source syntax for view patterns is straight-forward, so is its
-desugaring in terms of $\Grd$:
-\[
-\begin{array}{cc}
-\begin{array}{c}
-  pat    \Coloneqq \highlight{expr \rightarrow pat} \mid ...
-\end{array} &
-\begin{array}{c}
-  \highlight{\ds(x, expr \rightarrow pat) = \grdlet{|y|}{expr \; x}, \ds(y, pat)}
-\end{array}
-\end{array}
-\]
-
+Our source syntax had support for view patterns to start with (\cf
+\cref{fig:srcsyn}). And even the desugaring we gave as part of the definition
+of $\ds$ in \cref{fig:desugar} is accurate.
 \sg{Should we also generate a $\grdbang{x}$? That wouldn't be true for |const
 False -> True|. I'm not sure if there's a conservative way to handle that
 case!}
-Where |y| is a fresh variable. But this alone is insufficient for the checker
-to conclude that |safeLast| from \cref{sssec:viewpat} is an exhaustive
-definition! To see why, let's look at its guard tree:
+But this desugaring alone is insufficient for the checker to conclude that
+|safeLast| from \cref{sssec:viewpat} is an exhaustive definition! To see why,
+let's look at its guard tree:
 
 \begin{forest}
   grdtree,
