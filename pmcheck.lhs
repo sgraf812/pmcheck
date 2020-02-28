@@ -1566,23 +1566,6 @@ $\Delta$. That might fail, because $\Delta(x)$ might have a constraint that
 conflicts with constraints on $\Delta(y)$, so it is better to use $\!\adddelta\!$ rather
 than to add it blindly to $\Delta$.
 
-\sg{We need to brag about how this representation is better than GMTMs. Example:
-
-\begin{code}
-data T = A1 | ... | A1000
-f :: T -> T -> ()
-f A1 _  = ()
-f _  A1 = ()
-\end{code}
-
-This will split (a term which is introduced in \cref{sec:impl}) into a million
-value vectors in GMTMs model, whereas there will only be ever fall through one
-$\nabla$ from one equation to the next because of negative constraints.
-
-Also GMTM comitting to a particular COMPLETE set the first time it splits on a
-constructor pattern means buggy COMPLETE pragma handling. I think this
-comparison should go into Related Work.}
-
 
 \subsection{Inhabitation test}
 
@@ -2558,6 +2541,26 @@ only track positive constructor constraints.
 Not tracking negative constructor constraints makes them more susceptible
 to \ryan{Bugs? Efficiency problems? Not sure how to best finish this
 sentence...}
+\sg{Moving a note from section 4 here for inspiration:
+
+We need to brag about how this (with negative info) representation is better
+than GMTMs. Example:
+
+\begin{code}
+data T = A1 | ... | A1000
+f :: T -> T -> ()
+f A1 _  = ()
+f _  A1 = ()
+\end{code}
+
+This will split (a term which is introduced in \cref{sec:impl}) into a million
+value vectors in GMTMs model, whereas there will only be ever fall through one
+$\nabla$ from one equation to the next because of negative constraints.
+
+Also GMTM comitting to a particular COMPLETE set the first time it splits on a
+constructor pattern means buggy COMPLETE pragma handling. I think this
+comparison should go into Related Work.}
+
 
 \subsection{Refinement types in coverage checking}
 
