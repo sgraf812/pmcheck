@@ -2472,10 +2472,9 @@ to coverage checking. These include:
 \label{ssec:gmtm}
 
 \citet{gadtpm} present GADTs Meet Their Match (\gmtm), an algorithm which
-handles many of the
-subtleties of GADTs, guards, and laziness mentioned earlier in this
-section. Despite this, the \gmtm algorithm still gives incorrect warnings
-in many cases.
+handles many of the subtleties of GADTs, guards, and laziness mentioned in
+\cref{sec:problem}. Despite this, the \gmtm algorithm still gives incorrect
+warnings in many cases.
 
 \subsubsection{\gmtm does not consider laziness in its full glory}
 
@@ -2493,8 +2492,16 @@ more thoroughly tracks strictness when desugaring Haskell programs.
 the algorithm is parametric over the choice of oracle, in practice the
 implementation of \gmtm in GHC uses an extremely simple oracle that can only
 reason about guards in a limited fashion. More sophisticated uses of guards,
-such as in the |safeLast| function from \cref{sssec:viewpat}, will cause \gmtm
+such as in the |safeLast| function from \cref{sssec:viewpat}. But, will cause \gmtm
 to emit erroneous warnings.
+
+\sg{|safeLast| isn't about guards, strictly speaking. But we could have
+\begin{code}
+safeLast2 xs
+  | (x : _)  <- reverse xs = Just x
+  | []       <- reverse xs = Nothing
+\end{code}
+which is handled by \sysname, but not by \gmtm.}
 
 While \gmtm's term oracle is customizable, it is not as simple to customize
 as one might hope. The formalism in \citet{gadtpm} represents all guards as
@@ -2510,8 +2517,8 @@ from the surface syntax to guard trees. The $\addphi$ function, which is
 roughly a counterpart to \gmtm's term oracle, can then reason
 about terms arising from patterns. While $\addphi$ is already more powerful
 than a trivial term oracle, its real strength lies in the fact that it can
-easily be extended, as \sysname's treatment of pattern synonyms
-(\cref{ssec:extpatsyn}) demonstrates. While \gmtm's term oracle could be
+easily be extended, as \sysname's treatment of view patterns
+(\cref{ssec:extviewpat}) demonstrates. While \gmtm's term oracle could be
 improved to accomplish the same thing, it is unlikely to be as
 straightforward of a process as extending $\addphi$.
 
@@ -2548,7 +2555,7 @@ f _     = 2
 
 \noindent
 \citeauthor{maranget:warnings} implies that |f bot| evaluates to 2, which is of
-course incorrect. Also replacing the wild card by a match on |False| would no
+course incorrect. Also, replacing the wild card by a match on |False| would no
 longer be a complete match according to their formalism.
 
 \sg{We can shorten this as needed. It's just a rant at this point, I'm afraid...}
@@ -2556,7 +2563,7 @@ longer be a complete match according to their formalism.
 Apart from that, his algorithm would report |Nothing| as a missing clause of
 the definition |g (Just True) = 1|, but would fail to report the nested |Just
 False|, which is clearly unsound according to our definition
-(\cref{ssec:soundness}.
+in \cref{ssec:soundness}.
 
 \citeauthor{maranget:warnings} comes up with surprisingly tricky test cases
 which exponentially blew up compilation time of GHC at the time. We added them
@@ -2578,7 +2585,7 @@ version of GHC add dependent types or copatterns.
 
 \subsection{Positive and negative information}
 
-\sysname's use of positive and negative constructor constraints inert sets is
+\sysname's use of positive and negative constructor constraints in inert sets is
 inspired by \citet{sestoft1996ml}, which uses positive and negative information
 to implement a pattern-match compiler for ML. Sestoft utilises positive and
 negative information to generate decision trees that avoid
@@ -2604,12 +2611,12 @@ f True   = 3
 \noindent
 \gmtm would have to commit to a particular \extension{COMPLETE} set when
 encountering the match on |False|, without any semantic considerations.
-Choosing $\{|False|,|True'|\}$ here will mark the third GRHS as redundant,
-while choosing $\{|False|,|True|\}$ won't. GHC's implementation used to try
+Choosing $\{|True'|,|False|\}$ here will mark the third GRHS as redundant,
+while choosing $\{|True|,|False|\}$ won't. GHC's implementation used to try
 each \extension{COMPLETE} set in turn and had a complicated metric based on
 the number and kinds of warnings the choice of each one would generate to
 disambiguate\footnote{\href{https://downloads.haskell.org/~ghc/latest/docs/html/users\_guide/glasgow\_exts.html\#disambiguating-between-multiple-complete-pragmas}{``Disambiguating between multiple \extension{COMPLETE} pragmas'' in the user's guide of GHC 8.6.5}}
-, which was complicated, but broken still\footnote{\ticket{13363}}.
+, which was broken still\footnote{\ticket{13363}}.
 
 On the front of efficiency, consider
 \begin{code}
@@ -2637,7 +2644,8 @@ exhaustivity checking \cite{liquidhaskell,refinement-reflection}.
 While exhaustiveness checks are optional in ordinary
 Haskell, they are mandatory for Liquid Haskell, as proofs written in Liquid
 Haskell require user-defined functions to be total (and therefore exhaustive)
-in order to be sound. For example, consider this non-exhaustive function:
+in order to be sound (\cf \cref{ssec:soundness}). For example, consider this
+non-exhaustive function:
 
 \begin{code}
 fibPartial :: Integer -> Integer
