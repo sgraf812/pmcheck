@@ -239,18 +239,18 @@ has proved complex and hard to maintain.
 
 In this paper we propose a new, compositional coverage-checking
 algorithm, called Lower Your Guards (\sysname), that
-is simpler, more modular, \emph{and} more powerful (than \gmtm.
-Moreover, it avoids the \gmtm's performance pitfalls.
+is simpler, more modular, \emph{and} more powerful than \gmtm.
+Moreover, it avoids \gmtm's performance pitfalls.
 We make the following contributions:
 
 \begin{itemize}
 \item
-  We characterise some nuances of coverage checking that not even the
-  algorithm in \citet{gadtpm} handles (\Cref{sec:problem}). We also identify issues in GHC's
-  implementation of this algorithm.
+  We characterise some nuances of coverage checking that not even
+  \gmtm handles (\Cref{sec:problem}). We also identify issues in GHC's
+  implementation of \gmtm.
 
 \item
-  We describe a new, compositional coverage checking algorithm \sysname{}, in \Cref{sec:overview}.
+  We describe a new, compositional coverage checking algorithm, \sysname{}, in \Cref{sec:overview}.
   The key insight is to abandon the notion of structural pattern
   matching altogether, and instead desugar all
   the complexities of pattern matching into a very simple language
@@ -481,7 +481,7 @@ length (Text.uncons -> Just (_, xs))  = 1 + length xs
 \noindent
 % When compiled, a view pattern desugars into a pattern guard. The desugared version
 % of |length|, for instance, would look like this:
-% 
+%
 % \begin{code}
 % length' :: Text -> Int
 % length' t  | True <- Text.null t            = True
@@ -581,7 +581,7 @@ flow to the second equation, so it is redundant and can be deleted.
 Strict fields are one mechanism for adding extra strictness in ordinary Haskell, but
 GHC adds another in the form of \emph{bang patterns}. A bang pattern
 such as |!pat| indicates that matching a value $v$ against |pat| always evaluates $v$ to
-WHNF. Here is a variant of $v$, this time using the standard, lazy |Maybe| data type:
+weak-head normal form (WHNF). Here is a variant of $v$, this time using the standard, lazy |Maybe| data type:
 
 \begin{code}
 v' :: Maybe Void -> Int
@@ -589,9 +589,9 @@ v' Nothing = 0
 v' (Just !_) = 1    -- Not redundant, but RHS is inaccessible
 \end{code}
 The inhabitants of the type |Mabye Void| are $\bot$, |Nothing|, and $(|Just|~\bot)$.
-The input $\bot$ makes the first equation divergs; |Nothing| matches on the first equation;
-and $(|Just|~\bot)$ makes ths second equation diverge, because of the bang pattern.
-None of the three cases reaches the right hand side of the second equation; but neither
+The input $\bot$ makes the first equation diverge; |Nothing| matches on the first equation;
+and $(|Just|~\bot)$ makes the second equation diverge because of the bang pattern.
+None of the three cases reaches the right-hand side of the second equation, but neither
 is the second equation redundant, because removing it would mean that the input $(|Just|~\bot)$
 was matched by no equation.
 We say that the second equation is not redundant, but its right hand side is \emph{inaccessible}.
@@ -668,20 +668,20 @@ Stardust \cite{dunfieldthesis}.
 
 \simon{I deleted the soundness section: it didn't seem to pay its way}
 % \subsection{Soundness} \label{ssec:soundness}
-% 
+%
 % \sg{I'm not happy with the lack of mathematical rigor in the definitions and
 % the lack of content here.}
-% 
+%
 % Quite similar to a totality checker for a dependently typed language (like
 % \citet{dependent-copattern}), we can define soundness of a coverage checker
 % by the following three conditions:
-% 
+%
 % \begin{enumerate}
 %   \item[1.] If there is an uncovered pattern, the checker should report it.
 %   \item[2.] If the checker reports a redundant equation, its omission should not change semantics of the definition.
 %   \item[3.] If the checker reports an inaccessible equation, replacing its right-hand side by |undefined| should not change semantics of the definition.
 % \end{enumerate}
-% 
+%
 % \sg{TODO: Say more? Less?}
 
 \begin{figure}
