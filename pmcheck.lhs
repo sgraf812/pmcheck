@@ -179,7 +179,7 @@ checker, both in accuracy and performance.
 \section{Introduction}
 
 Pattern matching is a tremendously useful feature in Haskell and many other
-programming languages, but it must be wielded with care. Consider the following
+programming languages, but it must be used with care. Consider this
 example of pattern matching gone wrong:
 
 \begin{code}
@@ -187,15 +187,15 @@ f :: Int -> Bool
 f 0 = True
 f 0 = False
 \end{code}
-
-The |f| function exhibits two serious flaws. One obvious issue is that there
+\noindent
+The function |f| has two serious flaws. One obvious problem is that there
 are two clauses that match on |0|, and due to the top-to-bottom semantics of
 pattern matching, this makes the |f 0 = False| clause completely unreachable.
 Even worse is that |f| never matches on any patterns besides |0|, making it not fully
 defined. Attempting to invoke |f 1|, for instance, will fail.
 
 To avoid these mishaps, compilers for languages with pattern matching often
-emit warnings whenever a programmer misuses patterns. Such warnings indicate
+emit warnings
 if a function is missing clauses (i.e., if it is \emph{non-exhaustive}), if
 a function has completely overlapping clauses (i.e., if it is \emph{redundant}),
 or if a function has a right-hand side that cannot be reached (i.e., if it is
@@ -227,27 +227,30 @@ scope by pattern matching \cite{outsideinx}.
 % with all of these features is no small task.
 
 The current state of the art for coverage checking in a richer language of this sort
-is GADTs Meet Their Match \cite{gadtpm}, or \gmtm{} for short.
+is \emph{GADTs Meet Their Match} \cite{gadtpm}, or \gmtm{} for short.
 It presents an algorithm that handles the intricacies of
-checking GADTs, lazy patterns, and pattern guards. We argue that this
-algorithm is insufficient in a number of key ways. It does not account for a number of
-important language features and even gives incorrect results in certain cases.
-Moreover, the implementation of this algorithm in GHC is inefficient and has
-proved to be difficult to maintain due to its complexity.
+checking GADTs, lazy patterns, and pattern guards. However \gmtm{} is monolithic and
+does not account for a number of
+important language features; it gives incorrect results in certain cases;
+its formulation in terms of structural pattern matching
+makes it hard to avoid some serious performance problems;
+and its implementation in GHC, while a big step forward over its predecessors,
+has proved complex and hard to maintain.
 
-In this paper we propose a new, compositional coverage-checking algorithm, called Lower Your Guards (\sysname), that
-is much simpler, more modular, \emph{and} more powerful than \gmtm.
-We make the
-following contributions:
+In this paper we propose a new, compositional coverage-checking
+algorithm, called Lower Your Guards (\sysname), that
+is simpler, more modular, \emph{and} more powerful (than \gmtm.
+Moreover, it avoids the \gmtm's performance pitfalls.
+We make the following contributions:
 
 \begin{itemize}
 \item
-  We characterise the nuances of coverage checking that not even the
+  We characterise some nuances of coverage checking that not even the
   algorithm in \citet{gadtpm} handles (\Cref{sec:problem}). We also identify issues in GHC's
   implementation of this algorithm.
 
 \item
-  We give an overview of our new algorithm \sysname{} in \Cref{sec:overview}.
+  We describe a new, compositional coverage checking algorithm \sysname{}, in \Cref{sec:overview}.
   The key insight is to abandon the notion of structural pattern
   matching altogether, and instead desugar all
   the complexities of pattern matching into a very simple language
@@ -259,12 +262,12 @@ following contributions:
   of a refinement type, we can report accurate coverage errors (\Cref{sec:inhabitants}).
 
 \item
-  We shore up the intuitions of \Cref{sec:overview} with a formal treatment in
+  We underpin the intuitions of \Cref{sec:overview} with a detailed formal treatment in
   \Cref{sec:formalism}.
 
 \item
-  We demonstrate the compositionality of \sysname in \Cref{sec:impl} by augmenting it with
-  several language extensions. Although these extensions can change the source
+  We demonstrate the compositionality of \sysname by augmenting it with
+  several language extensions (\Cref{sec:extensions}). Although these extensions can change the source
   language in significant ways, the effort needed to incorporate them into the
   algorithm is comparatively small.
 
@@ -316,10 +319,10 @@ Matching on a pattern synonym is syntactically identical to matching on a data
 constructor, which makes coverage checking in the presence of pattern synonyms
 challenging.
 
-Prior work on coverage checking (which we will expound upon further in
+Prior work on coverage checking (discussed in
 \Cref{sec:related}) accounts for some of these nuances, but
-not all of them. In this section we identify all of the language features that
-complicate coverage checking. While these features may seem disparate at first,
+not all of them. In this section we identify some key language features that
+make coverage checking difficult. While these features may seem disparate at first,
 we will later show in \Cref{sec:formalism} that these ideas can all fit
 into a unified framework.
 
@@ -348,7 +351,7 @@ uses |otherwise|, which is simply defined as |True|.
 
 Guards can be thought of as a generalization of patterns, and we would like to
 include them as part of coverage checking. Checking guards is significantly more
-complicated than checking ordinary pattern matches, however, since guards can
+complicated than checking ordinary structural pattern matches, however, since guards can
 contain arbitrary expressions. Consider this implementation of the |signum|
 function:
 
@@ -362,9 +365,9 @@ signum x  | x > 0   = 1
 Intuitively, |signum| is exhaustive since the combination of |(>)|, |(==)|, and
 |(<)| covers all possible |Int|s. This is much harder for a machine to check,
 however, since that would require knowledge about the properties of |Int|
-inequalities. In fact, coverage checking for guards in the general case is an
-undecidable problem. While we cannot accurately check \emph{all} uses of guards,
-we can at least give decent warnings for some common use cases for guards.
+inequalities. Clearly, coverage checking for guards is
+undecidable in general. However, while we cannot accurately check \emph{all} uses of guards,
+we can at least give decent warnings for some common use-cases.
 For instance, take the following functions:
 \begin{minipage}{\textwidth}
 \begin{minipage}{0.33\textwidth}
@@ -392,7 +395,7 @@ not3 True            = False
 \end{code}
 \end{minipage}
 \end{minipage}
-
+\noindent
 Clearly all are equivalent.  Our coverage checking algorithm should find that all three
 are exhaustive, and indeed, \sysname does so. We explore the subset of guards that
 \sysname can check in more detail in \ryan{Cite relevant section}\sg{I think
@@ -400,8 +403,8 @@ that's mostly in Related Work? Not sure we give a detailed account anywhere}.
 
 \subsection{Programmable patterns}
 
-Expressions in guards are far from the only source of undecidability that the
-coverage checker must cope with. GHC extends the pattern language in ways
+Expressions in guards are not the only source of undecidability that the
+coverage checker must cope with. GHC extends the pattern language in other ways
 that are also impossible to check in the general case.
 We consider two such extensions here: view patterns and pattern synonyms.
 
@@ -451,23 +454,20 @@ We consider two such extensions here: view patterns and pattern synonyms.
 \label{sssec:viewpat}
 
 View patterns allow arbitrary computation to be performed while pattern
-matching. When a value |v| is matched against a view pattern |f -> p|, the
+matching. When a value |v| is matched against a view pattern |(f -> p)|, the
 match is successful when |f v| successfully matches against the pattern |p|.
 For example, one can use view patterns to succintly define a function that
 computes the length of Haskell's opaque |Text| data type:
 
 \begin{code}
-Text.null :: Text -> Bool
-  -- Checks if a Text is empty
-Text.uncons :: Text -> Maybe (Char, Text)
-  -- If a Text is non-empty, return Just (x, xs),
-  -- where x is the first character and xs is the rest of the Text
+Text.null :: Text -> Bool   -- Checks if a Text is empty
+Text.uncons :: Text -> Maybe (Char, Text)  -- If a Text is non-empty, return Just (x, xs),
+                                           -- where x is the first char and xs is the rest
 
 length :: Text -> Int
 length (Text.null -> True)            = 0
 length (Text.uncons -> Just (_, xs))  = 1 + length xs
 \end{code}
-
 % View patterns can be thought of as a generalization of overloaded literals. For
 % example, the |isZero| function in \ryan{cite section} can be rewritten to
 % use view patterns like so:
@@ -478,21 +478,23 @@ length (Text.uncons -> Just (_, xs))  = 1 + length xs
 % isZero n = False
 % \end{code}
 
-When compiled, a view pattern desugars into a pattern guard. The desugared version
-of |length|, for instance, would look like this:
-
-\begin{code}
-length' :: Text -> Int
-length' t  | True <- Text.null t            = True
-           | Just (_, xs) <- Text.uncons t  = False
-\end{code}
-
-As a result, any coverage-checking algorithm that can handle guards can also
-handle view patterns, provided that the view patterns desugar to guards that
-are not too complex. For instance, \sysname would not be
-able to conclude that |length| is exhaustive, but it would be able to conclude
-that the |safeLast| function below is exhaustive:
-
+\noindent
+% When compiled, a view pattern desugars into a pattern guard. The desugared version
+% of |length|, for instance, would look like this:
+% 
+% \begin{code}
+% length' :: Text -> Int
+% length' t  | True <- Text.null t            = True
+%            | Just (_, xs) <- Text.uncons t  = False
+% \end{code}
+% \noindent
+% As a result, any coverage-checking algorithm that can handle guards can also
+% handle view patterns, provided that the view patterns desugar to guards that
+% are not too complex.
+Again, it would be unreasonable to expect a coverage checking algorithm to
+prove that |length| is exhaustive, but one might hope for a coverage checking algorithm that handles
+some common usage patterns.  For example, \sysname{} indeed \emph{is} able to
+prove that |safeLast| function is exhaustive:
 \begin{code}
 safeLast :: [a] -> Maybe a
 safeLast (reverse -> [])       = Nothing
@@ -526,17 +528,17 @@ length (Cons x xs) = 1 + length xs
 \end{minipage}
 \end{minipage}
 
-How should a coverage checker handle pattern synonyms? One idea is to simply look
-through the definitions of each pattern synonym and verify whether the underlying
+How should a coverage checker handle pattern synonyms? One idea is to simply ``look
+through'' the definitions of each pattern synonym and verify whether the underlying
 patterns are exhaustive. This would be undesirable, however, because (1) we would
 like to avoid leaking the implementation details of abstract pattern synonyms, and
 (2) even if we \emph{did} look at the underlying implementation, it would be
 challenging to automatically check that the combination of |Text.null| and
 |Text.uncons| is exhaustive.
 
-Intuitively, |Text.null| and |Text.uncons| together are exhaustive. GHC allows
-programmers to communicate this sort of intuition to the coverage checker in the
-form of \extension{COMPLETE} sets\footnote{\url{https://downloads.haskell.org/~ghc/8.8.3/docs/html/users\_guide/glasgow\_exts.html\#pragma-COMPLETE}}
+Nevertheless, |Text.null| and |Text.uncons| together are in fact exhaustive, and  GHC allows
+programmers to communicate this fact to the coverage checker using
+a \extension{COMPLETE} pragma\footnote{\url{https://downloads.haskell.org/~ghc/8.8.3/docs/html/users\_guide/glasgow\_exts.html\#pragma-COMPLETE}}
 .
 A \extension{COMPLETE} set is a combination of data constructors
 and pattern synonyms that should be regarded as exhaustive when a function matches
@@ -556,54 +558,45 @@ into extra strict evaluation by giving the fields of a data type strict fields,
 such as in this example:
 
 \begin{code}
-data Void -- No data constructors
+data Void -- No data constructors; only inhabitant is bottom
 data SMaybe a = SJust !!a | SNothing
 
 v :: SMaybe Void -> Int
-v SNothing = 0
+v SNothing   = 0
+v (SJust _)  = 1   -- Redundant!
 \end{code}
-
-The |SJust| constructor is strict in its field, and as a consequence,
-evaluating |SJust| $\bot$ to weak-head normal form (WHNF) will diverge.
-This has consequences when coverage checking functions that match on
-|SMaybe| values, such as |v|. The definition of |v| is curious, since it appears
-to omit a case for |SJust|. We could imagine adding one:
-
-\begin{code}
-v (SJust _) = 1
-\end{code}
-
-It turns out, however, that the RHS of this case can never be
-reached. The only way to use |SJust| is to construct a value of type |SMaybe Void|
-is |SJust| $\bot$, since |Void| has no data constructors. Because |SJust| is
-strict in its field, matching on |SJust| will cause |SJust| $\bot$ to diverge,
-since matching on a data constructor evaluates it to WHNF. As a result, there
-is no argument one could pass to |v| to make it return |1|, which makes the
-|SJust| case unreachable.
+The ``!'' in the definition of |SJust| makes the constructor strict,
+so $(|SJust|~ \bot) = \bot$.
+Curiously, this makes the second equation of $v$ redundant!
+Since $\bot$ is the only inhabitant of type |Void|, the only inhabitants of
+|SMaybe Void| are |SNothing| and $\bot$.  The former will match on the first equation;
+the latter will make the first equation diverge.  In neither case will execution
+flow to the second equation, so it is redundant and can be deleted.
 
 % Although \citet{gadtpm} incorporates strictness constraints into their algorithm,
 % it does not consider constraints that arise from strict fields.
 
 \subsubsection{Bang patterns}
 
-Strict fields are the primary mechanism for adding extra strictness in ordinary Haskell, but
-GHC adds another mechanism in the form of \emph{bang patterns}. A bang pattern
-such as |!pat| indicates that matching against |pat| always evaluates it to
-WHNF. While data constructor matches are normally the only patterns that match
-strictly, bang patterns extend this treatment to other patterns. For example,
-one can rewrite the earlier |v| example to use the standard, lazy |Maybe| data
-type:
+Strict fields are one mechanism for adding extra strictness in ordinary Haskell, but
+GHC adds another in the form of \emph{bang patterns}. A bang pattern
+such as |!pat| indicates that matching a value $v$ against |pat| always evaluates $v$ to
+WHNF. Here is a variant of $v$, this time using the standard, lazy |Maybe| data type:
 
 \begin{code}
 v' :: Maybe Void -> Int
 v' Nothing = 0
-v' (Just !_) = 1
+v' (Just !_) = 1    -- Not redundant, but RHS is inaccessible
 \end{code}
+The inhabitants of the type |Mabye Void| are $\bot$, |Nothing|, and $(|Just|~\bot)$.
+The input $\bot$ makes the first equation divergs; |Nothing| matches on the first equation;
+and $(|Just|~\bot)$ makes ths second equation diverge, because of the bang pattern.
+None of the three cases reaches the right hand side of the second equation; but neither
+is the second equation redundant, because removing it would mean that the input $(|Just|~\bot)$
+was matched by no equation.
+We say that the second equation is not redundant, but its right hand side is \emph{inaccessible}.
+This may seem like a tricky corner case, but GHC's users reported many bugs of this sort (\Cref{sec:ghc-issues}).
 
-The |Just| case in |v'| is unreachable for the same reasons that the |SJust| case in
-|v| is unreachable. Due to the presence of bang patterns, a strictness-aware coverage-checking
-algorithm must be consider the effects of strictness on any possible pattern,
-not just those arising from matching on data constructors with strict fields.
 
 \subsection{Type-equality constraints}
 
@@ -673,23 +666,23 @@ Stardust \cite{dunfieldthesis}.
 \sysname continues this tradition---see
 \ryan{What section?}\sg{It's a little implicit at the moment, because it just works. Not sure what to reference here.} for \sysname's take on GADTs.
 
-
-\subsection{Soundness} \label{ssec:soundness}
-
-\sg{I'm not happy with the lack of mathematical rigor in the definitions and
-the lack of content here.}
-
-Quite similar to a totality checker for a dependently typed language (like
-\citet{dependent-copattern}), we can define soundness of a coverage checker
-by the following three conditions:
-
-\begin{enumerate}
-  \item[1.] If there is an uncovered pattern, the checker should report it.
-  \item[2.] If the checker reports a redundant equation, its omission should not change semantics of the definition.
-  \item[3.] If the checker reports an inaccessible equation, replacing its right-hand side by |undefined| should not change semantics of the definition.
-\end{enumerate}
-
-\sg{TODO: Say more? Less?}
+\simon{I deleted the soundness section: it didn't seem to pay its way}
+% \subsection{Soundness} \label{ssec:soundness}
+% 
+% \sg{I'm not happy with the lack of mathematical rigor in the definitions and
+% the lack of content here.}
+% 
+% Quite similar to a totality checker for a dependently typed language (like
+% \citet{dependent-copattern}), we can define soundness of a coverage checker
+% by the following three conditions:
+% 
+% \begin{enumerate}
+%   \item[1.] If there is an uncovered pattern, the checker should report it.
+%   \item[2.] If the checker reports a redundant equation, its omission should not change semantics of the definition.
+%   \item[3.] If the checker reports an inaccessible equation, replacing its right-hand side by |undefined| should not change semantics of the definition.
+% \end{enumerate}
+% 
+% \sg{TODO: Say more? Less?}
 
 \begin{figure}
 \centering
@@ -784,17 +777,16 @@ by the following three conditions:
 \label{fig:syn}
 \end{figure}
 
-In this section, we aim to provide an intuitive understanding of \sysname
-by way of deriving the intermediate representations
-of the pipeline step by step from motivating examples.
-
-\Cref{fig:pipeline} depicts a high-level overview over this pipeline.
-Desugaring the complex source Haskell syntax to the very elementary language of
-guard trees $\Gdt$ via $\ds$ is an incredible simplification for the checking
-process. At the same time, $\ds$ is the only transformation that is specific to
-Haskell, implying easy applicability to other languages. The resulting guard
+In this section, we give an intuitive explanation of \sysname.
+\Cref{fig:pipeline} depicts a high-level overview of the algorithm:
+\begin{itemize}
+  \item First, we desugar the complex source Haskell syntax to the tiny but expressive language of
+    \emph{guard trees} $\Gdt$ (\Cref{sec:desugar}).  This is the only part that is
+    Haskell specific; we can adapt \sysname{} to other languages simply by changing the desugaring
+    algorithm.
+\item Next, the resulting guard
 tree is then processed by two different functions, $\ann$ and $\unc$, which
-compute redundancy information and uncovered patterns, respectively. $\ann$
+compute redundancy information and uncovered patterns, respectively (\Cref{sec:check}). $\ann$
 boils down this information into an annotated tree $\Ant$, for which the set of
 redundant and inaccessible right-hand sides can be computed in a final pass of
 $\red$. $\unc$, on the other hand, returns a \emph{refinement type}
@@ -802,6 +794,7 @@ $\red$. $\unc$, on the other hand, returns a \emph{refinement type}
 representing
 the set of \emph{uncovered values}, for which $\generate$ can generate the
 inhabiting patterns to show to the user.
+\end{itemize}
 
 \subsection{Desugaring to guard trees} \label{sec:desugar}
 
@@ -1712,7 +1705,7 @@ that a variable is inhabited after $n$ such iterations and consider
 supplementing that with a simple termination analysis in the future.
 
 
-\section{Possible extensions}
+\section{Possible extensions} \label{sec:extensions}
 
 \sysname is well equipped to handle the fragment of Haskell it was designed to
 handle. But GHC (and other languages, for that matter) extends Haskell in
@@ -2478,7 +2471,7 @@ Our implementation thus splits the $\nabla$ into (possibly multiple)
 sub-$\nabla$s with positive information on variables we have negative
 information on before handing off to $\expand$.
 
-\subsection{GHC issues}
+\subsection{GHC issues} \label{sec:ghc-issues}
 
 Implementing \sysname in GHC has fixed a litany of bug reports related
 to coverage checking. These include:
