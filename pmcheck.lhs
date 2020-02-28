@@ -2590,8 +2590,7 @@ Choosing $\{|False|,|True'|\}$ here will mark the third GRHS as redundant,
 while choosing $\{|False|,|True|\}$ won't. GHC's implementation used to try
 each \extension{COMPLETE} set in turn and had a complicated metric based on
 the number and kinds of warnings the choice of each one would generate to
-disambiguate
-\footnote{\url{https://downloads.haskell.org/~ghc/latest/docs/html/users\_guide/glasgow\_exts.html\#disambiguating-between-multiple-complete-pragmas}}
+disambiguate\footnote{\href{https://downloads.haskell.org/~ghc/latest/docs/html/users\_guide/glasgow\_exts.html\#disambiguating-between-multiple-complete-pragmas}{``Disambiguating between multiple \extension{COMPLETE} pragmas'' in the user's guide of GHC 8.6.5}}
 , which was complicated, but broken still\footnote{\ticket{13363}}.
 
 On the front of efficiency, consider
@@ -2601,6 +2600,7 @@ h A1  _   = 1
 h _   A1  = 2
 \end{code}
 
+\noindent
 \gmtm first splits the value vector (roughly corresponding to one of our
 $\Delta$s without negative constructor constraints) into 1000 alternatives over
 the first match variable, and then \emph{each} of the 999 value vectors reaching
