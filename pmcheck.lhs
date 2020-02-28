@@ -2414,7 +2414,47 @@ process.
 \section{Evaluation}
 \label{sec:eval}
 
-\ryan{Put a snappy intro here}
+We have implemented \sysname in a to-be-released version of GHC.
+To put the new coverage checker to the
+test, we performed a survey of real-world Haskell code using the
+\texttt{head.hackage} repository
+\footnote{\url{https://gitlab.haskell.org/ghc/head.hackage/commit/30a310fd8033629e1cbb5a9696250b22db5f7045}}.
+\texttt{head.hackage} contains a sizable collection of libraries and minimal
+patches necessary to make them build with a development version of GHC.
+We identified those libraries which compiled without coverage warnings using
+GHC 8.8.3 (which uses \gmtm as its checking algorithm) but emitted warnings
+when compiled using our \sysname version of GHC.
+
+Of the 361 libraries in \texttt{head.hackage}, seven of them revealed coverage
+issues that only \sysname warned about. Two of the libraries, \texttt{pandoc} and
+\texttt{pandoc-types}, has cases that
+were flagged as redundant due to \sysname's improved treatment of guards and
+term equalities. One library, \texttt{geniplate-mirror}, has a case that was
+redundant by way of long-distance information. Another library,
+\texttt{generic-data}, has a case that is redundant due to bang patterns.
+
+The last three libraries---\texttt{Cabal}, \texttt{HsYAML}, and
+\texttt{network}---were the most
+interesting. \texttt{HsYAML} in particular defines this function:
+
+\begin{code}
+go' _ _ _ xs | False = error (show xs)
+go' _ _ _ xs = err xs
+\end{code}
+
+The first clause is clearly unreachable, and \sysname now flags it as such.
+However, the authors of \texttt{HsYAML} likely left in this clause because it is
+useful for debugging purposes. One can uncomment the second clause and remove
+the |False| guard to quickly try out a code path that prints a more detailed
+error message. Moreover, leaving the first clause in the code ensures that it
+is typechecked and less susceptible to bitrotting over time.
+
+We may consider
+adding a primitive function |keepAlive :: a -> a| primitive function such that
+|keepAlive False| does not get marked as redundant in order to support use
+cases like \texttt{HsYAML}'s. The unreachable code in \texttt{Cabal} and
+\texttt{network} is of a
+similar caliber and would also benefit from |keepAlive|.
 
 \subsection{Reporting uncovered patterns}
 
