@@ -323,7 +323,7 @@ complicate coverage checking. While these features may seem disparate at first,
 we will later show in \Cref{sec:formalism} that these ideas can all fit
 into a unified framework.
 
-\subsection{Guards}
+\subsection{Guards} \label{ssec:guards}
 
 Guards are a flexible form of control flow in Haskell. Here is a function that
 demonstrates various capabilities of guards:
@@ -1089,6 +1089,9 @@ desugaring, coverage checking, and finding inhabitants of the resulting
 refinement types. The latter subtask proves challenging enough to warrant two
 additional subsections.
 
+\sg{We should talk about why ``constructor applications'' in $\Expr, \Grd,
+\varphi$ and $\delta$ have different number of arguments. Not sure where.}
+
 \subsection{Desugaring to guard trees}
 
 \begin{figure}
@@ -1822,8 +1825,8 @@ a very localised change:
 \]
 
 Where |r_i| is the representative of the equivalence class of expressions with
-global value number $i$. Thus, our implementation will not emit any warning for
-a definition like |safeLast|.
+global value number $i$. Thus, our implementation will not emit any warnings
+for a definition like |safeLast|.
 
 
 \subsection{Pattern synonyms}
@@ -2503,7 +2506,7 @@ straightforward of a process as extending $\addphi$.
 \citet{kalvoda2019structural} implement a variation of \gmtm that leverages an
 SMT solver to give more accurate coverage warnings for programs that use
 guards. For instance, their implementation can conclude that
-the |signum| function from \ryan{Which section?} is exhaustive. This is something
+the |signum| function from \cref{ssec:guards} is exhaustive. This is something
 that \sysname cannot do out of the box, although it would be possible to
 extend $\addphi$ with SMT-like reasoning about booleans and integer arithmetic.
 \ryan{Sebastian: is this the thing that would need to be extended?}
@@ -2518,9 +2521,31 @@ inhabited, quite similar to a \extension{COMPLETE} set.}
 
 \citet{maranget:warnings} presents a coverage checking algorithm for OCaml. While
 OCaml is a strict language, the algorithm claims to be general enough to handle
-languages with non-strict semantics such as Haskell. However, we have found that
-this algorithm actually handles laziness incorrectly.
-\ryan{I need Sebastian to fill in the rest...}
+languages with non-strict semantics such as Haskell. That claim however builds on
+a broken understanding of laziness. Given the following definition
+\begin{code}
+f True  = 1
+f _     = 2
+\end{code}
+
+\noindent
+\citeauthor{maranget:warnings} implies that |f bot| evaluates to 2, which is of
+course incorrect. Also replacing the wild card by a match on |False| would no
+longer be a complete match according to their formalism.
+
+\sg{We can shorten this as needed. It's just a rant at this point, I'm afraid...}
+
+Apart from that, his algorithm would report |Nothing| as a missing clause of
+the definition |g (Just True) = 1|, but would fail to report the nested |Just
+False|, which is clearly unsound according to our definition.
+\sg{Define soundness and completeness!}
+
+\citeauthor{maranget:warnings} comes up with surprisingly tricky test cases
+which exponentially blew up compilation time of GHC at the time. We added them
+into our testsuite\footnote{\ticket{17264}} as regression tests and made sure
+that throttling (\cref{ssec:throttling}) maintains linear performance
+characteristics.
+
 
 \subsubsection{Elaborating dependent (co)pattern matching}
 
