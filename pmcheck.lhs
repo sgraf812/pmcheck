@@ -1356,24 +1356,22 @@ well-formedness constraints:
     should conflict with each other.
   \item[\inert{2}] \emph{Triangular form}: A $x \termeq y$ constraint implies
     absence of any other constraints mentioning |x| in its left-hand side.
-  \item[\inert{3}] \emph{Single solution}: There is at most one constraint of
-    the form $x \termeq \mathunderscore$.
+  \item[\inert{3}] \emph{Single solution}: There is at most one positive
+    constructor constraint $x \termeq \deltaconapp{K}{a}{y}$ for a given |x|.
 \end{enumerate}
 
-\sg{We don't maintain \inert{3} in \cref{fig:add} as is, because we might
-have $x \termeq \bot$ and $x \termeq |Nothing|$. Maybe relax it to apply only
-to data constructor solutions?}
+\noindent
 We refer to such a $\nabla$ as an \emph{inert set}, in the sense that its
 constraints are of canonical form and already checked for mutual compatibility
 (\inert{1}), in analogy to a typechecker's implementation.
 
-It is helpful at times to think of a $\Delta$ as a partial function from |x|
-to its \emph{solution}, informed by the single positive constraint $x \termeq
-\mathunderscore \in \Delta$, if it exists. For example, $x \termeq |Nothing|$
-can be understood as a function mapping |x| to |Nothing|. This reasoning is
-justified by \inert{3}. Under this view, $\Delta$ looks like a substitution. As
-we'll see later in \cref{ssec:extinert}, this view is supported by immense
-overlap with unification algorithms.
+It is helpful at times to think of a $\Delta$ as a partial function from |x| to
+its \emph{solution}, informed by the single positive constraint $x \termeq
+\deltaconapp{K}{a}{y} \in \Delta$, if it exists. For example, $x \termeq
+|Nothing|$ can be understood as a function mapping |x| to |Nothing|. This
+reasoning is justified by \inert{3}. Under this view, $\Delta$ looks like a
+substitution. As we'll see later in \cref{ssec:extinert}, this view is
+supported by immense overlap with unification algorithms.
 
 \inert{2} is actually a condition on the represented substitution. Whenever we
 find out that $x \termeq y$, for example when matching a variable pattern |y|
@@ -1694,6 +1692,7 @@ f :: SMaybe T -> ()
 f SNothing = ()
 \end{code}
 
+\noindent
 This is exhaustive, because |T| is an uninhabited type. Upon adding the constraint
 $x \ntermeq |SNothing|$ on the match variable |x| via $\!\adddelta\!$, we
 perform an inhabitation test, which tries to instantiate the $|SJust|$ constructor
@@ -1729,6 +1728,7 @@ f x = ... (case x of
   True -> 3) ...
 \end{code}
 
+\noindent
 \sysname as is will not produce any warnings for this definition. But the
 reader can easily make the ``long distance connection'' that the last GRHS of
 the |case| expression is redundant! That simply follows by context-sensitive
