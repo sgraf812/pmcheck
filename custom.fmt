@@ -8,8 +8,5 @@
 %format !! = "\;!"
 %format !_ = "\;!\_"
 %format |> = "\triangleright"
-%format corefltau = "\corefl{\tau}"
-%format conewt = "\conewt"
-%format cosym = "\cosym"
-%format coseq = "\coseq"
+%format bot = "\bot"
 

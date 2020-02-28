@@ -1997,8 +1997,9 @@ without a \extension{COMPLETE} set.
 \[
   \ds(x, N \; pat_1\,...\,pat_n) = \grdcon{N \; y_1\,...\,y_n}{x}, \ds(y_1, pat_1), ..., \ds(y_n, pat_n)
 \]
+
 \[
-\begin{array}{cc}
+\begin{array}{c}
   \prooftree
     \Shortstack{{(\ctxt{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false}
                 {\highlight{x:\tau \in \Gamma \quad \text{$\tau$ not a Newtype}}}}
@@ -2008,7 +2009,7 @@ without a \extension{COMPLETE} set.
     \inhabitedbot
   \endprooftree
 
-  &
+  \qquad
 
   \prooftree
     \Shortstack{{x:\tau \in \Gamma \quad \cons(\ctxt{\Gamma}{\Delta}, \tau)=\overline{C_1,...,C_{n_i}}^i}
@@ -2017,7 +2018,10 @@ without a \extension{COMPLETE} set.
     \inhabited{\ctxt{\Gamma}{\Delta}}{x}
   \using
     \inhabitedinst
-  \endprooftree \\
+  \endprooftree
+
+  \\
+  \\
 
   \highlight{\prooftree
     \Shortstack{{\text{$\tau$ Newtype with constructor |N| wrapping $\sigma$}}
@@ -2029,6 +2033,7 @@ without a \extension{COMPLETE} set.
   \endprooftree}
 \end{array}
 \]
+
 \[
 \begin{array}{r@@{\,}c@@{\,}lcl}
   \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
@@ -2084,21 +2089,23 @@ The definition of |f| is subtle. Contrary to the situation with data
 constructors, the second GRHS is \emph{redundant}: The pattern match on the
 Newtype constructor is a no-op. Conversely, the bang pattern in the third GRHS
 forces not only the Newtype constructor, but also its wrapped thing. That could
-lead to divergence, so the third GRHS is \emph{inaccessible} (because every
-value it could cover was already covered by the first GRHS), but not redundant.
-A perhaps surprising consequence is that the definition of |f| is exhaustive,
-because after |N Void| was deprived of its sole inhabitant $\bot \equiv
-N\,\bot$, there is nothing left to match on.
+lead to divergence for a call site like |f bot False|, so the third GRHS is
+\emph{inaccessible} (because every value it could cover was already covered by
+the first GRHS), but not redundant. A perhaps surprising consequence is that
+the definition of |f| is exhaustive, because after |N Void| was deprived of its
+sole inhabitant $\bot \equiv N\,\bot$ by the third GRHS, there is nothing left
+to match on.
 
-\Cref{fig:newtypes} outlines a solution that handles |f| correctly. The idea
-is to treat Newtype pattern matches lazily (so compared to data constructor
-matches, $\ds$ omits the $\grdbang{x}$). The other significant change is
-to the $\inhabited{}{}$ judgment form, where we introduce a new rule
-\inhabitednt that is specific to Newtypes, which can no longer be proven
-inhabited by either \inhabitedinst or \inhabitedbot.
+\Cref{fig:newtypes} outlines a solution (based on that for pattern synonyms for
+brevity) that handles |f| correctly. The idea is to treat Newtype pattern
+matches lazily (so compared to data constructor matches, $\ds$ omits the
+$\grdbang{x}$). The other significant change is to the $\inhabited{}{}$
+judgment form, where we introduce a new rule \inhabitednt that is specific to
+Newtypes, which can no longer be proven inhabited by either \inhabitedinst or
+\inhabitedbot.
 
 \sg{I think that just assuming Newtype constructors to have strict fields
-achieves the same, but is a more surgical change.}
+achieves the same, but is a more surgical change, probably saving some space.}
 
 But |g1| crushes this simple hack. We would mark its second GRHS as
 inaccessible when it is clearly redundant, because the $x \ntermeq \bot$
@@ -2110,13 +2117,13 @@ downside and doesn't even regress in terms of soundness.
 changes to $\adddelta$.}
 
 We counter that with another refinement: We just add $|x| \termeq N y$ and $|y|
-\ntermeq \bot$ constraints (similarly for $|y| \termeq \bot$) whenever we add
-$|x| \ntermeq \bot$ constraints when we know that |x| is a Newtype with
-constructor |N|. Both |g1| and |g2| will be handled correctly.
+\ntermeq \bot$ constraints whenever we add $|x| \ntermeq \bot$ constraints when
+we know that |x| is a Newtype with constructor |N| (similarly for $|x| \termeq
+\bot$). Both |g1| and |g2| will be handled correctly.
 
 \sg{Needless to say, we won't propagate $\bot$ constraints when we only find
 out (by additional type info) that something is a Newtype \emph{after} adding
-the constraints (think |SMaybe a| and we later find that $a \typeeq N Void$),
+the constraints (think |SMaybe a| and we later find that $a \typeeq |N Void|$),
 but let's call it a day.}
 
 An alternative, less hacky solution would be treating Newtype wrappers as
