@@ -1,3 +1,17 @@
+I ran GHC HEAD (commit
+https://gitlab.haskell.org/ghc/ghc/commit/59c023ba5ccb10fff62810591f20608bd73c97af)
+against `head.hackage` (commit
+https://gitlab.haskell.org/ghc/head.hackage/commit/30a310fd8033629e1cbb5a9696250b22db5f7045)
+and recorded how many packages gave new
+coverage warnings (as opposed to GHC 8.8.3, which implements GMTM).
+
+`head.hackage` has approximately 361 libraries. (I obtained this number by
+going through
+[this `head.hackage` CI log](https://gitlab.haskell.org/ghc/head.hackage/-/jobs/269094)
+and counting the number of lines that being with `Downloading  `.)
+Of these 361 libraries, I found 7 that gave new warnings under HEAD, which are
+documented below:
+
 # Packages that give new warnings under HEAD
 
 ## `Cabal-2.4.1.0`
