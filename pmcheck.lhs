@@ -10,7 +10,7 @@
 %% For final camera-ready submission, w/ required CCS and ACM Reference
 %\documentclass[acmsmall]{acmart}\settopmatter{}
 
-\documentclass[acmsmall,review]{acmart}
+\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
 
 %include custom.fmt
 
