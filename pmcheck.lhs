@@ -1314,7 +1314,7 @@ both in \cref{ssec:extinert} and \cref{ssec:extviewpat}.
 
   \expand(\nabla, \epsilon) &=& \epsilon \\
   \expand(\ctxt{\Gamma}{\Delta}, x_1 ... x_n) &=& \begin{cases}
-    (K \; q_1 ... q_m) \, p_2 ... p_n & \parbox[t]{0.5\textwidth}{where $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$\\ and $(q_1 ... q_m \, p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, y_1 ... y_m x_2 ... x_n)$} \\
+    (K \; q_1 ... q_m) \, p_2 ... p_n & \parbox[t]{0.5\textwidth}{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$\\ and $(q_1 ... q_m \, p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, y_1 ... y_m x_2 ... x_n)$} \\
     \_ \; p_2 ... p_n & \text{where $(p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, x_2 ... x_n)$} \\
   \end{cases} \\
 
@@ -2097,11 +2097,17 @@ to the $\inhabited{}{}$ judgment form, where we introduce a new rule
 \inhabitednt that is specific to Newtypes, which can no longer be proven
 inhabited by either \inhabitedinst or \inhabitedbot.
 
+\sg{I think that just assuming Newtype constructors to have strict fields
+achieves the same, but is a more surgical change.}
+
 But |g1| crushes this simple hack. We would mark its second GRHS as
 inaccessible when it is clearly redundant, because the $x \ntermeq \bot$
 constraint on the match variable |x| wasn't propagated to the wrapped |()|.
 The inner bang pattern has nothing to evaluate. This is arguably a small
 downside and doesn't even regress in terms of soundness.
+
+\sg{We could save about 1/4 of a page by stopping here and omitting the
+changes to $\adddelta$.}
 
 We counter that with another refinement: We just add $|x| \termeq N y$ and $|y|
 \ntermeq \bot$ constraints (similarly for $|y| \termeq \bot$) whenever we add
@@ -2449,20 +2455,18 @@ The formalism in \citet{gadtpm} incorporates strictness constraints, but
 these constraints can only arise from matching against data constructors.
 \gmtm does not consider strict matches that arise from strict fields of
 data constructors or bang patterns. A consequence of this is that \gmtm
-would incorrectly warn that |v| (\ryan{Cite the section!}) is missing a
-case for |SJust|, even though such a case is unreachable. \sysname,
-on the other hand, more thoroughly tracks strictness when desugaring
-Haskell programs.
+would incorrectly warn that |v| (\cref{ssec:strictness}) is missing a case for
+|SJust|, even though such a case is unreachable. \sysname, on the other hand,
+more thoroughly tracks strictness when desugaring Haskell programs.
 
 \subsubsection{\gmtm's treatment of guards is shallow}
 
-\gmtm can only reason about guards through an abstract term oracle.
-Although the algorithm is parametric over the choice of oracle, in practice
-the implementation of \gmtm in GHC uses an extremely simple oracle that can
-only reason about guards in a limited fashion.
-More sophisticated uses of guards, such
-as in the |safeLast| function from \ryan{Cite the section!}, will
-cause \gmtm to emit erroneous warnings.
+\gmtm can only reason about guards through an abstract term oracle. Although
+the algorithm is parametric over the choice of oracle, in practice the
+implementation of \gmtm in GHC uses an extremely simple oracle that can only
+reason about guards in a limited fashion. More sophisticated uses of guards,
+such as in the |safeLast| function from \cref{sssec:viewpat}, will cause \gmtm
+to emit erroneous warnings.
 
 While \gmtm's term oracle is customizable, it is not as simple to customize
 as one might hope. The formalism in \citet{gadtpm} represents all guards as
