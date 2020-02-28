@@ -1426,7 +1426,7 @@ well-defined.
   \ctxt{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
     \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
   \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{K \; \mathunderscore \; \overline{\sigma} \;  \overline{\gamma} \; \overline{e}} &=& \ctxt{\Gamma,x:\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \tau'} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y:\tau'}{e}} \\
-  &&&& \quad \text{where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\tau'}$} \\
+  &&&& \quad \text{where $\overline{a}\,\overline{y} \freein \Gamma$, $\overline{e:\tau'}$} \\
   \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{y} &=& \ctxt{\Gamma,x:\tau}{\Delta} \adddelta x \termeq y \\
   \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \ctxt{\Gamma,x:\tau}{\Delta} \\
   % TODO: Somehow make the coercion from delta to phi less ambiguous
@@ -1632,13 +1632,13 @@ than to add it blindly to $\Delta$.
 \begin{array}{c}
 
   \inst(\ctxt{\Gamma}{\Delta}, x, K) =
-    \ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta}
+    \ctxt{\Gamma,\overline{a},\overline{b},\overline{y:\sigma}}{\Delta}
       \adddelta \tau_x \typeeq \tau
       \adddelta \overline{\gamma}
-      \adddelta x \termeq \deltaconapp{K}{a}{y}
+      \adddelta x \termeq \deltaconapp{K}{b}{y}
       \adddelta \overline{y' \ntermeq \bot} \\
   \qquad \qquad
-    \text{where $K : \forall \overline{a}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{y} \# \Gamma$, $\overline{a} \# \Gamma$, $x:\tau_x \in \Gamma$, $\overline{y'}$ bind strict fields} \\
+    \text{where $K : \forall \overline{a}\,\overline{b}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{a}\,\overline{b}\,\overline{y} \freein \Gamma$, $x:\tau_x \in \Gamma$, $\overline{y'}$ bind strict fields} \\
 
 \end{array}
 \]
@@ -2021,7 +2021,7 @@ without a \extension{COMPLETE} set.
 
   \highlight{\prooftree
     \Shortstack{{\text{$\tau$ Newtype with constructor |N| wrapping $\sigma$}}
-                {x:\tau \in \Gamma \quad y\#\Gamma \quad \inhabited{\ctxt{\Gamma,y:\sigma}{\Delta} \adddelta x \termeq |N y|}{|y|}}}
+                {x:\tau \in \Gamma \quad y \freein \Gamma \quad \inhabited{\ctxt{\Gamma,y:\sigma}{\Delta} \adddelta x \termeq |N y|}{|y|}}}
   \justifies
     \inhabited{\ctxt{\Gamma}{\Delta}}{x}
   \using

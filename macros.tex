@@ -25,6 +25,7 @@
 
 \newcommand{\ruleform}[1]{\fbox{$#1$}}
 \newcommand{\rulename}[1]{\textsc{[#1]}}
+\newcommand{\freein}{\;\#\;}
 
 \newcommand{\ticket}[1]{\href{https://ghc.haskell.org/trac/ghc/ticket/#1}{\##1}}
 \newcommand{\extension}[1]{\texttt{#1}}
@@ -40,7 +41,6 @@
 \newcommand{\Grd}{\ty{Grd}}
 \newcommand{\Con}{\ty{Con}}
 \newcommand{\Var}{\ty{Var}}
-\newcommand{\Co}{\ty{Co}}
 \newcommand{\Expr}{\ty{Expr}}
 \newcommand{\Type}{\ty{Type}}
 \newcommand{\Kind}{\ty{Kind}}
@@ -58,12 +58,6 @@
 \newcommand{\deltaconapp}[3]{#1\;\overline{#2}\;\overline{#3}}
 \newcommand{\false}{\times}
 \newcommand{\true}{\checked}
-
-% Coercions
-\newcommand{\cosym}{\textsf{sym}\,}
-\newcommand{\corefl}[1]{\langle#1\rangle}
-\newcommand{\coseq}{;}
-\newcommand{\conewt}{\textsf{newt}\,}
 
 % GrdTree Gdt
 \newcommand{\Gdt}{\ty{Gdt}}
