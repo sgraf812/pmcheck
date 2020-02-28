@@ -1425,7 +1425,8 @@ well-defined.
   \nabla &\addphi& \true &=& \nabla \\
   \ctxt{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
     \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{\expconapp{K}{\sigma'}{\sigma}{\gamma}{e}} &=& \ctxt{\Gamma,x:\tau,\overline{a},\overline{y:\tau'}}{\Delta} \adddelta \overline{a \typeeq \tau'} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y}{e}} \text{ where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\tau'}$} \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{K \; \mathunderscore \; \overline{\sigma} \;  \overline{\gamma} \; \overline{e}} &=& \ctxt{\Gamma,x:\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \tau'} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y:\tau'}{e}} \\
+  &&&& \quad \text{where $\overline{a} \# \Gamma$, $\overline{y} \# \Gamma$, $\overline{e:\tau'}$} \\
   \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{y} &=& \ctxt{\Gamma,x:\tau}{\Delta} \adddelta x \termeq y \\
   \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \ctxt{\Gamma,x:\tau}{\Delta} \\
   % TODO: Somehow make the coercion from delta to phi less ambiguous
@@ -1437,7 +1438,7 @@ well-defined.
 \[ \textbf{Add a constraint to the inert set} \]
 \[ \ruleform{ \nabla \adddelta \delta = \nabla } \]
 \[
-\begin{array}{r@@{\,}c@@{\,}lcl}
+\begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}l}
 
   \false &\adddelta& \delta &=& \false \\
   \ctxt{\Gamma}{\Delta} &\adddelta& \gamma &=& \begin{cases}
