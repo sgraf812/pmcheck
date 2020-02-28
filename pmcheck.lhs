@@ -395,7 +395,8 @@ not3 True            = False
 
 Clearly all are equivalent.  Our coverage checking algorithm should find that all three
 are exhaustive, and indeed, \sysname does so. We explore the subset of guards that
-\sysname can check in more detail in \ryan{Cite relevant section}.
+\sysname can check in more detail in \ryan{Cite relevant section}\sg{I think
+that's mostly in Related Work? Not sure we give a detailed account anywhere}.
 
 \subsection{Programmable patterns}
 
@@ -535,8 +536,7 @@ challenging to automatically check that the combination of |Text.null| and
 
 Intuitively, |Text.null| and |Text.uncons| together are exhaustive. GHC allows
 programmers to communicate this sort of intuition to the coverage checker in the
-form of \extension{COMPLETE} sets
-\footnote{\url{https://downloads.haskell.org/~ghc/8.8.3/docs/html/users\_guide/glasgow\_exts.html\#pragma-COMPLETE}}
+form of \extension{COMPLETE} sets\footnote{\url{https://downloads.haskell.org/~ghc/8.8.3/docs/html/users\_guide/glasgow\_exts.html\#pragma-COMPLETE}}
 .
 A \extension{COMPLETE} set is a combination of data constructors
 and pattern synonyms that should be regarded as exhaustive when a function matches
@@ -671,7 +671,25 @@ including those for OCaml \cite{ocamlgadts},
 Dependent ML \cite{deadcodexi,xithesis,dependentxi}, and
 Stardust \cite{dunfieldthesis}.
 \sysname continues this tradition---see
-\ryan{What section?} for \sysname's take on GADTs.
+\ryan{What section?}\sg{It's a little implicit at the moment, because it just works. Not sure what to reference here.} for \sysname's take on GADTs.
+
+
+\subsection{Soundness} \label{ssec:soundness}
+
+\sg{I'm not happy with the lack of mathematical rigor in the definitions and
+the lack of content here.}
+
+Quite similar to a totality checker for a dependently typed language (like
+\citet{dependent-copattern}), we can define soundness of a coverage checker
+by the following three conditions:
+
+\begin{enumerate}
+  \item[1.] If there is an uncovered pattern, the checker should report it.
+  \item[2.] If the checker reports a redundant equation, its omission should not change semantics of the definition.
+  \item[3.] If the checker reports an inaccessible equation, replacing its right-hand side by |undefined| should not change semantics of the definition.
+\end{enumerate}
+
+\sg{TODO: Say more? Less?}
 
 \begin{figure}
 \centering
@@ -2537,8 +2555,8 @@ longer be a complete match according to their formalism.
 
 Apart from that, his algorithm would report |Nothing| as a missing clause of
 the definition |g (Just True) = 1|, but would fail to report the nested |Just
-False|, which is clearly unsound according to our definition.
-\sg{Define soundness and completeness!}
+False|, which is clearly unsound according to our definition
+(\cref{ssec:soundness}.
 
 \citeauthor{maranget:warnings} comes up with surprisingly tricky test cases
 which exponentially blew up compilation time of GHC at the time. We added them
