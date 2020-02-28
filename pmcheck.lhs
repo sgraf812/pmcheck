@@ -2247,7 +2247,7 @@ first place, only whether there where any inhabitants at all! In this new
 representation, whether a vector of $\nabla$ is inhabited is easily seen by
 syntactically comparing it to the empty vector, $\epsilon$.
 
-\subsection{Throttling for graceful degradation}
+\subsection{Throttling for graceful degradation} \label{ssec:throttling}
 
 Even with the tweaks from \cref{ssec:interleaving}, checking certain pattern
 matches remains NP-hard \sg{Cite something here or earlier, bring an example}.
@@ -2566,37 +2566,50 @@ to implement a pattern-match compiler for ML. Sestoft utilises positive and
 negative information to generate decision trees that avoid
 scrutinizing the same terms repeatedly. This insight is equally applicable to
 coverage checking and is one of the primary reasons for \sysname's efficiency.
-For instance, tracking negative constructor constraints allows \sysname
-to check \extension{COMPLETE} sets while avoiding quadratic blowup
-(\cref{ssec:residual-complete}).
 
-Other coverage checkers for Haskell, such as those of
+But also accurate redundancy warnings involving \extension{COMPLETE} sets hinge
+on negative constraints. For why this isn't possible in other checkers that
+only track positive information, such as those of
 \citet{gadtpm} (\cref{ssec:gmtm})
 and
 \citet{maranget:warnings} (\cref{ssec:maranget}),
-only track positive constructor constraints.
-Not tracking negative constructor constraints makes them more susceptible
-to \ryan{Bugs? Efficiency problems? Not sure how to best finish this
-sentence...}
-\sg{Moving a note from section 4 here for inspiration:
-
-We need to brag about how this (with negative info) representation is better
-than GMTMs. Example:
+consider the following example:
 
 \begin{code}
-data T = A1 | ... | A1000
-f :: T -> T -> ()
-f A1 _  = ()
-f _  A1 = ()
+pattern True' = True
+{-# COMPLETE True', False #-}
+f False  = 1
+f True'  = 2
+f True   = 3
 \end{code}
 
-This will split (a term which is introduced in \cref{sec:impl}) into a million
-value vectors in GMTMs model, whereas there will only be ever fall through one
-$\nabla$ from one equation to the next because of negative constraints.
+\noindent
+\gmtm would have to commit to a particular \extension{COMPLETE} set when
+encountering the match on |False|, without any semantic considerations.
+Choosing $\{|False|,|True'|\}$ here will mark the third GRHS as redundant,
+while choosing $\{|False|,|True|\}$ won't. GHC's implementation used to try
+each \extension{COMPLETE} set in turn and had a complicated metric based on
+the number and kinds of warnings the choice of each one would generate to
+disambiguate
+\footnote{\url{https://downloads.haskell.org/~ghc/latest/docs/html/users\_guide/glasgow\_exts.html\#disambiguating-between-multiple-complete-pragmas}}
+, which was complicated, but broken still\footnote{\ticket{13363}}.
 
-Also GMTM comitting to a particular COMPLETE set the first time it splits on a
-constructor pattern means buggy COMPLETE pragma handling. I think this
-comparison should go into Related Work.}
+On the front of efficiency, consider
+\begin{code}
+data T = A1 | ... | A1000
+h A1  _   = 1
+h _   A1  = 2
+\end{code}
+
+\gmtm first splits the value vector (roughly corresponding to one of our
+$\Delta$s without negative constructor constraints) into 1000 alternatives over
+the first match variable, and then \emph{each} of the 999 value vectors reaching
+the second GRHS into another 1000 alternatives over the second match variable.
+Negative constraints allow us to compress the 999 value vectors falling through
+into a single one indicating that the match variable can no longer be |A1|.
+\citeauthor{maranget:warnings} detects wildcard matches to prevent blowup, but
+only can find a subset of all uncovered patterns in doing so
+(\cref{ssec:maranget}).
 
 
 \subsection{Refinement types in coverage checking}
