@@ -55,7 +55,7 @@ Distribution/PackageDescription/PrettyPrint.hs:130:15: error: [-Woverlapping-pat
 
 ## `generic-data-0.8.1.0`
 
-Bang patterns that should have been `EmptyCase`:
+Bang patterns that should have been `EmptyCase` (see https://github.com/Lysxia/generic-data/pull/29):
 
 ```hs
 data V1 x
