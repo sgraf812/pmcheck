@@ -2456,6 +2456,14 @@ cases like \texttt{HsYAML}'s. The unreachable code in \texttt{Cabal} and
 \texttt{network} is of a
 similar caliber and would also benefit from |keepAlive|.
 
+\subsection{Performance tests}
+
+\ryan{I ran out of time today, but we should measure the difference between
+GHC 8.8.3 and HEAD on the following perf tests from GHC's test suite:
+T11303, T11276, T11303b, T11374, T11822, T11195, T17096,
+PmSeriesS, PmSeriesT, PmSeriesV, and PmSeriesG. These all live under the
+\texttt{testsuite/tests/pmcheck/should\_compile} directory.}
+
 \subsection{Reporting uncovered patterns}
 
 Our formalism in \cref{fig:gen} is subtly buggy when it comes to presenting
