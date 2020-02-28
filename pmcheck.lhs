@@ -2570,7 +2570,7 @@ which exponentially blew up compilation time of GHC at the time. We added them
 into our testsuite\footnote{\ticket{17264}} as regression tests and made sure
 that throttling (\cref{ssec:throttling}) maintains linear performance
 characteristics.
-
+\ryan{The use of ``We'' in this sentence risks de-anonymizing us...}
 
 \subsubsection{Elaborating dependent (co)pattern matching}
 
