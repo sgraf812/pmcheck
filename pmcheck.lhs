@@ -2636,6 +2636,37 @@ into a single one indicating that the match variable can no longer be |A1|.
 only can find a subset of all uncovered patterns in doing so
 (\cref{ssec:maranget}).
 
+\subsection{Strict fields in inhabitation testing}
+
+To our knowledge, the $\mathsf{Inst}$ function in \cref{fig:inh} is the first
+inhabitation test in a coverage checking algorithm to take strict fields into
+account. This is essential in order to conclude that the |v| function from
+\cref{ssec:strictness} is exhaustive, which is something that even coverage
+checkers for call-by-value languages get wrong. For example, we ported |v|
+to OCaml and Idris
+\footnote{Idris has separate compile-time and runtime semantics, the latter
+of which is call by value.}:
+
+\begin{minipage}{\textwidth}
+\begin{minipage}{0.4\textwidth}
+\centering
+\begin{code}
+type void;;
+let v (None : void option) : int = 0;;
+\end{code}
+\end{minipage} %
+\begin{minipage}{0.4\textwidth}
+\centering
+\begin{code}
+v : Maybe Void -> Int
+v Nothing = 0
+\end{code}
+\end{minipage}
+\end{minipage}
+
+OCaml incorrectly warns that |v| is missing a case on |Some _|. Idris does not warn,
+but if one adds an extra |v (Just _) = 1| clause, it will not warn that the extra
+clause is redundant.
 
 \subsection{Refinement types in coverage checking}
 
