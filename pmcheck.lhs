@@ -339,15 +339,15 @@ guardDemo c1 c2
   | let c1' = c1, 'c' <- c1', c2 == 'd'  = 2
   | otherwise                            = 3
 \end{code}
-
-The first guard is a \emph{boolean guard} that succeeds
-(i.e., evaluates its right-hand side) if
-the expression in the guard returns |True|. The second guard is a \emph{pattern
-guard} that succeeds if the pattern in the guard
+\noindent
+This function had four \emph{guarded right-hand sides} or GRHSs for short.
+The first GRHS has a \emph{boolean guard} |(c1 == 'a')|, that succeeds
+if the expression in the guard returns |True|. The second GRHS has a \emph{pattern
+guard} |('b' <- c1)|, that succeeds if the pattern in the guard
 successfully matches.
-Moreover, a guard can have |let| bindings or even
-multiple checks, as the third guard demonstrates. The fourth guard
-uses |otherwise|, which is simply defined as |True|.
+The next line illustrates that a GRHS may have multiple guard,
+and that guards include |let| bindings, such as |let c1' = c2|.
+The fourth GRHS uses |otherwise|, which is simply defined as |True|.
 
 Guards can be thought of as a generalization of patterns, and we would like to
 include them as part of coverage checking. Checking guards is significantly more
@@ -780,20 +780,24 @@ Stardust \cite{dunfieldthesis}.
 In this section, we give an intuitive explanation of \sysname.
 \Cref{fig:pipeline} depicts a high-level overview of the algorithm:
 \begin{itemize}
-  \item First, we desugar the complex source Haskell syntax to the tiny but expressive language of
-    \emph{guard trees} $\Gdt$ (\Cref{sec:desugar}).  This is the only part that is
-    Haskell specific; we can adapt \sysname{} to other languages simply by changing the desugaring
+\item First, we desugar the complex source Haskell syntax into a \emph{guard tree} $t:\Gdt$ (\Cref{sec:desugar}).
+  The language of guard trees is tiny but expressive, and allows the subsequent passes to be entirely
+  independent of the source syntax.
+  \sysname{} can readily be adapted to other languages simply by changing the desugaring
     algorithm.
 \item Next, the resulting guard
-tree is then processed by two different functions, $\ann$ and $\unc$, which
-compute redundancy information and uncovered patterns, respectively (\Cref{sec:check}). $\ann$
-boils down this information into an annotated tree $\Ant$, for which the set of
-redundant and inaccessible right-hand sides can be computed in a final pass of
-$\red$. $\unc$, on the other hand, returns a \emph{refinement type}
-\cite{rushby1998subtypes,boundschecking}
-representing
-the set of \emph{uncovered values}, for which $\generate$ can generate the
-inhabiting patterns to show to the user.
+  tree is then processed by two different functions.   The function $\ann(t)$ produces
+  an \emph{annotated tree} $t_A : \Ant$, which has the same general branching structure as $t$ but
+  desribes which clauses are accessible, inaccessible, or redundant.
+  The function $\unc(t)$, on the other hand, returns a \emph{refinement type} $\Theta$
+  \cite{rushby1998subtypes,boundschecking}
+  that describes the set of \emph{uncovered values}, which are not matched by any of the clauses.
+\item Finally, an error reporting pass generates comprehensible error messages (\Cref{sec:inhabitants}).
+  Again there are two things to do.
+  The function $\red$ processes the annotated tree produced by $\ann$, to explicitly identify the
+  accessible, inaccessible, or redundant clauses.
+  More substantively, the function $\generate(\Theta)$ produces a representative \emph{inhabitant} of
+  the refinement types $\Theta$ (produced by $\unc$) that describes the uncovered values.
 \end{itemize}
 
 \subsection{Desugaring to guard trees} \label{sec:desugar}
@@ -847,7 +851,7 @@ inhabiting patterns to show to the user.
 \end{figure}
 
 
-To understand what language we should desugar to, consider the following 3am
+To understand what language we should desugar to, consider the following
 attempt at lifting equality over \hs{Maybe}:
 
 \begin{code}
@@ -857,31 +861,29 @@ liftEq (Just x) (Just y)
   | otherwise       = False
 \end{code}
 \noindent
-Function definitions in Haskell allow one or more \emph{guarded right-hand
-sides} (GRHS) per syntactic \emph{clause} (see \cref{fig:srcsyn}). For example,
-|liftEq| has two clauses, the second of which defines two GRHSs. Semantically,
-neither of them will match the call site |liftEq (Just 1) Nothing|, leading to
+|liftEq| has two equations, the second of which defines two GRHSs.
+However, the definition is inexhaustive:
+neither equation will match the call |liftEq (Just 1) Nothing|, leading to
 a crash.
-
-To see that, we can follow Haskell's top-to-bottom, left-to-right pattern match
-semantics. The first clause fails to match |Just 1| against |Nothing|, while
-the second clause successfully matches |1| with |x| but then fails trying to
-match |Nothing| against |Just y|. There is no third clause, and the
+To see this, we can follow Haskell's top-to-bottom, left-to-right pattern match
+semantics. The first equation fails to match |Just 1| against |Nothing|, while
+the second equation successfully matches |1| with |x| but then fails trying to
+match |Nothing| against |Just y|. There is no third equation, and the
 \emph{uncovered} tuple of values |(Just 1) Nothing| that falls out at the
 bottom of this process will lead to a crash.
 
 Compare that to matching on |(Just 1) (Just 2)|: While matching against the first
-clause fails, the second matches |x| to |1| and |y| to |2|. Since there are
+equation fails, the second matches |x| to |1| and |y| to |2|. Since there are
 multiple GRHSs, each of them in turn has to be tried in a top-to-bottom
 fashion. The first GRHS consists of a single boolean guard (in general we have
-to consider each of them in a left-to-right fashion!) that will fail because |1
+to consider each of them in a left-to-right fashion) that will fail because |1
 /= 2|. The second GRHS is tried next, and because |otherwise| is a
 boolean guard that never fails, this successfully matches.
 
 Note how both the pattern matching per clause and the guard checking within a
 syntactic $match$ share top-to-bottom and left-to-right semantics. Having to
 make sense of both pattern and guard semantics seems like a waste of energy.
-Perhpas we can express all pattern matching by (nested) pattern guards, thus:
+Perhpas we can express \emph{all} pattern matching by (nested) pattern guards, thus:
 \begin{code}
 liftEq mx my
   | Nothing <- mx, Nothing <- my              = True
@@ -902,18 +904,18 @@ corresponding graphical notation):
 \begin{forest}
   grdtree
   [
-    [{$\grdbang{mx}, \grdcon{\mathtt{Nothing}}{mx}, \grdbang{my}, \grdcon{\mathtt{Nothing}}{my}$} [1]]
-    [{$\grdbang{mx}, \grdcon{\mathtt{Just}\;x}{mx}, \grdbang{my}, \grdcon{\mathtt{Just}\;y}{my}$}
-      [{$\grdlet{t}{|x == y|}, \grdbang{t}, \grdcon{\mathtt{True}}{t}$} [2]]
-      [{$\grdbang{otherwise}, \grdcon{\mathtt{True}}{otherwise}$} [3]]]]
+    [{$\grdbang{mx},\, \grdcon{\mathtt{Nothing}}{mx},\, \grdbang{my},\, \grdcon{\mathtt{Nothing}}{my}$} [1]]
+    [{$\grdbang{mx},\, \grdcon{\mathtt{Just}\;x}{mx},\, \grdbang{my},\, \grdcon{\mathtt{Just}\;y}{my}$}
+      [{$\grdlet{t}{|x == y|},\, \grdbang{t},\, \grdcon{\mathtt{True}}{t}$} [2]]
+      [{$\grdbang{otherwise},\, \grdcon{\mathtt{True}}{otherwise}$} [3]]]]
 \end{forest}
 
-This representation is quite a bit more explicit than the original program. For
-one thing, every source-level pattern guard is strict in its scrutinee, whereas
-the pattern guards in our tree language are not, so we had to insert \emph{bang
-guards}. By analogy with bang patterns, |!x| evaluates $x$ to WHNF, which will
+This representation is much more explicit than the original program. For
+one thing, every source-level pattern guard is implicitly strict in its scrutinee,
+whereas that is made explicit in the guard tree by a \emph{bang guards}, e.g. $\grdbang{mx}$.
+The bang guard $\grdbang{mx}$ evaluates $mx$ to WHNF, and will
 either succeed or diverge. Moreover, the pattern guards in $\Grd$ only
-scrutinise variables (and only one level deep), so the comparison in the
+scrutinise variables, and only one level deep, so the comparison in the
 boolean guard's scrutinee had to be bound to an auxiliary variable in a let
 binding.
 
@@ -943,9 +945,9 @@ $\Ant$ with the same shape as the guard tree to check, capturing redundancy and
 divergence information.
 
 For the example of |liftEq|'s guard tree $t_|liftEq|$, we represent the set of
-values reaching the first clause by the \emph{refinement type} $\reft{(mx :
-|Maybe a|, my : |Maybe a|)}{\true}$ (which is a $\Theta$ from \cref{fig:syn}) .
-This set is gradually refined until finally we have $\Theta_{|liftEq|} :=
+values reaching the first clause by the \emph{refinement type} $\Theta_0 = \reft{(mx :
+|Maybe a|, my : |Maybe a|)}{\true}$.   Refinement types are described in \cref{fig:syn}.
+This type  is gradually refined until finally we have $\Theta_{|liftEq|} :=
 \reft{(mx : |Maybe a|, my : |Maybe a|)}{\Phi}$ as the uncovered set, where the
 predicate $\Phi$ is semantically equivalent to:
 \[
@@ -956,7 +958,7 @@ predicate $\Phi$ is semantically equivalent to:
 \]
 
 Every $\vee$ disjunct corresponds to one way in which a pattern guard in the
-tree could fail. It is not obvious at all for humans to read off inhbaitants
+tree could fail. It is not easy for humans to read off inhabitants
 from this representation, but we will give an intuitive treatment of how
 to do so in the next subsection.
 
@@ -1230,7 +1232,7 @@ than this by looking at the pattern (which might be a variable match or
 \ann(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& \ann(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
-\[ \ruleform{ \red(t_A) = (\overline{k}, \overline{n}, \overline{m}) } \]
+\[ \ruleform{ \red(t_A) = (\overline{k}, \overline{n}, \overline{m}) } \quad \text{Returns (accessible, inaccessible, redundant) clauses}\]
 \[
 \begin{array}{lcl}
 \red(\antrhs{n}) &=& (n, \epsilon, \epsilon) \\
