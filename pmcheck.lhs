@@ -1236,7 +1236,7 @@ than this by looking at the pattern (which might be a variable match or
 \[
 \begin{array}{lcl}
 \red(\antrhs{n}) &=& (n, \epsilon, \epsilon) \\
-\red(\antred{n}) &=& (\epsilon, n, \epsilon) \\
+\red(\antred{n}) &=& (\epsilon, \epsilon, n) \\
 \red(\antseq{t}{u}) &=& (\overline{k}\,\overline{k'}, \overline{n}\,\overline{n'}, \overline{m}\,\overline{m'}) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
     (\overline{k}, \overline{n}, \overline{m}) &=& \red(t) \\
     (\overline{k'}, \overline{n'}, \overline{m'}) &=& \red(u) \\
