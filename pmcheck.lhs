@@ -1213,23 +1213,6 @@ than this by looking at the pattern (which might be a variable match or
 \ann(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& \ann(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
-\[ \ruleform{ \red(t_A) = (\overline{k}, \overline{n}, \overline{m}) } \quad \text{Returns (accessible, inaccessible, redundant) clauses}\]
-\[
-\begin{array}{lcl}
-\red(\antrhs{\Theta}{n}) &=& \begin{cases}
-    (\epsilon, \epsilon, n), & \text{if $\generate(\Theta) = \emptyset$} \\
-    (n, \epsilon, \epsilon), & \text{otherwise} \\
-  \end{cases} \\
-\red(\antseq{t}{u}) &=& (\overline{k}\,\overline{k'}, \overline{n}\,\overline{n'}, \overline{m}\,\overline{m'}) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
-    (\overline{k}, \overline{n}, \overline{m}) &=& \red(t) \\
-    (\overline{k'}, \overline{n'}, \overline{m'}) &=& \red(u) \\
-  \end{array} \\
-\red(\antbang{\Theta}{t}) &=& \begin{cases}
-    (\epsilon, m, \overline{m'}), & \text{if $\generate(\Theta) = \emptyset$ and $\red(t) = (\epsilon, \epsilon, m\,\overline{m'})$} \\
-    \red(t), & \text{otherwise} \\
-  \end{cases} \\
-\end{array}
-\]
 
 \caption{Coverage checking}
 \label{fig:check}
@@ -1283,6 +1266,25 @@ both in \cref{ssec:extinert} and \cref{ssec:extviewpat}.
 
 \begin{figure}
 \centering
+\[ \textbf{Collect accessible, inaccessible and redundant GRHSs} \]
+\[ \ruleform{ \red(t_A) = (\overline{k}, \overline{n}, \overline{m}) } \]
+\[
+\begin{array}{lcl}
+\red(\antrhs{\Theta}{n}) &=& \begin{cases}
+    (\epsilon, \epsilon, n), & \text{if $\generate(\Theta) = \emptyset$} \\
+    (n, \epsilon, \epsilon), & \text{otherwise} \\
+  \end{cases} \\
+\red(\antseq{t}{u}) &=& (\overline{k}\,\overline{k'}, \overline{n}\,\overline{n'}, \overline{m}\,\overline{m'}) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
+    (\overline{k}, \overline{n}, \overline{m}) &=& \red(t) \\
+    (\overline{k'}, \overline{n'}, \overline{m'}) &=& \red(u) \\
+  \end{array} \\
+\red(\antbang{\Theta}{t}) &=& \begin{cases}
+    (\epsilon, m, \overline{m'}), & \text{if $\generate(\Theta) = \emptyset$ and $\red(t) = (\epsilon, \epsilon, m\,\overline{m'})$} \\
+    \red(t), & \text{otherwise} \\
+  \end{cases} \\
+\end{array}
+\]
+
 \[ \textbf{Inert Set Syntax} \]
 \[
 \begin{array}{rcll}
