@@ -752,16 +752,14 @@ Stardust \cite{dunfieldthesis}.
 \end{array}
 \end{array}
 \]
-\[ \textbf{Constraint Formula Syntax} \]
+
+\[ \textbf{Refinement Type Syntax} \]
 \[
 \begin{array}{rcll}
   \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
   \varphi &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Literals} \\
   \Phi &\Coloneqq& \varphi \mid \Phi \wedge \Phi \mid \Phi \vee \Phi & \text{Formula} \\
   \Theta &\Coloneqq& \reft{\Gamma}{\Phi} & \text{Refinement Type} \\
-  \delta &\Coloneqq& \gamma \mid x \termeq \deltaconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Constraints} \\
-  \Delta &\Coloneqq& \varnothing \mid \Delta,\delta & \text{Set of constraints} \\
-  \nabla &\Coloneqq& \false \mid \ctxt{\Gamma}{\Delta} & \text{Inert Set} \\
 \end{array}
 \]
 
@@ -1305,6 +1303,15 @@ both in \cref{ssec:extinert} and \cref{ssec:extviewpat}.
 \[
 \begin{array}{c}
    \generate(\reft{\Gamma}{\Phi}) = \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \construct(\ctxt{\Gamma}{\varnothing}, \Phi) \right\}
+\end{array}
+\]
+
+\[ \textbf{Inert Set Syntax} \]
+\[
+\begin{array}{rcll}
+  \delta &\Coloneqq& \gamma \mid x \termeq \deltaconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Constraints} \\
+  \Delta &\Coloneqq& \varnothing \mid \Delta,\delta & \text{Set of constraints} \\
+  \nabla &\Coloneqq& \false \mid \ctxt{\Gamma}{\Delta} & \text{Inert Set} \\
 \end{array}
 \]
 
