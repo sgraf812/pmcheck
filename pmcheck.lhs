@@ -1314,7 +1314,7 @@ both in \cref{ssec:extinert} and \cref{ssec:extviewpat}.
 \begin{array}{lcl}
 
   \construct(\nabla, \varphi) &=& \begin{cases}
-    \left\{ \ctxt{\Gamma'}{\Phi'} \right\} & \text{where $\ctxt{\Gamma'}{\Phi'} = \nabla \addphi \varphi$} \\
+    \left\{ \ctxt{\Gamma'}{\Delta'} \right\} & \text{where $\ctxt{\Gamma'}{\Delta'} = \nabla \addphi \varphi$} \\
     \emptyset & \text{otherwise} \\
   \end{cases} \\
   \construct(\nabla, \Phi_1 \wedge \Phi_2) &=& \bigcup \left\{ \construct(\nabla', \Phi_2) \mid \nabla' \in \construct(\nabla, \Phi_1) \right\} \\
