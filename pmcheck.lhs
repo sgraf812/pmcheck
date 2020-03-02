@@ -1216,7 +1216,7 @@ than this by looking at the pattern (which might be a variable match or
 \unc(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& (\Theta \andtheta (x \ntermeq K)) \uniontheta \unc(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
-\[ \ruleform{ \ann(\Delta, t_G) = t_A } \]
+\[ \ruleform{ \ann(\Theta, t_G) = t_A } \]
 \[
 \begin{array}{lcl}
 \ann(\Theta,\gdtrhs{n}) &=& \begin{cases}
