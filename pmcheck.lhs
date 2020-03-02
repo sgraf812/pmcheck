@@ -45,7 +45,7 @@
 
 %%%%%%%
 \usepackage{todonotes}
-\usepackage{verbatim}  % for multiline comments
+\usepackage{fancyvrb}  % for indentation in Verbatim
 \usepackage{wasysym}   % for \checked
 \usepackage{amssymb}   % for beautiful empty set
 
@@ -729,8 +729,6 @@ Stardust \cite{dunfieldthesis}.
 
 \begin{figure}
 \centering
-\begin{verbatim}
-\end{verbatim}
 \[
 \begin{array}{cc}
 \textbf{Meta variables} & \textbf{Pattern Syntax} \\
@@ -842,12 +840,12 @@ Stardust \cite{dunfieldthesis}.
     \vcenter{\hbox{\begin{forest}
       anttree,
       for tree={delay={edge={-}}},
-      [{\lightning} [{$t_A$}] ]
-    \end{forest}}} & \Coloneqq & \antbang{\mathunderscore}{t_A} \\
+      [{$\Theta$\,\lightning} [{$t_A$}] ]
+    \end{forest}}} & \Coloneqq & \antbang{\Theta}{t_A} \\
     \vcenter{\hbox{\begin{forest}
       anttree,
-      [ [{$n$} ] ]
-    \end{forest}}} & \Coloneqq & \antrhs{\mathunderscore}{n} \\
+      [ [{$\Theta$\,$n$}] ]
+    \end{forest}}} & \Coloneqq & \antrhs{\Theta}{n} \\
   \end{array}
 \end{array}
 \]
@@ -1395,23 +1393,24 @@ Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
 The final step is to report errors.  First, let us focus on reporting
 missing equations.  Consider the following definition
 \begin{code}
-  f :: Maybe Int -> Bool
-  f (Just 0) = True
+  data T = A | B | C
+  f (Just A) = True
 \end{code}
 If $t$ is the guard tree obtained from $f$, fhe function $\unc(t)$ will produce this
 refinement type describing values that are not matched:
 $$
 \unc(t) = \Theta_f = \reft{ x{:}|Maybe Int| }
-  { x \ntermeq \bot,\, \ctcon{|Just y|}{x},\, \ctlet{b}{|y == 0|},\, b \ntermeq \bot, \ctcon{|True|}{b} }
+  { x \ntermeq \bot \wedge (x \ntermeq |Just| \vee (\ctcon{|Just y|}{x} \wedge |y| \ntermeq \bot \wedge (|y| \ntermeq |A| \vee (\ctcon{|A|}{|y|} \wedge \false)))) }
 $$
+
 But this is not very helpful to report to the user. It would be far preferable
 to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, something like this:
-\begin{verbatim}
+\begin{Verbatim}
     Missing equations for function 'f':
       f Nothing  = ...
-      f (Just y) = ...,   where y /= 0
-\end{verbatim}
-\simon{Layout is not well aligned.}
+      f (Just B) = ...
+      f (Just C) = ...
+\end{Verbatim}
 Producing these inhabitants is done by $\generate(\Theta)$ in \Cref{fig:gen},
 which we discuss next in \Cref{sec:generate}.
 But before doing so, notice that the very same function $\generate$ allows
@@ -1427,18 +1426,39 @@ triple of (accessible, inaccessible, redundant) GRHSs:
   of them and mark it as inaccessible.
 \item The case for $\red(t;u)$ is trivial: just combine the classifications of $t$ and $u$.
 \end{itemize}
-To illustrate the second case consider |u'| from \cref{sssec:inaccessibility}:
+To illustrate the second case consider |u'| from \cref{sssec:inaccessibility} and its annotated tree:
+
+\begin{minipage}{\textwidth}
+\begin{minipage}{0.22\textwidth}
+\centering
 \begin{code}
   u' ()  | False  = 1
          | False  = 2
   u' _            = 3
 \end{code}
-From the first two equations we will get the annotated tree
-$$\antbang{\Theta_1}{ (\antrhs{\Theta_2}{1} \; ; \; \antrhs{\Theta_3}{2}) }$$
-where $\Theta_2$ and $\Theta_3$ are uninhabited (because of the |False| guards).
-But we cannot delete both GRHSs as redundant, because that would make the call $(u'~\bot)$ return
-3 rather than diverging.  Rather, we want to report the first GRHSs as inaccessible,
-leaving all the others as redundant.
+\end{minipage}%
+\begin{minipage}{0.05\textwidth}
+\centering
+\[ \leadsto \]
+\end{minipage}%
+\begin{minipage}{0.2\textwidth}
+\centering
+\begin{forest}
+  anttree
+  [
+    [{$\Theta_1$\,\lightning}
+      [{$\Theta_2$\,1}]
+      [{$\Theta_3$\,2}]]
+    [{$\Theta_4$\,3}]]
+\end{forest}
+\end{minipage}
+\end{minipage}
+
+$\Theta_2$ and $\Theta_3$ are uninhabited (because of the
+|False| guards). But we cannot delete both GRHSs as redundant,
+because that would make the call |u' bot| return 3 rather
+than diverging.  Rather, we want to report the first GRHSs as
+inaccessible, leaving all the others as redundant.
 
 \subsection{Generating inhabitants of a refinement type} \label{sec:gen}
 
