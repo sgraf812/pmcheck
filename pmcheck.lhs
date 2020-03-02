@@ -1481,10 +1481,10 @@ A normalised refinement type $\nabla = \ctxt{\Gamma}{\Delta}$ is similar to a
 refinement type $\Theta = \reft{\Gamma}{\Phi}$, but is in a much more restricted form:
 \begin{itemize}
 \item $\Delta$ is simply a conjunction of literals $\delta$; there are no disjunctions.
-  Instead, disjunction is reflects in the fact that $\construct$ returns a \emph{set} of nomalised refinement types.
+  Instead, disjunction reflects in the fact that $\construct$ returns a \emph{set} of nomalised refinement types.
 \item Unlike $\Phi$, the literals in $\Delta$ cannot bind variables.  They are all bound in $\Gamma$.
 \end{itemize}
-Beyond these syntactic diffferences, we enforce the following semantics invariants on $\nabla$:
+Beyond these syntactic differences, we enforce the following semantic invariants on $\nabla$:
 \begin{enumerate}
   \item[\inert{1}] \emph{Mutual compatibility}: No two constraints in $\nabla$
     should conflict with each other.
@@ -1614,7 +1614,7 @@ well-defined.
 \end{figure}
 
 Normalisation, carried out by $\construct$ in \Cref{fig:gen},
-is largely a matter of repeatedly adding a literal $\phi$ to a
+is largely a matter of repeatedly adding a literal $\varphi$ to a
 normalised type, thus $\nabla \addphi \varphi$.  This function
 is where all the work is done, in \Cref{fig:add}.
 
@@ -1810,7 +1810,12 @@ The process for adding a constraint to an inert set above (which turned out to
 be a unification procedure in disguise) makes use of an
 \emph{contradiction test} $\inhabited{\nabla}{x}$, depicted in \cref{fig:inh}.
 This tests whether $\nabla$ whether there are any values of $x$ that satisfy $\nabla$.
-If not, $\nabla$ is contradictory, and does not uphold \inert{1}.  \simon{Is this right?}
+If not, $\nabla$ is contradictory, and does not uphold \inert{1}.
+
+\simon{Is this right?}
+\sg{While the explanation seems fine, I'm not sure if the term
+``contradiction test'' is a good fit. After all, we're testing
+just a single variable, not the whole $\nabla$.}
 
 The \inhabitedbot judgment of $\inhabited{\nabla}{x}$ tries to instantiate $x$ to
 $\bot$ to conclude that $x$ is inhabited. \inhabitedinst instantiates $x$ to one
@@ -1826,7 +1831,7 @@ in the checking process that actually aren't inhabited and trigger false
 positive warnings. But that also means that the $\inhabited{}{}$ relation is
 undecidable! Consider the following example:
 \begin{code}
-data T = MkT !T
+data T = MkT !!T
 f :: SMaybe T -> ()
 f SNothing = ()
 \end{code}
