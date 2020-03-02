@@ -935,8 +935,9 @@ defined as follows:
 \item Matching a guard tree $(\gdtguard{\grdbang{x}}{t_G})$ evaluates $x$; if that diverges the match diverges; if not
   match $t_G$.
 \item Matching a guard tree $(\gdtguard{(\grdcon{|K|~ y_1 \ldots y_n}{x})}{t_G})$ matches $x$ against constructor |K|.
-  If the match succeeds, bind $y_1 \ldots y_n$ to the components, and match $t_G$.
-\item Matching a guard tree $(\gdtguard{(\grdlet{x}{e})}{t_G})$ binds $x$ (lazily) to $e$, and matches $t_G$.
+  If the match succeeds, bind $y_1 \ldots y_n$ to the components, and match $t_G$; if the constructor match
+  fails the, the entire match fails.
+\item Matching a guard tree $(\gdtguard{(\grdlet{x}{e})}{t_G})$ binds $x$ (lazily) to $e$, and matches $t_G$;
 \end{itemize}
 The desugaring algorithm, $\ds$, is given in \Cref{fig:desugar}.
 It is a straightforward recursive descent over the source syntax, with a little
@@ -1262,7 +1263,7 @@ inaccessible) when it reaches a particular GRHS.
 
 \begin{figure}
 \centering
-\[ \textbf{Collect accessible, inaccessible and redundant GRHSs} \]
+\[ \textbf{Collect accessible $(\overline{k})$, inaccessible $(\overline{n})$ and redundant $(\overline{m})$ GRHSs} \]
 \[ \ruleform{ \red(t_A) = (\overline{k}, \overline{n}, \overline{m}) } \]
 \[
 \begin{array}{lcl}
@@ -1284,9 +1285,9 @@ inaccessible) when it reaches a particular GRHS.
 \[ \textbf{Inert Set Syntax} \]
 \[
 \begin{array}{rcll}
-  \delta &\Coloneqq& \gamma \mid x \termeq \deltaconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Constraints} \\
+  \nabla &\Coloneqq& \false \mid \ctxt{\Gamma}{\Delta} & \text{Normalised refinement type} \\
   \Delta &\Coloneqq& \varnothing \mid \Delta,\delta & \text{Set of constraints} \\
-  \nabla &\Coloneqq& \false \mid \ctxt{\Gamma}{\Delta} & \text{Inert Set} \\
+  \delta &\Coloneqq& \gamma \mid x \termeq \deltaconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Constraints} \\
 \end{array}
 \]
 
@@ -1349,64 +1350,243 @@ missing equations.  Consider the following definition
   f :: Maybe Int -> Bool
   f (Just 0) = True
 \end{code}
-If $t$ is the guard tree obtained from $f$, fhe function $\unc(t)$ will produce a refinement type describing values that are
-not matched, something like this:
+If $t$ is the guard tree obtained from $f$, fhe function $\unc(t)$ will produce this
+refinement type describing values that are not matched:
 $$
 \unc(t) = \Theta_f = \reft{ x{:}|Maybe Int| }
   { x \ntermeq \bot,\, \ctcon{|Just y|}{x},\, \ctlet{b}{|y == 0|},\, b \ntermeq \bot, \ctcon{|True|}{b} }
 $$
-  But this is not very helpful to report to the user. It would be far preferable
-  to produce one or more \emph{inhabitants} of $\Theta_f$ to report, something like this
+But this is not very helpful to report to the user. It would be far preferable
+to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, something like this
 \begin{verbatim}
     Missing equations for function 'f':
       f Nothing  = ...
       f (Just y) = ...,   where y /= 0
 \end{verbatim}
+\simon{Layout is not well aligned.}
+Producing these inhabitants is done by $\generate(\Theta)$ in \Cref{fig:gen},
+which we disucss next, in \Cref{sec:generate}.
+But before doing so, notice that the very same function $\generate$ allows
+us to report accessible, inaccessible, and redundant GRHSs.  The function $\red$,
+also defined in \Cref{fig:gen} does exactly this, returning a
+triple of (accessible, inaccessible, redundant) GRHSs:
+\begin{itemize}
+\item Having reached a leaf $\antrhs{\Theta}{n}$, if the refinement type $\Theta$ is
+  uninhabited ($\generate(\Theta) = \emptyset$), then no input values can cause execution to reach this right hand side,
+  and it is redundant.
+\item Having reached a node $\antbang{\Theta}{t}$, if $\Theta$ is inhabited there is a possibility of
+  divergence. Now suppose that all the GHRHSs in $t$ are redundant.  Then we should pick the first
+  of them and mark it as inaccessible.
+\item The case for $\red(t;u)$ is trivial: just combine the classifications of $t$ and $u$.
+\end{itemize}
+To illustrate the second case consider \simon{Backward ref to where Ryan describes this}
+\begin{code}
+  g ()  | False  = 1
+        | False  = 2
+  g _            = 3
+\end{code}
+From the first two equations we will get the annotated tree
+$$\antbang{\Theta_1}{ (\antrhs{\Theta_2}{1} \; ; \; \antrhs{\Theta_3}{2}) }$$
+where $\Theta_2$ and $\Theta_3$ are uninhabited (because of the |False| guards).
+But we cannot delete both GHRHSs as redundant, because that would make the call $(f~\bot)$ return
+3 rather than diverging.  Rather, we want to report the first GRHSs as inaccessible,
+leaving all the others as redundant.
 
-\simon{Working here}
+\subsection{Generating inhabitants of a refinement type} \label{sec:gen}
 
-The predicate literals $\varphi$ of refinement types look quite similar to the
-original $\Grd$ language, so how is checking them for emptiness an improvement
-over reasoning about about guard trees directly? To appreciate the transition,
-it is important to realise that semantics of $\Grd$s are \emph{highly
-non-local}! Left-to-right and top-to-bottom match semantics means that it is
-hard to view $\Grd$s in isolation; we always have to reason about whole
-$\Gdt$s. By contrast, refinement types are self-contained, which means the
-process of generating inhabitants can be treated separately from the process
-of coverage checking.
+Thus far, all our functions have been very simple, syntax-directed
+transformations, but they all ultimately depend on the single function
+$\generate$, which does the real work.  That is our new focus.
 
-Apart from generating inhabitants of the final uncovered set for non-exhaustive
-match warnings, there are two points at which we have to check whether
-a refinement type has become empty: To determine whether a right-hand side is
-inaccessible and whether a particular bang guard may lead to divergence and
-requires us to wrap a \lightning{}.
+As \Cref{fig:gen} shows, $\generate(\Theta)$ takes a refinement
+type $\Theta = \reft{\Gamma}{\Phi}$
+and returns a (possibly-empty) set of patterns $\overline{p}$ (syntax in \Cref{fig:syn})
+that give the shape of values that inhabit $\Theta$.
+We do this in two steps:
+\begin{itemize}
+\item Flatten $\Theta$ into a set of \emph{normalised refinement types} $\nabla$,
+  by the call $\construct(\ctxt{\Gamma}{\varnothing}, \Phi)$; see \Cref{sec:flatten}.
+\item For each such $\nabla$, expand $\Gamma$ into a list of patterns, by the call
+  $\expand(\nabla, \mathsf{dom}(\Gamma))$.
+\end{itemize}
+A normalised refinement type $\nabla = \ctxt{\Gamma}{\Delta}$ is similar to a
+refinment type $\Theta = \reft{\Gamma}{\Phi}$, but is in a much more restricted form:
+\begin{itemize}
+\item $Delta$ is simply a conjunction of literals $\delta$; there are no disjuntions.
+\item Unlike $\Phi$, the literals in $\Delta$ cannot bind variables.  The are all bound in $\Gamma$.
+\end{itemize}
+Beyond these syntactic diffferences, we enforce the following semantics invariants on $\nabla$:
+\begin{enumerate}
+  \item[\inert{1}] \emph{Mutual compatibility}: No two constraints in $\nabla$
+    should conflict with each other.
+  \item[\inert{2}] \emph{Triangular form}: A $x \termeq y$ constraint implies
+    absence of any other constraints mentioning |x| in its left-hand side.
+  \item[\inert{3}] \emph{Single solution}: There is at most one positive
+    constructor constraint $x \termeq \deltaconapp{K}{a}{y}$ for a given |x|.
+\end{enumerate}
 
-Take the final uncovered set $\Theta_{|liftEq|}$ after checking |liftEq| above
-as an example. A bit of eyeballing |liftEq|'s definition reveals that |Nothing
-(Just _)| is an uncovered pattern, but eyeballing the constraint formula of
-$\Theta_{|liftEq|}$ seems impossible in comparison. A more systematic approach
-is to adopt a generate-and-test scheme: Enumerate possible values of the data
-types for each variable involved (the pattern variables |mx| and |my|, but also
-possibly the guard-bound |x|, |y| and |t|) and test them for compatibility with
-the recorded constraints.
+It is helpful at times to think of a $\Delta$ as a partial function from |x| to
+its \emph{solution}, informed by the single positive constraint $x \termeq
+\deltaconapp{K}{a}{y} \in \Delta$, if it exists. For example, $x \termeq
+|Nothing|$ can be understood as a function mapping |x| to |Nothing|. This
+reasoning is justified by \inert{3}. Under this view, $\Delta$ looks like a
+substitution. As we'll see later in \cref{ssec:extinert}, this view is
+supported by immense overlap with unification algorithms.
 
-Starting from |mx my|, we enumerate all possibilities for the shape of |mx|,
-and similarly for |my|. The obvious first candidate in a lazy language is
-$\bot$! But that is a contradicting assignment for both |mx| and |my|
-indepedently. Refining to |Nothing Nothing| contradicts with the left part
-of the top-level $\wedge$. Trying |Just y| (|y| fresh) instead as the shape for
-|my| yields our first inhabitant! Note that |y| is unconstrained, so $\bot$ is
-a trivial inhabitant. Similarly for |(Just _) Nothing| and |(Just _) (Just _)|.
+\inert{2} is actually a condition on the represented substitution. Whenever we
+find out that $x \termeq y$, for example when matching a variable pattern |y|
+against a match variable |x|, we have to merge all the other constraints on |x|
+into |y| and say that |y| is the representative of |x|'s equivalence class.
+This is so that every new constraint we record on |y| also affects |x| and vice
+versa. The process of finding the solution of |x| in $x \termeq y, y \termeq
+|Nothing|$ then entails \emph{walking} the substitution, because we have to look
+up (in the sense of understanding $\Delta$ as a partial function) twice: The
+first lookup will find |x|'s representative |y|, the second lookup on |y| will
+then find the solution |Nothing|.
 
-Why do we have to test guard-bound variables in addition to the pattern
-variables? It is because of empty data types and strict fields. For example,
-|v| from \cref{ssec:strictness} does not have any uncovered patterns. And our
-approach should see that by looking at its uncovered set $\reft{x : |Maybe
-Void|}{x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}}$. Specifically, the
-candidate |SJust y| (for fresh |y|) for |x| should be rejected, because there
-is no inhabitant for |y|! $\bot$ is ruled out by the strict field and |Void|
-has no data constructors with which to instantiate |y|. Hence it is important
-to test guard-bound variables for inhabitants, too.
+In denoting looking up the representative by $\Delta(x)$ (\cf \cref{fig:gen}),
+we can assert that |x| has |Nothing| as a solution simply by writing $\Delta(x)
+\termeq |Nothing| \in \Delta$.
+
+\subsection{Expanding a normalised refinement type to a pattern} \label{sec:expand}
+
+Expanding a $\nabla$ to a pattern vector, by calling $\expand{\nabla}$ in \Cref{fig:gen},
+in $\expand$ is syntactically heavy, but straightforward.
+When there is a solution like $\Delta(x) \termeq |Just y|$
+in $\Delta$ for the head $x$ of the variable vector of interest, expand $y$ in
+addition to the rest of the vector and wrap it in a |Just|. Invariant \inert{3}
+guarantees that there is at most one such solution and $\expand$ is
+well-defined.
+
+\subsection{Flattening a refinement type} \label{ssec:flatten}
+
+\begin{figure}
+\centering
+\[ \textbf{Add a formula literal to the inert set} \]
+\[ \ruleform{ \nabla \addphi \varphi = \nabla } \]
+\[
+\begin{array}{r@@{\,}c@@{\,}lcl}
+
+  \nabla &\addphi& \false &=& \false \\
+  \nabla &\addphi& \true &=& \nabla \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
+    \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \ctxt{\Gamma,x:\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y:\tau'}{e}} \\
+  &&&& \quad \text{where $\overline{a}\,\overline{y} \freein \Gamma$, $\overline{e:\tau'}$} \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{y} &=& \ctxt{\Gamma,x:\tau}{\Delta} \adddelta x \termeq y \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \ctxt{\Gamma,x:\tau}{\Delta} \\
+  % TODO: Somehow make the coercion from delta to phi less ambiguous
+  \ctxt{\Gamma}{\Delta} &\addphi& \varphi &=& \ctxt{\Gamma}{\Delta} \adddelta \varphi
+
+\end{array}
+\]
+
+\[ \textbf{Add a constraint to the inert set} \]
+\[ \ruleform{ \nabla \adddelta \delta = \nabla } \]
+\[
+\begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}l}
+
+  \false &\adddelta& \delta &=& \false \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& \gamma &=& \begin{cases}
+    \ctxt{\Gamma}{(\Delta,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\Delta,\gamma)}}{\rep{\Delta}{x}}$} \\
+    \false & \text{otherwise} \\
+  \end{cases} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
+    \ctxt{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
+    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K'}{b}{z} \in \Delta$ } \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \text{if $\rep{\Delta}{x} \ntermeq K \not\in \Delta$ and $\overline{\inhabited{\ctxt{\Gamma}{\Delta}}{\Delta(y)}}$} \\
+    \false & \text{otherwise} \\
+  \end{cases} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
+    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
+    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{\rep{\Delta}{x}}$} \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{otherwise} \\
+  \end{cases} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
+    \false & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
+  \end{cases} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
+    \false & \text{if $\rep{\Delta}{x} \termeq \bot \in \Delta$} \\
+    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
+    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
+  \end{cases} \\
+  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq y &=& \begin{cases}
+    \ctxt{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
+    \ctxt{\Gamma}{((\Delta \setminus \rep{\Delta}{x}), \rep{\Delta}{x} \termeq \rep{\Delta}{y})} \adddelta ((\Delta \cap \rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
+  \end{cases} \\
+\end{array}
+\]
+
+\[
+\begin{array}{cc}
+\ruleform{ \Delta \setminus x = \Delta } & \ruleform{ \Delta \cap x = \Delta } \\
+\begin{array}{r@@{\,}c@@{\,}lcl}
+  \varnothing &\setminus& x &=& \varnothing \\
+  (\Delta,x \termeq \deltaconapp{K}{a}{y}) &\setminus& x &=& \Delta \setminus x \\
+  (\Delta,x \ntermeq K) &\setminus& x &=& \Delta \setminus x \\
+  (\Delta,x \termeq \bot) &\setminus& x &=& \Delta \setminus x \\
+  (\Delta,x \ntermeq \bot) &\setminus& x &=& \Delta \setminus x \\
+  (\Delta,\delta) &\setminus& x &=& (\Delta \setminus x),\delta \\
+\end{array}&
+\begin{array}{r@@{\,}c@@{\,}lcl}
+  \varnothing &\cap& x &=& \varnothing \\
+  (\Delta,x \termeq \deltaconapp{K}{a}{y}) &\cap& x &=& (\Delta \cap x), x \termeq \deltaconapp{K}{a}{y} \\
+  (\Delta,x \ntermeq K) &\cap& x &=& (\Delta \cap x), x \ntermeq K \\
+  (\Delta,x \termeq \bot) &\cap& x &=& (\Delta \cap x), x \termeq \bot \\
+  (\Delta,x \ntermeq \bot) &\cap& x &=& (\Delta \cap x), x \ntermeq \bot \\
+  (\Delta,\delta) &\cap& x &=& \Delta \cap x \\
+\end{array}
+\end{array}
+\]
+
+\caption{Adding a constraint to the inert set $\nabla$}
+\label{fig:add}
+\end{figure}
+
+
+% The predicate literals $\varphi$ of refinement types look quite similar to the
+% original $\Grd$ language, so how is checking them for emptiness an improvement
+% over reasoning about about guard trees directly? To appreciate the transition,
+% it is important to realise that semantics of $\Grd$s are \emph{highly
+% non-local}! Left-to-right and top-to-bottom match semantics means that it is
+% hard to view $\Grd$s in isolation; we always have to reason about whole
+% $\Gdt$s. By contrast, refinement types are self-contained, which means the
+% process of generating inhabitants can be treated separately from the process
+% of coverage checking.
+%
+% Apart from generating inhabitants of the final uncovered set for non-exhaustive
+% match warnings, there are two points at which we have to check whether
+% a refinement type has become empty: To determine whether a right-hand side is
+% inaccessible and whether a particular bang guard may lead to divergence and
+% requires us to wrap a \lightning{}.
+%
+% Take the final uncovered set $\Theta_{|liftEq|}$ after checking |liftEq| above
+% as an example. A bit of eyeballing |liftEq|'s definition reveals that |Nothing
+% (Just _)| is an uncovered pattern, but eyeballing the constraint formula of
+% $\Theta_{|liftEq|}$ seems impossible in comparison. A more systematic approach
+% is to adopt a generate-and-test scheme: Enumerate possible values of the data
+% types for each variable involved (the pattern variables |mx| and |my|, but also
+% possibly the guard-bound |x|, |y| and |t|) and test them for compatibility with
+% the recorded constraints.
+%
+% Starting from |mx my|, we enumerate all possibilities for the shape of |mx|,
+% and similarly for |my|. The obvious first candidate in a lazy language is
+% $\bot$! But that is a contradicting assignment for both |mx| and |my|
+% indepedently. Refining to |Nothing Nothing| contradicts with the left part
+% of the top-level $\wedge$. Trying |Just y| (|y| fresh) instead as the shape for
+% |my| yields our first inhabitant! Note that |y| is unconstrained, so $\bot$ is
+% a trivial inhabitant. Similarly for |(Just _) Nothing| and |(Just _) (Just _)|.
+%
+% Why do we have to test guard-bound variables in addition to the pattern
+% variables? It is because of empty data types and strict fields. For example,
+% |v| from \cref{ssec:strictness} does not have any uncovered patterns. And our
+% approach should see that by looking at its uncovered set $\reft{x : |Maybe
+% Void|}{x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}}$. Specifically, the
+% candidate |SJust y| (for fresh |y|) for |x| should be rejected, because there
+% is no inhabitant for |y|! $\bot$ is ruled out by the strict field and |Void|
+% has no data constructors with which to instantiate |y|. Hence it is important
+% to test guard-bound variables for inhabitants, too.
 
 
 \section{Formalism} \label{sec:formalism}
@@ -1591,89 +1771,6 @@ well-defined.
 \subsection{Extending the inert set}
 \label{ssec:extinert}
 
-\begin{figure}
-\centering
-\[ \textbf{Add a formula literal to the inert set} \]
-\[ \ruleform{ \nabla \addphi \varphi = \nabla } \]
-\[
-\begin{array}{r@@{\,}c@@{\,}lcl}
-
-  \nabla &\addphi& \false &=& \false \\
-  \nabla &\addphi& \true &=& \nabla \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
-    \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \ctxt{\Gamma,x:\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y:\tau'}{e}} \\
-  &&&& \quad \text{where $\overline{a}\,\overline{y} \freein \Gamma$, $\overline{e:\tau'}$} \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{y} &=& \ctxt{\Gamma,x:\tau}{\Delta} \adddelta x \termeq y \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \ctxt{\Gamma,x:\tau}{\Delta} \\
-  % TODO: Somehow make the coercion from delta to phi less ambiguous
-  \ctxt{\Gamma}{\Delta} &\addphi& \varphi &=& \ctxt{\Gamma}{\Delta} \adddelta \varphi
-
-\end{array}
-\]
-
-\[ \textbf{Add a constraint to the inert set} \]
-\[ \ruleform{ \nabla \adddelta \delta = \nabla } \]
-\[
-\begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}l}
-
-  \false &\adddelta& \delta &=& \false \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& \gamma &=& \begin{cases}
-    \ctxt{\Gamma}{(\Delta,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\Delta,\gamma)}}{\rep{\Delta}{x}}$} \\
-    \false & \text{otherwise} \\
-  \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
-    \ctxt{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
-    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K'}{b}{z} \in \Delta$ } \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \text{if $\rep{\Delta}{x} \ntermeq K \not\in \Delta$ and $\overline{\inhabited{\ctxt{\Gamma}{\Delta}}{\Delta(y)}}$} \\
-    \false & \text{otherwise} \\
-  \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
-    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
-    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{\rep{\Delta}{x}}$} \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{otherwise} \\
-  \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
-    \false & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
-  \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
-    \false & \text{if $\rep{\Delta}{x} \termeq \bot \in \Delta$} \\
-    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
-  \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq y &=& \begin{cases}
-    \ctxt{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
-    \ctxt{\Gamma}{((\Delta \setminus \rep{\Delta}{x}), \rep{\Delta}{x} \termeq \rep{\Delta}{y})} \adddelta ((\Delta \cap \rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
-  \end{cases} \\
-\end{array}
-\]
-
-\[
-\begin{array}{cc}
-\ruleform{ \Delta \setminus x = \Delta } & \ruleform{ \Delta \cap x = \Delta } \\
-\begin{array}{r@@{\,}c@@{\,}lcl}
-  \varnothing &\setminus& x &=& \varnothing \\
-  (\Delta,x \termeq \deltaconapp{K}{a}{y}) &\setminus& x &=& \Delta \setminus x \\
-  (\Delta,x \ntermeq K) &\setminus& x &=& \Delta \setminus x \\
-  (\Delta,x \termeq \bot) &\setminus& x &=& \Delta \setminus x \\
-  (\Delta,x \ntermeq \bot) &\setminus& x &=& \Delta \setminus x \\
-  (\Delta,\delta) &\setminus& x &=& (\Delta \setminus x),\delta \\
-\end{array}&
-\begin{array}{r@@{\,}c@@{\,}lcl}
-  \varnothing &\cap& x &=& \varnothing \\
-  (\Delta,x \termeq \deltaconapp{K}{a}{y}) &\cap& x &=& (\Delta \cap x), x \termeq \deltaconapp{K}{a}{y} \\
-  (\Delta,x \ntermeq K) &\cap& x &=& (\Delta \cap x), x \ntermeq K \\
-  (\Delta,x \termeq \bot) &\cap& x &=& (\Delta \cap x), x \termeq \bot \\
-  (\Delta,x \ntermeq \bot) &\cap& x &=& (\Delta \cap x), x \ntermeq \bot \\
-  (\Delta,\delta) &\cap& x &=& \Delta \cap x \\
-\end{array}
-\end{array}
-\]
-
-\caption{Adding a constraint to the inert set $\nabla$}
-\label{fig:add}
-\end{figure}
 
 After tearing down abstraction after abstraction in the previous sections we
 are nearly at the heart of \sysname: \Cref{fig:add} depicts how to add a
@@ -1884,9 +1981,7 @@ appropriate desugaring function) and nested function definitions, like in the
 following example:
 \begin{code}
 f True = 1
-f x = ... (case x of
-  False -> 2
-  True -> 3) ...
+f x = ... (case x of{ False -> 2; True -> 3 }) ...
 \end{code}
 
 \noindent
