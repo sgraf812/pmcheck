@@ -2810,13 +2810,23 @@ and
 \citet{maranget:warnings} (\cref{ssec:maranget}),
 consider the following example:
 
+\begin{minipage}{\textwidth}
+\begin{minipage}{0.4\textwidth}
+\centering
 \begin{code}
 pattern True' = True
 {-# COMPLETE True', False #-}
+\end{code}
+\end{minipage} %
+\begin{minipage}{0.4\textwidth}
+\centering
+\begin{code}
 f False  = 1
 f True'  = 2
 f True   = 3
 \end{code}
+\end{minipage}
+\end{minipage}
 
 \noindent
 \gmtm would have to commit to a particular \extension{COMPLETE} set when
@@ -2829,12 +2839,23 @@ disambiguate
 \cite{complete-users-guide},
 which was broken still \cite{gitlab:13363}.
 
-On the front of efficiency, consider
+On the front of efficiency, consider:
+
+\begin{minipage}{\textwidth}
+\begin{minipage}{0.4\textwidth}
+\centering
 \begin{code}
 data T = A1 | ... | A1000
+\end{code}
+\end{minipage} %
+\begin{minipage}{0.4\textwidth}
+\centering
+\begin{code}
 h A1  _   = 1
 h _   A1  = 2
 \end{code}
+\end{minipage}
+\end{minipage}
 
 \noindent
 \gmtm first splits the value vector (roughly corresponding to one of our
