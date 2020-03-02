@@ -68,10 +68,9 @@
 
 % AnnTree Ant
 \newcommand{\Ant}{\ty{Ant}}
-\newcommand{\antred}[1]{\texttt{InaccessibleRhs} \; #1}
-\newcommand{\antrhs}[1]{\texttt{AccessibleRhs} \; #1}
+\newcommand{\antrhs}[2]{\texttt{Rhs} \; #1 \; #2}
 \newcommand{\antseq}[2]{#1; #2}
-\newcommand{\antdiv}[1]{\texttt{MayDiverge} \; #1}
+\newcommand{\antbang}[2]{\texttt{Bang} \; #1 \; #2}
 \newcommand{\antempty}{\texttt{AntEmpty}}
 
 % Graphic notation for trees
@@ -91,15 +90,14 @@
   grdtree/.style={
     clausetree,
     guards/.style={edge={-Bar}},
-    %grhs/.style={tier=rhs,edge={->,decorate,decoration={snake,post length=2pt,amplitude=0.8pt}}}, % experimental squiggly arrow
     grhs/.style={tier=rhs,edge={->}},
     % Everything except the root and the leaves is guards
     for descendants={delay={if n children=0{grhs}{guards}}}
   },
   anttree/.style={
     clausetree,
-    acc/.style={tier=rhs,edge={->},edge label={node[above]{$\checked$}}},
-    inacc/.style={tier=rhs,edge={->},edge label={node[above]{$\times$}}},
+    grhs/.style={tier=rhs,edge={->}},
+    for descendants={delay={if n children=0{grhs}{}}}
   },
 }
 
@@ -118,7 +116,7 @@
 \newcommand{\expand}{\mathcal{E}}
 
 % Refinement type syntax
-\newcommand{\reft}[2]{\langle \, #1 \mid #2 \, \rangle }
+\newcommand{\reft}[2]{\langle \, #1 \mid #2 \, \rangle}
 \newcommand{\andtheta}{\,\dot{\wedge}\,}
 \newcommand{\uniontheta}{\,\cup\,}
 

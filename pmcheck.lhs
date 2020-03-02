@@ -767,7 +767,7 @@ Stardust \cite{dunfieldthesis}.
 \[
 \begin{array}{rcll}
   t_G,u_G \in \Gdt &\Coloneqq& \gdtrhs{n} \mid \gdtseq{t_G}{u_G} \mid \gdtguard{g}{t_G}         \\
-  t_A,u_A \in \Ant &\Coloneqq& \antrhs{n} \mid \antred{n} \mid \antseq{t_A}{u_A} \mid \antdiv{t_A} \\
+  t_A,u_A \in \Ant &\Coloneqq& \antrhs{\Theta}{n} \mid \antseq{t_A}{u_A} \mid \antbang{\Theta}{t_A} \\
 \end{array}
 \]
 
@@ -800,15 +800,11 @@ Stardust \cite{dunfieldthesis}.
       anttree,
       for tree={delay={edge={-}}},
       [{\lightning} [{$t_A$}] ]
-    \end{forest}}} & \Coloneqq & \antdiv{t_A} \\
+    \end{forest}}} & \Coloneqq & \antbang{\mathunderscore}{t_A} \\
     \vcenter{\hbox{\begin{forest}
       anttree,
-      [ [{$n$},acc] ]
-    \end{forest}}} & \Coloneqq & \antrhs{n} \\
-    \vcenter{\hbox{\begin{forest}
-      anttree,
-      [ [{$n$},inacc] ]
-    \end{forest}}} & \Coloneqq & \antred{n} \\
+      [ [{$n$} ] ]
+    \end{forest}}} & \Coloneqq & \antrhs{\mathunderscore}{n} \\
   \end{array}
 \end{array}
 \]
@@ -960,10 +956,10 @@ this:
   anttree
   [
     [{\lightning}
-      [1,acc]
+      [1]
       [{\lightning}
-        [{\lightning} [2,acc]]
-        [3,acc]]]]
+        [{\lightning} [2]]
+        [{\lightning} [3]]]]]
 \end{forest}
 
 A GRHS is deemed accessible (\checked{}) whenever there is a non-empty set of
@@ -1017,9 +1013,9 @@ g _              = 3
   anttree
   [
     [{\lightning}
-      [1,inacc]
-      [2,acc]]
-    [3,acc]]
+      [1]
+      [2]]
+    [3]]
 \end{forest}
 \end{minipage}
 \end{minipage}
@@ -1210,15 +1206,9 @@ than this by looking at the pattern (which might be a variable match or
 \[ \ruleform{ \ann(\Theta, t_G) = t_A } \]
 \[
 \begin{array}{lcl}
-\ann(\Theta,\gdtrhs{n}) &=& \begin{cases}
-    \antred{n}, & \generate(\Theta) = \emptyset \\
-    \antrhs{n}, & \text{otherwise} \\
-  \end{cases} \\
+\ann(\Theta,\gdtrhs{n}) &=& \antrhs{\Theta}{n} \\
 \ann(\Theta, (\gdtseq{t}{u})) &=& \antseq{\ann(\Theta, t)}{\ann(\unc(\Theta, t), u)} \\
-\ann(\Theta, \gdtguard{(\grdbang{x})}{t}) &=& \begin{cases}
-    \ann(\Theta \andtheta (x \ntermeq \bot), t), & \generate(\Theta \andtheta (x \termeq \bot)) = \emptyset \\
-    \antdiv{\ann(\Theta \andtheta (x \ntermeq \bot), t)} & \text{otherwise} \\
-  \end{cases} \\
+\ann(\Theta, \gdtguard{(\grdbang{x})}{t}) &=& \antbang{(\Theta \andtheta (x \termeq \bot))}{\ann(\Theta \andtheta (x \ntermeq \bot), t)} \\
 \ann(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \ann(\Theta \andtheta (\ctlet{x}{e}), t) \\
 \ann(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& \ann(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
@@ -1226,15 +1216,17 @@ than this by looking at the pattern (which might be a variable match or
 \[ \ruleform{ \red(t_A) = (\overline{k}, \overline{n}, \overline{m}) } \quad \text{Returns (accessible, inaccessible, redundant) clauses}\]
 \[
 \begin{array}{lcl}
-\red(\antrhs{n}) &=& (n, \epsilon, \epsilon) \\
-\red(\antred{n}) &=& (\epsilon, \epsilon, n) \\
+\red(\antrhs{\Theta}{n}) &=& \begin{cases}
+    (\epsilon, \epsilon, n), & \text{if $\generate(\Theta) = \emptyset$} \\
+    (n, \epsilon, \epsilon), & \text{otherwise} \\
+  \end{cases} \\
 \red(\antseq{t}{u}) &=& (\overline{k}\,\overline{k'}, \overline{n}\,\overline{n'}, \overline{m}\,\overline{m'}) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
     (\overline{k}, \overline{n}, \overline{m}) &=& \red(t) \\
     (\overline{k'}, \overline{n'}, \overline{m'}) &=& \red(u) \\
   \end{array} \\
-\red(\antdiv{t}) &=& \begin{cases}
-    (\epsilon, m, \overline{m'}) & \text{if $\red(t) = (\epsilon, \epsilon, m\,\overline{m'})$} \\
-    \red(t) & \text{otherwise} \\
+\red(\antbang{\Theta}{t}) &=& \begin{cases}
+    (\epsilon, m, \overline{m'}), & \text{if $\generate(\Theta) = \emptyset$ and $\red(t) = (\epsilon, \epsilon, m\,\overline{m'})$} \\
+    \red(t), & \text{otherwise} \\
   \end{cases} \\
 \end{array}
 \]
@@ -1291,20 +1283,20 @@ both in \cref{ssec:extinert} and \cref{ssec:extviewpat}.
 
 \begin{figure}
 \centering
-\[ \textbf{Generate inhabitants of $\Theta$} \]
-\[ \ruleform{ \generate(\Theta) = \mathcal{P}(\overline{p}) } \]
-\[
-\begin{array}{c}
-   \generate(\reft{\Gamma}{\Phi}) = \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \construct(\ctxt{\Gamma}{\varnothing}, \Phi) \right\}
-\end{array}
-\]
-
 \[ \textbf{Inert Set Syntax} \]
 \[
 \begin{array}{rcll}
   \delta &\Coloneqq& \gamma \mid x \termeq \deltaconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Constraints} \\
   \Delta &\Coloneqq& \varnothing \mid \Delta,\delta & \text{Set of constraints} \\
   \nabla &\Coloneqq& \false \mid \ctxt{\Gamma}{\Delta} & \text{Inert Set} \\
+\end{array}
+\]
+
+\[ \textbf{Generate inhabitants of $\Theta$} \]
+\[ \ruleform{ \generate(\Theta) = \mathcal{P}(\overline{p}) } \]
+\[
+\begin{array}{c}
+   \generate(\reft{\Gamma}{\Phi}) = \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \construct(\ctxt{\Gamma}{\varnothing}, \Phi) \right\}
 \end{array}
 \]
 
@@ -2165,7 +2157,7 @@ use of laziness. If the answer is ``No'', then there isn't anything to
 simplify, just relatively more $x \termeq \bot$ constraints to handle.
 
 Otherwise, in a completely eager language we could simply drop $\grdbang{x}$
-from $\Grd$ and $\antdiv{}$ from $\Ant$. Actually, $\Ant$ and $\red$ could go
+from $\Grd$ and $\antbang{}{\hspace{-0.6em}}$ from $\Ant$. Actually, $\Ant$ and $\red$ could go
 altogether and $\ann$ could just collect the redundant GRHS directly!
 
 Since there wouldn't be any bang guards, there is no reason to have $x \termeq
@@ -2208,15 +2200,14 @@ sure how to sell that.}
 \[ \ruleform{ \uncann(\overline{\nabla}, t_G) = (\overline{\nabla}, \Ant) } \]
 \[
 \begin{array}{lcl}
-\uncann(\epsilon, \gdtrhs{n}) &=& (\epsilon, \antred{n}) \\
-\uncann(\overline{\nabla}, \gdtrhs{n}) &=& (\epsilon, \antrhs{n}) \\
+\uncann(\overline{\nabla}, \gdtrhs{n}) &=& (\epsilon, \antrhs{\overline{\nabla}}{n}) \\
 \uncann(\overline{\nabla}, \gdtseq{t_G}{u_G}) &=& (\overline{\nabla}_2, \antseq{t_A}{u_A}) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
     (\overline{\nabla}_1, t_A) &=& \uncann(\overline{\nabla}, t_G) \\
     (\overline{\nabla}_2, u_A) &=& \uncann(\overline{\nabla}_1, u_G)
   \end{array} \\
 \uncann(\overline{\nabla}, \gdtguard{(\grdbang{x})}{t_G}) &=& \begin{cases}
     (\overline{\nabla}', t_A), & \overline{\nabla} \addphiv (x \termeq \bot) = \epsilon \\
-    (\overline{\nabla}', \antdiv{t_A}) & \text{otherwise} \\
+    (\overline{\nabla}', \antbang{\overline{\nabla}}{t_A}) & \text{otherwise} \\
   \end{cases} \\
   && \quad \text{where } (\overline{\nabla}', t_A) = \uncann(\overline{\nabla} \addphiv (x \ntermeq \bot), t_G) \\
 \uncann(\overline{\nabla}, \gdtguard{(\grdlet{x}{e})}{t}) &=& \uncann(\overline{\nabla} \addphiv (\ctlet{x}{e}), t) \\
