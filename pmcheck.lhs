@@ -340,12 +340,12 @@ guardDemo c1 c2
   | otherwise                            = 3
 \end{code}
 \noindent
-This function had four \emph{guarded right-hand sides} or GRHSs for short.
-The first GRHS has a \emph{boolean guard} |(c1 == 'a')|, that succeeds
+This function has four \emph{guarded right-hand sides} or GRHSs for short.
+The first GRHS has a \emph{boolean guard}, |(c1 == 'a')|, that succeeds
 if the expression in the guard returns |True|. The second GRHS has a \emph{pattern
-guard} |('b' <- c1)|, that succeeds if the pattern in the guard
+guard}, |('b' <- c1)|, that succeeds if the pattern in the guard
 successfully matches.
-The next line illustrates that a GRHS may have multiple guard,
+The next line illustrates that a GRHS may have multiple guards,
 and that guards include |let| bindings, such as |let c1' = c2|.
 The fourth GRHS uses |otherwise|, which is simply defined as |True|.
 
@@ -828,9 +828,9 @@ In this section, we give an intuitive explanation of \sysname.
   The function $\unc(t)$, on the other hand, returns a \emph{refinement type} $\Theta$
   \cite{rushby1998subtypes,boundschecking}
   that describes the set of \emph{uncovered values}, which are not matched by any of the clauses.
-\item Finally, an error reporting pass generates comprehensible error messages (\Cref{sec:inhabitants}).
+\item Finally, an error-reporting pass generates comprehensible error messages (\Cref{sec:inhabitants}).
   Again there are two things to do.
-  The function $\red$ processes the annotated tree produced by $\ann$, to explicitly identify the
+  The function $\red$ processes the annotated tree produced by $\ann$ to explicitly identify the
   accessible, inaccessible, or redundant clauses.
   More substantively, the function $\generate(\Theta)$ produces a representative \emph{inhabitant} of
   the refinement types $\Theta$ (produced by $\unc$) that describes the uncovered values.
@@ -850,7 +850,7 @@ liftEq (Just x) (Just y)
 \end{code}
 \noindent
 |liftEq| has two equations, the second of which defines two GRHSs.
-However, the definition is inexhaustive:
+However, the definition is non-exhaustive:
 neither equation will match the call |liftEq (Just 1) Nothing|, leading to
 a crash.
 To see this, we can follow Haskell's top-to-bottom, left-to-right pattern match
@@ -871,7 +871,7 @@ boolean guard that never fails, this successfully matches.
 Note how both the pattern matching per clause and the guard checking within a
 syntactic $match$ share top-to-bottom and left-to-right semantics. Having to
 make sense of both pattern and guard semantics seems like a waste of energy.
-Perhpas we can express \emph{all} pattern matching by (nested) pattern guards, thus:
+Perhaps we can express \emph{all} pattern matching by (nested) pattern guards, thus:
 \begin{code}
 liftEq mx my
   | Nothing <- mx, Nothing <- my              = True
@@ -899,7 +899,7 @@ tree} (see \cref{fig:syn} for the syntax):
 
 This representation is much more explicit than the original program. For
 one thing, every source-level pattern guard is implicitly strict in its scrutinee,
-whereas that is made explicit in the guard tree by a \emph{bang guards}, e.g. $\grdbang{mx}$.
+whereas that is made explicit in the guard tree by \emph{bang guards}, e.g. $\grdbang{mx}$.
 The bang guard $\grdbang{mx}$ evaluates $mx$ to WHNF, and will
 either succeed or diverge. Moreover, the pattern guards in $\Grd$ only
 scrutinise variables, and only one level deep, so the comparison in the
@@ -1808,7 +1808,7 @@ guard tree:
 Although |y_1| and |y_2| bind syntactically equivalent expressions, our simple
 desugaring function doesn't see that and allocated fresh names for each of
 them. That in turn means that both the match on |y_1| and |y_2| by itself are
-inexhaustive. But due to referential transparency, the result of |reverse x_1|
+non-exhaustive. But due to referential transparency, the result of |reverse x_1|
 doesn't change! By making the connection between |y_1| and |y_2|, the checker
 could infer that the match was exhaustive.
 
