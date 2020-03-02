@@ -37,3 +37,7 @@ All test cases were compiled using:
 | `PmSeriesT` | 6.864          | 17577224                  |
 | `PmSeriesV` | 4.544          | 9525800                   |
 | `PmSeriesG` | 8.082          | 18899376                  |
+
+## Percent differences
+
+See `perf-notes.ods`.
