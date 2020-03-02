@@ -771,39 +771,8 @@ Stardust \cite{dunfieldthesis}.
 \end{array}
 \]
 
-\caption{IR Syntax}
-\label{fig:syn}
-\end{figure}
-
-In this section, we give an intuitive explanation of \sysname.
-\Cref{fig:pipeline} depicts a high-level overview of the algorithm:
-\begin{itemize}
-\item First, we desugar the complex source Haskell syntax into a \emph{guard tree} $t:\Gdt$ (\Cref{sec:desugar}).
-  The language of guard trees is tiny but expressive, and allows the subsequent passes to be entirely
-  independent of the source syntax.
-  \sysname{} can readily be adapted to other languages simply by changing the desugaring
-    algorithm.
-\item Next, the resulting guard
-  tree is then processed by two different functions.   The function $\ann(t)$ produces
-  an \emph{annotated tree} $t_A : \Ant$, which has the same general branching structure as $t$ but
-  desribes which clauses are accessible, inaccessible, or redundant.
-  The function $\unc(t)$, on the other hand, returns a \emph{refinement type} $\Theta$
-  \cite{rushby1998subtypes,boundschecking}
-  that describes the set of \emph{uncovered values}, which are not matched by any of the clauses.
-\item Finally, an error reporting pass generates comprehensible error messages (\Cref{sec:inhabitants}).
-  Again there are two things to do.
-  The function $\red$ processes the annotated tree produced by $\ann$, to explicitly identify the
-  accessible, inaccessible, or redundant clauses.
-  More substantively, the function $\generate(\Theta)$ produces a representative \emph{inhabitant} of
-  the refinement types $\Theta$ (produced by $\unc$) that describes the uncovered values.
-\end{itemize}
-
-\subsection{Desugaring to guard trees} \label{sec:desugar}
-
-\begin{figure}
+\[ \textbf{Graphical Notation} \]
 \[
-%TODO: Guard and MayDiverge should probably have an incoming edge (-|), but
-%      then we have an overfull hbox.
 \begin{array}{cc}
   \begin{array}{rcll}
     \vcenter{\hbox{\begin{forest}
@@ -844,10 +813,35 @@ In this section, we give an intuitive explanation of \sysname.
 \end{array}
 \]
 
-\caption{Graphical notation}
-\label{fig:grphnot}
+\caption{IR Syntax}
+\label{fig:syn}
 \end{figure}
 
+In this section, we give an intuitive explanation of \sysname.
+\Cref{fig:pipeline} depicts a high-level overview of the algorithm:
+\begin{itemize}
+\item First, we desugar the complex source Haskell syntax into a \emph{guard tree} $t:\Gdt$ (\Cref{sec:desugar}).
+  The language of guard trees is tiny but expressive, and allows the subsequent passes to be entirely
+  independent of the source syntax.
+  \sysname{} can readily be adapted to other languages simply by changing the desugaring
+    algorithm.
+\item Next, the resulting guard
+  tree is then processed by two different functions.   The function $\ann(t)$ produces
+  an \emph{annotated tree} $t_A : \Ant$, which has the same general branching structure as $t$ but
+  desribes which clauses are accessible, inaccessible, or redundant.
+  The function $\unc(t)$, on the other hand, returns a \emph{refinement type} $\Theta$
+  \cite{rushby1998subtypes,boundschecking}
+  that describes the set of \emph{uncovered values}, which are not matched by any of the clauses.
+\item Finally, an error reporting pass generates comprehensible error messages (\Cref{sec:inhabitants}).
+  Again there are two things to do.
+  The function $\red$ processes the annotated tree produced by $\ann$, to explicitly identify the
+  accessible, inaccessible, or redundant clauses.
+  More substantively, the function $\generate(\Theta)$ produces a representative \emph{inhabitant} of
+  the refinement types $\Theta$ (produced by $\unc$) that describes the uncovered values.
+\end{itemize}
+
+
+\subsection{Desugaring to guard trees} \label{sec:desugar}
 
 To understand what language we should desugar to, consider the following
 attempt at lifting equality over \hs{Maybe}:
@@ -896,8 +890,7 @@ two guards left-to-right, we try to match each of the GRHSs in turn,
 top-to-bottom (and their individual guards left-to-right).
 
 Hence \sysname desugars the source syntax to the following \emph{guard
-tree} (see \cref{fig:syn} for the full syntax and \cref{fig:grphnot} the
-corresponding graphical notation):
+tree} (see \cref{fig:syn} for the syntax):
 
 \begin{forest}
   grdtree
