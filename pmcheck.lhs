@@ -929,13 +929,9 @@ The first line says ``evaluate $x_1$; then match $x_1$ against $Just~ t_1$;
 then match $t_1$ against $(t_2,t_3)$; and so on''. If any of those matches
 fail, we fall through into the second line.
 
-<<<<<<< Updated upstream
-More formally, matching a guard tree may \emph{succeed} (with some bindings for the variables bound in the tree), \emph{fail}, or \emph{diverge}.  Matching is defined as follows:
-=======
 More formally, matching a guard tree may \emph{succeed} (with some bindings for
 the variables bound in the tree), \emph{fail}, or \emph{diverge}.  Matching is
 defined as follows:
->>>>>>> Stashed changes
 \begin{itemize}
 \item Matching a guard tree $(\gdtrhs{n})$ succeeds.
 \item Matching a guard tree $(\gdtseq{t_G}{u_G})$ means matching against $t_G$; if that succeeds, the overall match succeeds;
