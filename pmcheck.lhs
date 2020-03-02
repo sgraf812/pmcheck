@@ -2391,13 +2391,13 @@ would have been the set of reaching values.
 You can see the resulting definition in \cref{fig:fastcheck}. The readability
 of the interleaving of both functions is clouded by unwrapping of pairs. Other
 than that, all references to $\Theta$ were replaced by a vector of $\nabla$s.
-$\uncann$ requires that these $\nabla$s are non-empty, \ie not $\false$. This
-invariant is maintained by adding $\varphi$ constraints through $\addphiv$,
-which filters out any $\nabla$ that would become empty. All mentions of
-$\generate$ are gone, because we never were interested in inhabitants in the
-first place, only whether there where any inhabitants at all! In this new
-representation, whether a vector of $\nabla$ is inhabited is easily seen by
-syntactically comparing it to the empty vector, $\epsilon$.
+$\uncann$ requires that each $\nabla$ individually is non-empty, \ie not
+$\false$. This invariant is maintained by adding $\varphi$ constraints through
+$\addphiv$, which filters out any $\nabla$ that would become empty. All
+mentions of $\generate$ are gone, because we never were interested in
+inhabitants in the first place, only whether there where any inhabitants at
+all! In this new representation, whether a vector of $\nabla$ is inhabited is
+easily seen by syntactically comparing it to the empty vector, $\epsilon$.
 
 \subsection{Throttling for graceful degradation} \label{ssec:throttling}
 
@@ -2416,6 +2416,7 @@ g _
   | True <- f1 N,  True <- f2 N  = ()
 \end{code}
 
+\noindent
 Here's the corresponding guard tree:
 
 \begin{forest}
