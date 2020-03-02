@@ -576,6 +576,49 @@ flow to the second equation, so it is redundant and can be deleted.
 % Although \citet{gadtpm} incorporates strictness constraints into their algorithm,
 % it does not consider constraints that arise from strict fields.
 
+\subsubsection{Redundancy versus inaccessibility}
+\label{sssec:inaccessibility}
+
+When reporting unreachable cases, we must distinguish between \emph{redundant}
+and \emph{inaccessible} cases. Redundant cases can be removed from a function
+without changing its semantics, whereas inaccessible cases have semantic importance.
+The examples below illustrate this:
+
+\begin{minipage}{\textwidth}
+\begin{minipage}{0.4\textwidth}
+\centering
+\begin{code}
+g :: () -> Int
+g ()   | False   = 1
+       | True    = 2
+g _              = 3
+\end{code}
+\end{minipage} %
+\begin{minipage}{0.4\textwidth}
+\centering
+\begin{code}
+g' :: () -> Int
+g' ()   | False   = 1
+g' _              = 3
+\end{code}
+\end{minipage}
+\end{minipage}
+
+Within |g|, the equations that return |1| and |3| could be deleted without
+changing the semantics of |g|, so they are classified as redundant. Within |g'|,
+however, the equation returning |1| cannot be removed so easily. Using the
+definition above, $|g'|~\bot~|=|~\bot$, but if the first equation were removed,
+then $|g'|~\bot~|= 3|$. As a result, \sysname warns that the first equation in |g'| is
+inaccessible, which suggests to the programmer that |g'| might benefit from
+a small refactor to avoid this (e.g., |g' () = 3|).
+
+Observe that the first equations in |g| and |g'| have different warnings, but the
+only difference between the two functions is the presence of the |True| guard in
+|g|. This demonstrates that determining whether code is redundant or inaccessible
+is a non-local problem.
+Inaccessibility may seem like a tricky corner case, but GHC's users have
+reported many bugs of this sort (\Cref{sec:ghc-issues}).
+
 \subsubsection{Bang patterns}
 
 Strict fields are one mechanism for adding extra strictness in ordinary Haskell, but
@@ -588,15 +631,12 @@ v' :: Maybe Void -> Int
 v' Nothing = 0
 v' (Just !_) = 1    -- Not redundant, but RHS is inaccessible
 \end{code}
-The inhabitants of the type |Mabye Void| are $\bot$, |Nothing|, and $(|Just|~\bot)$.
+The inhabitants of the type |Maybe Void| are $\bot$, |Nothing|, and $(|Just|~\bot)$.
 The input $\bot$ makes the first equation diverge; |Nothing| matches on the first equation;
 and $(|Just|~\bot)$ makes the second equation diverge because of the bang pattern.
-None of the three cases reaches the right-hand side of the second equation, but neither
-is the second equation redundant, because removing it would mean that the input $(|Just|~\bot)$
-was matched by no equation.
-We say that the second equation is not redundant, but its right hand side is \emph{inaccessible}.
-This may seem like a tricky corner case, but GHC's users reported many bugs of this sort (\Cref{sec:ghc-issues}).
-
+Therefore, none of the three inhabitants will result in the right-hand side of
+the second equation being reached. Note that the second equation is inaccessible, not redundant
+(\cref{sssec:inaccessibility}).
 
 \subsection{Type-equality constraints}
 
@@ -1211,52 +1251,57 @@ Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
 % desugaring function $\ds$ in \cref{fig:desugar})! We have yet to find a
 % language extension that does not fit into this framework.
 
-\subsubsection{Why do we not report redundant GRHSs directly?}
-
-Why not compute the redundant GRHSs directly instead of building up a whole new
-tree? Because determining inaccessibility \vs redundancy is a non-local
-problem. Consider this example and its corresponding annotated tree after
-checking:
-\sg{I think this kind of detail should be motivated in a prior section and then
-referenced here for its solution.}
-
-\begin{minipage}{\textwidth}
-\begin{minipage}{0.22\textwidth}
-\centering
-\begin{code}
-g :: () -> Int
-g ()   | False   = 1
-       | True    = 2
-g _              = 3
-\end{code}
-\end{minipage}%
-\begin{minipage}{0.05\textwidth}
-\centering
-\[ \leadsto \]
-\end{minipage}%
-\begin{minipage}{0.2\textwidth}
-\centering
-\begin{forest}
-  anttree
-  [
-    [{\lightning}
-      [1]
-      [2]]
-    [3]]
-\end{forest}
-\end{minipage}
-\end{minipage}
-
-Is the first GRHS just inaccessible or even redundant? Although the match on
-|()| forces the argument, we can delete the first GRHS without changing program
-semantics, so clearly it is redundant.
-But that wouldn't be true if the second GRHS wasn't there to ``keep alive'' the
-|()| pattern!
-
-In general, at least one GRHS under a \lightning{} may not be flagged as
-redundant ($\times$).
-Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
-inaccessible) when it reaches a particular GRHS.
+%%%%%%%%
+%% Ryan: commented out since this now exists in a different form earlier in the paper
+%% (see sssec:inaccessibility)
+%%%%%%%%
+%
+% \subsubsection{Why do we not report redundant GRHSs directly?}
+%
+% Why not compute the redundant GRHSs directly instead of building up a whole new
+% tree? Because determining inaccessibility \vs redundancy is a non-local
+% problem. Consider this example and its corresponding annotated tree after
+% checking:
+% \sg{I think this kind of detail should be motivated in a prior section and then
+% referenced here for its solution.}
+%
+% \begin{minipage}{\textwidth}
+% \begin{minipage}{0.22\textwidth}
+% \centering
+% \begin{code}
+% g :: () -> Int
+% g ()   | False   = 1
+%        | True    = 2
+% g _              = 3
+% \end{code}
+% \end{minipage}%
+% \begin{minipage}{0.05\textwidth}
+% \centering
+% \[ \leadsto \]
+% \end{minipage}%
+% \begin{minipage}{0.2\textwidth}
+% \centering
+% \begin{forest}
+%   anttree
+%   [
+%     [{\lightning}
+%       [1]
+%       [2]]
+%     [3]]
+% \end{forest}
+% \end{minipage}
+% \end{minipage}
+%
+% Is the first GRHS just inaccessible or even redundant? Although the match on
+% |()| forces the argument, we can delete the first GRHS without changing program
+% semantics, so clearly it is redundant.
+% But that wouldn't be true if the second GRHS wasn't there to ``keep alive'' the
+% |()| pattern!
+%
+% In general, at least one GRHS under a \lightning{} may not be flagged as
+% redundant ($\times$).
+% Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
+% inaccessible) when it reaches a particular GRHS.
 
 \subsection{Reporting errors} \label{sec:inhabitants}
 
