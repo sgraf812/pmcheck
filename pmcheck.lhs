@@ -1120,11 +1120,11 @@ Unconventionally, however, a literal may bind one or more variables, and those
 bindings are in scope in conjunctions to the right. This can readily be formalised
 by giving a type system for $\Phi$, but we omit that here. \simon{It would be nice to add it.}
 The literal $\true$ means ``true'', as illustrated above; while
-$\false$ means ``false'', so that $\reft{Gamma}{\false} = \emptyset$.
+$\false$ means ``false'', so that $\reft{Gamma}{\false}$ denotes $\emptyset$.
 
 \simon{I'm unhappy with having to subscribe our trees with G all the time, thus $t_G$.  Can we just us a
   different letter for guard trees and annotated trees?}  The
-uncovered-set function $\unc(\Theta, t_G)$, defined in
+uncovered set function $\unc(\Theta, t_G)$, defined in
 \Cref{fig:check}, computes a refinement type describing the values in
 $\Theta$ that are not covered by the guard tree $t_G$.  It is defined
 by a simple recursive descent over the guard tree, using the operation
@@ -1136,10 +1136,10 @@ guard tree, the function $\ann$ finds refinements describing values that
 \emph{are} matched by a guard tree, or that cause matching to diverge.
 It does so by producing an \emph{annotated tree}, whose syntax is given in \Cref{fig:syn}.
 An annotated tree has the same general structure as the guard tree from whence it came:
-in particular the sequential compositions ``;'' are in the same places.  But
+in particular the top-to-bottom compositions ``;'' are in the same places.  But
 in an annotated tree, each \texttt{Rhs} leaf is annotated with a refinement type
 describing the input values that will lead to that right-hand side; and each
-\texttt{MayDiverge} node is annotated with a refinement type that describes
+$\antbang{}{\hspace{-0.6em}}$ node is annotated with a refinement type that describes
 the input values on which matching will diverge.  Once again, $\ann$ can
 be defined by a simple recursive descent over the guard tree (\Cref{fig:check}), but note
 that the second equation uses $\unc$ as an auxiliary function\footnote{
@@ -1353,7 +1353,7 @@ If $t$ is the guard tree obtained from $f$, fhe function $\unc(t)$ will produce 
 not matched, something like this:
 $$
 \unc(t) = \Theta_f = \reft{ x{:}|Maybe Int| }
-  { x \ntermeq \bot,\, \ctcon{|Just y|}{x},\, \ctlet{b}{(y == 0)},\, b \ntermeq \bot, \ctcon{|True|}{b} }
+  { x \ntermeq \bot,\, \ctcon{|Just y|}{x},\, \ctlet{b}{|y == 0|},\, b \ntermeq \bot, \ctcon{|True|}{b} }
 $$
   But this is not very helpful to report to the user. It would be far preferable
   to produce one or more \emph{inhabitants} of $\Theta_f$ to report, something like this
