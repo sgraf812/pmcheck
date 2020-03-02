@@ -2910,12 +2910,6 @@ use |fibPartial| in a proof will yield an inconsistent environment (and therefor
 fail to verify) unless the user can
 prove that |fibPartial| is only ever invoked with the arguments |0| or |1|.
 
-\ryan{Other things from GMTM's related work?}
-
-\section{Conclusion}
-
-\TODO
-
 \bibliography{references}
 
 \end{document}
