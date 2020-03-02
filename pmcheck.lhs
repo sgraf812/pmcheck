@@ -716,7 +716,7 @@ Stardust \cite{dunfieldthesis}.
 \end{figure}
 
 
-\section{Overview of our solution}
+\section{Lower your guards: a new coverage checker}
 \label{sec:overview}
 
 \begin{figure}
@@ -813,8 +813,8 @@ Stardust \cite{dunfieldthesis}.
 \label{fig:syn}
 \end{figure}
 
-In this section, we give an intuitive explanation of \sysname.
-\Cref{fig:pipeline} depicts a high-level overview of the algorithm:
+In this section, we describe our new coverage checking algorithm, \sysname.
+\Cref{fig:pipeline} depicts a high-level overview, which divides into three steps:
 \begin{itemize}
 \item First, we desugar the complex source Haskell syntax into a \emph{guard tree} $t:\Gdt$ (\Cref{sec:desugar}).
   The language of guard trees is tiny but expressive, and allows the subsequent passes to be entirely
@@ -822,277 +822,25 @@ In this section, we give an intuitive explanation of \sysname.
   \sysname{} can readily be adapted to other languages simply by changing the desugaring
     algorithm.
 \item Next, the resulting guard
-  tree is then processed by two different functions.   The function $\ann(t)$ produces
+  tree is then processed by two different functions (\Cref{sec:check}).   The function $\ann(t)$ produces
   an \emph{annotated tree} $t_A : \Ant$, which has the same general branching structure as $t$ but
   desribes which clauses are accessible, inaccessible, or redundant.
   The function $\unc(t)$, on the other hand, returns a \emph{refinement type} $\Theta$
   \cite{rushby1998subtypes,boundschecking}
   that describes the set of \emph{uncovered values}, which are not matched by any of the clauses.
-\item Finally, an error-reporting pass generates comprehensible error messages (\Cref{sec:inhabitants}).
+\item Finally, an error reporting pass generates comprehensible error messages (\Cref{sec:inhabitants}).
   Again there are two things to do.
-  The function $\red$ processes the annotated tree produced by $\ann$ to explicitly identify the
+  The function $\red$ processes the annotated tree produced by $\ann$, to explicitly identify the
   accessible, inaccessible, or redundant clauses.
-  More substantively, the function $\generate(\Theta)$ produces a representative \emph{inhabitant} of
+  The function $\generate(\Theta)$ produces a representative \emph{inhabitant} of
   the refinement types $\Theta$ (produced by $\unc$) that describes the uncovered values.
 \end{itemize}
-
-
-\subsection{Desugaring to guard trees} \label{sec:desugar}
-
-To understand what language we should desugar to, consider the following
-attempt at lifting equality over \hs{Maybe}:
-
-\begin{code}
-liftEq Nothing  Nothing  = True
-liftEq (Just x) (Just y)
-  | x == y          = True
-  | otherwise       = False
-\end{code}
-\noindent
-|liftEq| has two equations, the second of which defines two GRHSs.
-However, the definition is non-exhaustive:
-neither equation will match the call |liftEq (Just 1) Nothing|, leading to
-a crash.
-To see this, we can follow Haskell's top-to-bottom, left-to-right pattern match
-semantics. The first equation fails to match |Just 1| against |Nothing|, while
-the second equation successfully matches |1| with |x| but then fails trying to
-match |Nothing| against |Just y|. There is no third equation, and the
-\emph{uncovered} tuple of values |(Just 1) Nothing| that falls out at the
-bottom of this process will lead to a crash.
-
-Compare that to matching on |(Just 1) (Just 2)|: While matching against the first
-equation fails, the second matches |x| to |1| and |y| to |2|. Since there are
-multiple GRHSs, each of them in turn has to be tried in a top-to-bottom
-fashion. The first GRHS consists of a single boolean guard (in general we have
-to consider each of them in a left-to-right fashion) that will fail because |1
-/= 2|. The second GRHS is tried next, and because |otherwise| is a
-boolean guard that never fails, this successfully matches.
-
-Note how both the pattern matching per clause and the guard checking within a
-syntactic $match$ share top-to-bottom and left-to-right semantics. Having to
-make sense of both pattern and guard semantics seems like a waste of energy.
-Perhaps we can express \emph{all} pattern matching by (nested) pattern guards, thus:
-\begin{code}
-liftEq mx my
-  | Nothing <- mx, Nothing <- my              = True
-  | Just x <- mx,  Just y <- my  | x == y     = True
-                                 | otherwise  = False
-\end{code}
-Transforming the first clause with its single GRHS is easy. But the second
-clause already has two GRHSs, so we need to use \emph{nested} pattern guards.
-This is not a feature that Haskell offers (yet), but it allows a very
-convenient uniformity for our purposes: after the successful match on the first
-two guards left-to-right, we try to match each of the GRHSs in turn,
-top-to-bottom (and their individual guards left-to-right).
-
-Hence \sysname desugars the source syntax to the following \emph{guard
-tree} (see \cref{fig:syn} for the syntax):
-
-\begin{forest}
-  grdtree
-  [
-    [{$\grdbang{mx},\, \grdcon{\mathtt{Nothing}}{mx},\, \grdbang{my},\, \grdcon{\mathtt{Nothing}}{my}$} [1]]
-    [{$\grdbang{mx},\, \grdcon{\mathtt{Just}\;x}{mx},\, \grdbang{my},\, \grdcon{\mathtt{Just}\;y}{my}$}
-      [{$\grdlet{t}{|x == y|},\, \grdbang{t},\, \grdcon{\mathtt{True}}{t}$} [2]]
-      [{$\grdbang{otherwise},\, \grdcon{\mathtt{True}}{otherwise}$} [3]]]]
-\end{forest}
-
-This representation is much more explicit than the original program. For
-one thing, every source-level pattern guard is implicitly strict in its scrutinee,
-whereas that is made explicit in the guard tree by \emph{bang guards}, e.g. $\grdbang{mx}$.
-The bang guard $\grdbang{mx}$ evaluates $mx$ to WHNF, and will
-either succeed or diverge. Moreover, the pattern guards in $\Grd$ only
-scrutinise variables, and only one level deep, so the comparison in the
-boolean guard's scrutinee had to be bound to an auxiliary variable in a let
-binding.
-
-% \ryan{|otherwise| was introduced earlier, so commenting this out.}
-% Note that |otherwise| is an external identifier which we can assume to
-% be bound to |True|, which is in fact how it defined.
-
-Pattern guards in $\Grd$ are the only guards that can possibly fail to match,
-in which case the value of the scrutinee was not of the shape of the
-constructor application it was matched against. The $\Gdt$ tree language
-determines how to cope with a failed guard. Left-to-right matching semantics is
-captured by $\gdtguard{}{\hspace{-0.6em}}$, whereas top-to-bottom backtracking
-is expressed by sequence ($\gdtseq{}{}$). The leaves in a guard tree each
-correspond to a GRHS.
-
-\subsection{Checking guard trees} \label{sec:check}
-
-Coverage checking works by gradually refining the set of reaching values
-\ryan{Did you mean to write ``reachable values'' here? ``Reaching values''
-reads strangely to me.}
-\sg{I was thinking ``reaching values'' as in ``reaching definitions'': The set
-of values that reach that particular piece of the guard tree.}
-as they flow through the guard tree until it produces two outputs.
-One output is the set of uncovered values that wasn't covered by any clause,
-and the other output is an annotated guard tree skeleton
-$\Ant$ with the same shape as the guard tree to check, capturing redundancy and
-divergence information.
-
-For the example of |liftEq|'s guard tree $t_|liftEq|$, we represent the set of
-values reaching the first clause by the \emph{refinement type} $\Theta_0 = \reft{(mx :
-|Maybe a|, my : |Maybe a|)}{\true}$.   Refinement types are described in \cref{fig:syn}.
-This type  is gradually refined until finally we have $\Theta_{|liftEq|} :=
-\reft{(mx : |Maybe a|, my : |Maybe a|)}{\Phi}$ as the uncovered set, where the
-predicate $\Phi$ is semantically equivalent to:
-\[
-\begin{array}{cl}
-         & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Nothing} \vee (\ctcon{\mathtt{Nothing}}{mx} \wedge my \ntermeq \bot \wedge my \ntermeq \mathtt{Nothing}))) \\
-  \wedge & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Just} \vee (\ctcon{\mathtt{Just}\;x}{mx} \wedge my \ntermeq \bot \wedge (my \ntermeq \mathtt{Just})))) \\
-\end{array}
-\]
-
-Every $\vee$ disjunct corresponds to one way in which a pattern guard in the
-tree could fail. It is not easy for humans to read off inhabitants
-from this representation, but we will give an intuitive treatment of how
-to do so in the next subsection.
-
-The annotated guard tree skeleton corresponding to $t_|liftEq|$ looks like
-this:
-
-\begin{forest}
-  anttree
-  [
-    [{\lightning}
-      [1]
-      [{\lightning}
-        [{\lightning} [2]]
-        [{\lightning} [3]]]]]
-\end{forest}
-
-A GRHS is deemed accessible (\checked{}) whenever there is a non-empty set of
-values reaching it. For the first GRHS, the set that reaches it looks
-like $\{ (mx, my) \mid mx \ntermeq \bot, \grdcon{\mathtt{Nothing}}{mx}, my
-\ntermeq \bot, \grdcon{\mathtt{Nothing}}{my} \}$, which is inhabited by
-$(\mathtt{Nothing}, \mathtt{Nothing})$. Similarly, we can find inhabitants for
-the other two clauses.
-
-A \lightning{} denotes possible divergence in one of the bang guards and
-involves testing the set of reaching values for compatibility with \ie $mx
-\termeq \bot$. We cannot know in advance whether $mx$, $my$ or $t$ are
-$\bot$ (hence the three uses of
-\lightning{}), but we can certainly rule out $otherwise \termeq \bot$ simply by
-knowing that it is defined as |True|. But since all GRHSs are accessible,
-there is nothing to report in terms of redundancy and the \lightning{}
-decorators are irrelevant.
-
-Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
-guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
-expressive enough to express all pattern matching in Haskell (cf. the
-desugaring function $\ds$ in \cref{fig:desugar})! We have yet to find a
-language extension that does not fit into this framework.
-
-\subsubsection{Why do we not report redundant GRHSs directly?}
-
-Why not compute the redundant GRHSs directly instead of building up a whole new
-tree? Because determining inaccessibility \vs redundancy is a non-local
-problem. Consider this example and its corresponding annotated tree after
-checking:
-\sg{I think this kind of detail should be motivated in a prior section and then
-referenced here for its solution.}
-
-\begin{minipage}{\textwidth}
-\begin{minipage}{0.22\textwidth}
-\centering
-\begin{code}
-g :: () -> Int
-g ()   | False   = 1
-       | True    = 2
-g _              = 3
-\end{code}
-\end{minipage}%
-\begin{minipage}{0.05\textwidth}
-\centering
-\[ \leadsto \]
-\end{minipage}%
-\begin{minipage}{0.2\textwidth}
-\centering
-\begin{forest}
-  anttree
-  [
-    [{\lightning}
-      [1]
-      [2]]
-    [3]]
-\end{forest}
-\end{minipage}
-\end{minipage}
-
-Is the first GRHS just inaccessible or even redundant? Although the match on
-|()| forces the argument, we can delete the first GRHS without changing program
-semantics, so clearly it is redundant.
-But that wouldn't be true if the second GRHS wasn't there to ``keep alive'' the
-|()| pattern!
-
-In general, at least one GRHS under a \lightning{} may not be flagged as
-redundant ($\times$).
-Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
-inaccessible) when it reaches a particular GRHS.
-
-\subsection{Generating inhabitants of a refinement type} \label{sec:inhabitants}
-
-The predicate literals $\varphi$ of refinement types look quite similar to the
-original $\Grd$ language, so how is checking them for emptiness an improvement
-over reasoning about about guard trees directly? To appreciate the transition,
-it is important to realise that semantics of $\Grd$s are \emph{highly
-non-local}! Left-to-right and top-to-bottom match semantics means that it is
-hard to view $\Grd$s in isolation; we always have to reason about whole
-$\Gdt$s. By contrast, refinement types are self-contained, which means the
-process of generating inhabitants can be treated separately from the process
-of coverage checking.
-
-Apart from generating inhabitants of the final uncovered set for non-exhaustive
-match warnings, there are two points at which we have to check whether
-a refinement type has become empty: To determine whether a right-hand side is
-inaccessible and whether a particular bang guard may lead to divergence and
-requires us to wrap a \lightning{}.
-
-Take the final uncovered set $\Theta_{|liftEq|}$ after checking |liftEq| above
-as an example. A bit of eyeballing |liftEq|'s definition reveals that |Nothing
-(Just _)| is an uncovered pattern, but eyeballing the constraint formula of
-$\Theta_{|liftEq|}$ seems impossible in comparison. A more systematic approach
-is to adopt a generate-and-test scheme: Enumerate possible values of the data
-types for each variable involved (the pattern variables |mx| and |my|, but also
-possibly the guard-bound |x|, |y| and |t|) and test them for compatibility with
-the recorded constraints.
-
-Starting from |mx my|, we enumerate all possibilities for the shape of |mx|,
-and similarly for |my|. The obvious first candidate in a lazy language is
-$\bot$! But that is a contradicting assignment for both |mx| and |my|
-indepedently. Refining to |Nothing Nothing| contradicts with the left part
-of the top-level $\wedge$. Trying |Just y| (|y| fresh) instead as the shape for
-|my| yields our first inhabitant! Note that |y| is unconstrained, so $\bot$ is
-a trivial inhabitant. Similarly for |(Just _) Nothing| and |(Just _) (Just _)|.
-
-Why do we have to test guard-bound variables in addition to the pattern
-variables? It is because of empty data types and strict fields. For example,
-|v| from \cref{ssec:strictness} does not have any uncovered patterns. And our
-approach should see that by looking at its uncovered set $\reft{x : |Maybe
-Void|}{x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}}$. Specifically, the
-candidate |SJust y| (for fresh |y|) for |x| should be rejected, because there
-is no inhabitant for |y|! $\bot$ is ruled out by the strict field and |Void|
-has no data constructors with which to instantiate |y|. Hence it is important
-to test guard-bound variables for inhabitants, too.
-
-
-\section{Formalism} \label{sec:formalism}
-
-The previous section gave insights into how we represent coverage checking
-problems as guard trees and provided an intuition for how to check them for
-exhaustiveness and redundancy. This section formalises these intuitions in
-terms of the syntax (\cf \cref{fig:syn}) we introduced earlier.
-
-As in the previous section, we divide this section into three main parts:
-desugaring, coverage checking, and finding inhabitants of the resulting
-refinement types. The latter subtask proves challenging enough to warrant two
-additional subsections.
 
 \sg{We should talk about why ``constructor applications'' in $\Expr, \Grd,
 \varphi$ and $\delta$ have different number of arguments. Not sure where.}
 
-\subsection{Desugaring to guard trees}
+
+\subsection{Desugaring to guard trees} \label{sec:desugar}
 
 \begin{figure}
 
@@ -1143,16 +891,23 @@ additional subsections.
 \ds(x, expr \rightarrow pat) &=& \grdlet{|y|}{expr \; x}, \ds(y, pat) \\
 \end{array}
 \]
-\caption{Desugaring Haskell to $\Gdt$}
+\caption{Desugaring from source language to $\Gdt$}
 \label{fig:desugar}
 \end{figure}
 
-\Cref{fig:desugar} outlines the desugaring step from source Haskell to our
-guard tree language $\Gdt$. It is assumed that the top-level match variables
-$x_1$ through $x_n$ in the $clause$ cases have special, fixed names. All other
-variables that aren't bound in arguments to $\ds$ have fresh names.
+The first step is to desugar the source language into
+the language of \emph{guard trees}.  The syntax of the source
+language is given in \Cref{fig:srcsyn}. Definitions $\mathit{defn}$ consist
+of a list of $\mathit{clauses}$, each of which has a list of \emph{patterns},
+and a list of \emph{guarded right-hand sides} (GRHSs).
+Patterns include variables and constructor patterns, of course, but also
+a representative
+selection of extensions: wildcards, as-patterns, bang-patterns, and view patterns.
+We explore several other extensions in \Cref{sec:extensions}.
 
-Consider this example function:
+The language of guard trees $\Gdt$, is much smaller: its syntax is given in \Cref{fig:syn}.
+All of the syntactic redundancy of the source language is translated
+into a minimal form very similar to pattern guards.  We start with an example:
 
 \begin{code}
 f (Just (!xs,_))  ys@Nothing   = 1
@@ -1160,7 +915,7 @@ f Nothing         (g -> True)  = 2
 \end{code}
 
 \noindent
-Under $\ds$, this desugars to
+This desugars to the following guard tree:
 
 \begin{forest}
   grdtree,
@@ -1168,20 +923,145 @@ Under $\ds$, this desugars to
     [{$\grdbang{x_1}, \grdcon{|Just t_1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{xs}{t_2}, \grdlet{ys}{x_2}, \grdbang{ys}, \grdcon{|Nothing|}{ys}$} [1]]
     [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_3}{|g x_2|}, \grdbang{y}, \grdcon{|True|}{t_3}$} [2]]]
 \end{forest}
+\\
+Here we use a graphical syntax for guard trees, also defined in \Cref{fig:syn}.
+The first line says ``evaluate $x_1$; then match $x_1$ against $Just~ t_1$; then match $t_1$ against $(t_2,t_3)$; and so on''.
+If any of those matches fail, we fall through into the second line.
 
-The definition of $\ds$ is straight-forward, but a little expansive because of
-the realistic source language. Its most intricate job is keeping track of all
-the renaming going on to resolve name mismatches. Other than that, the
-desugaring follows from the restrictions on the $\Grd$ language, such as the
-fact that source-level pattern guards also need to emit a bang guard on the
-variable representing the scrutinee.
-
-Note how our na{\"i}ve desugaring function generates an abundance of fresh
-temporary variables. In practice, the implementation of $\ds$ can be smarter
+More formally, matching a guard tree may \emph{succeed} (with some bindings for the variables bound in the tree), \emph{fail}m, or \emph{diverge}.  Matching is defined as follows:
+\begin{itemize}
+\item Matching a guard tree $(\gdtrhs{n})$ suceeds.
+\item Matching a guard tree $(\gdtseq{t_G}{u_G})$ means matching against $t_G$; if that succeeds, the overall match succeeds;
+  if not, match against $u_G$.
+\item Matching a guard tree $(\gdtguard{\grdbang{x}}{t_G})$ evaluates $x$; if that diverges the match diverges; if not
+  match $t_G$.
+\item Matching a guard tree $(\gdtguard{(\grdcon{|K|~ y_1 \ldots y_n}{x})}{t_G})$ matches $x$ against constructor |K|.
+  If the match succeeds, bind $y_1 \ldots y_n$ to the components, and match $t_G$.
+\item Matching a guard tree $(\gdtguard{(\grdlet{x}{e})}{t_G})$ binds $x$ (lazily) to $e$, and matches $t_G$.
+\end{itemize}
+The desugaring algorithm, $\ds$, is given in \Cref{fig:desugar}.
+It is a straightforward recursive descent over the source syntax, with a little
+bit of administrative bureaucracy to account for renaming.
+It also generates an abundance of fresh
+temporary variables; in practice, the implementation of $\ds$ can be smarter
 than this by looking at the pattern (which might be a variable match or
-|@|-pattern) when choosing a name for a variable.
+|@|-pattern) when choosing a name for a temporary variable.
 
-\subsection{Checking guard trees}
+% It is assumed that the top-level match variables
+% $x_1$ through $x_n$ in the $clause$ cases have special, fixed names. All other
+% variables that aren't bound in arguments to $\ds$ have fresh names.
+
+Notice that both ``structural'' pattern-matching in the source language (e.g.
+the match on |Nothing| in the second equation), and view patterns (e.g. |g -> True|)
+can readily be compiled to a single form of matching in guard trees.
+The same holds for pattern guards.  For example, consider this (stylistically contrived) definition
+of |liftEq|, which is inexhaustive:
+\begin{code}
+liftEq Nothing  Nothing   = True
+liftEq mx       (Just y)  | Just x <- mx, x == y  = True
+                          | otherwise             = False
+\end{code}
+\noindent
+It desugars thus:
+
+\begin{forest}
+  grdtree
+  [
+    [{$\grdbang{mx},\, \grdcon{\mathtt{Nothing}}{mx},\, \grdbang{my},\, \grdcon{\mathtt{Nothing}}{my}$} [1]]
+    [{$\grdbang{my},\, \grdcon{\mathtt{Just}\;y}{my}$}
+     [{$ \grdbang{mx},\, \grdcon{\mathtt{Just}\;x}{mx},\, \grdlet{t}{|x == y|},\, \grdbang{t},\, \grdcon{\mathtt{True}}{t}$} [2]]
+      [{$\grdbang{otherwise},\, \grdcon{\mathtt{True}}{otherwise}$} [3]]]]
+\end{forest}
+
+\noindent
+Notice that the pattern guard |(Just x <- mx)|, and the
+boolean guard |(x == y)|, have both turned into the same constructor-matching
+construct in the guard tree.
+
+In a way there is nothing very deep here, but it took us a surprisingly long
+time to come up with the language of guard trees.  We recommend it!
+
+%
+% To understand what language we should desugar to, consider the following
+% attempt at lifting equality over \hs{Maybe}:
+%
+% \begin{code}
+% liftEq Nothing  Nothing  = True
+% liftEq (Just x) (Just y)
+%   | x == y          = True
+%   | otherwise       = False
+% \end{code}
+% \noindent
+% |liftEq| has two equations, the second of which defines two GRHSs.
+% However, the definition is non-exhaustive:
+% neither equation will match the call |liftEq (Just 1) Nothing|, leading to
+% a crash.
+% To see this, we can follow Haskell's top-to-bottom, left-to-right pattern match
+% semantics. The first equation fails to match |Just 1| against |Nothing|, while
+% the second equation successfully matches |1| with |x| but then fails trying to
+% match |Nothing| against |Just y|. There is no third equation, and the
+% \emph{uncovered} tuple of values |(Just 1) Nothing| that falls out at the
+% bottom of this process will lead to a crash.
+%
+% Compare that to matching on |(Just 1) (Just 2)|: While matching against the first
+% equation fails, the second matches |x| to |1| and |y| to |2|. Since there are
+% multiple GRHSs, each of them in turn has to be tried in a top-to-bottom
+% fashion. The first GRHS consists of a single boolean guard (in general we have
+% to consider each of them in a left-to-right fashion) that will fail because |1
+% /= 2|. The second GRHS is tried next, and because |otherwise| is a
+% boolean guard that never fails, this successfully matches.
+%
+% Note how both the pattern matching per clause and the guard checking within a
+% syntactic $match$ share top-to-bottom and left-to-right semantics. Having to
+% make sense of both pattern and guard semantics seems like a waste of energy.
+% Perhaps we can express \emph{all} pattern matching by (nested) pattern guards, thus:
+% \begin{code}
+% liftEq mx my
+%   | Nothing <- mx, Nothing <- my              = True
+%   | Just x <- mx,  Just y <- my  | x == y     = True
+%                                  | otherwise  = False
+% \end{code}
+% Transforming the first clause with its single GRHS is easy. But the second
+% clause already has two GRHSs, so we need to use \emph{nested} pattern guards.
+% This is not a feature that Haskell offers (yet), but it allows a very
+% convenient uniformity for our purposes: after the successful match on the first
+% two guards left-to-right, we try to match each of the GRHSs in turn,
+% top-to-bottom (and their individual guards left-to-right).
+%
+% Hence \sysname desugars the source syntax to the following \emph{guard
+% tree} (see \cref{fig:syn} for the syntax):
+%
+% \begin{forest}
+%   grdtree
+%   [
+%     [{$\grdbang{mx},\, \grdcon{\mathtt{Nothing}}{mx},\, \grdbang{my},\, \grdcon{\mathtt{Nothing}}{my}$} [1]]
+%     [{$\grdbang{mx},\, \grdcon{\mathtt{Just}\;x}{mx},\, \grdbang{my},\, \grdcon{\mathtt{Just}\;y}{my}$}
+%       [{$\grdlet{t}{|x == y|},\, \grdbang{t},\, \grdcon{\mathtt{True}}{t}$} [2]]
+%       [{$\grdbang{otherwise},\, \grdcon{\mathtt{True}}{otherwise}$} [3]]]]
+% \end{forest}
+%
+% This representation is much more explicit than the original program. For
+% one thing, every source-level pattern guard is implicitly strict in its scrutinee,
+% whereas that is made explicit in the guard tree by \emph{bang guards}, e.g. $\grdbang{mx}$.
+% The bang guard $\grdbang{mx}$ evaluates $mx$ to WHNF, and will
+% either succeed or diverge. Moreover, the pattern guards in $\Grd$ only
+% scrutinise variables, and only one level deep, so the comparison in the
+% boolean guard's scrutinee had to be bound to an auxiliary variable in a let
+% binding.
+%
+% % \ryan{|otherwise| was introduced earlier, so commenting this out.}
+% % Note that |otherwise| is an external identifier which we can assume to
+% % be bound to |True|, which is in fact how it defined.
+%
+% Pattern guards in $\Grd$ are the only guards that can possibly fail to match,
+% in which case the value of the scrutinee was not of the shape of the
+% constructor application it was matched against. The $\Gdt$ tree language
+% determines how to cope with a failed guard. Left-to-right matching semantics is
+% captured by $\gdtguard{}{\hspace{-0.6em}}$, whereas top-to-bottom backtracking
+% is expressed by sequence ($\gdtseq{}{}$). The leaves in a guard tree each
+% correspond to a GRHS.
+
+\subsection{Checking guard trees} \label{sec:check}
 
 \begin{figure}
 \[ \textbf{Operations on $\Theta$} \]
@@ -1218,51 +1098,168 @@ than this by looking at the pattern (which might be a variable match or
 \label{fig:check}
 \end{figure}
 
-\Cref{fig:check} shows the two main functions for checking guard trees. $\unc$
-carries out exhaustiveness checking by computing the set of uncovered values
-for a particular guard tree, whereas $\ann$ computes the corresponding
-annotated tree, capturing redundancy information. $\red$ extracts a triple of
-accessible, inaccessible and redundant GRHS from such an annotated tree.
+In the next step, we transform the guard tree into an \emph{annotated tree}, $\Ant$, and
+an \emph{uncovered set}, $\Theta$.
 
-Both $\unc$ and $\ann$ take as their second parameter the set of values
-\emph{reaching} the particular guard tree node. If no value reaches a
-particular tree node, that node is inaccessible. The definition of $\unc$
-follows the intuition we built up earlier: It refines the set of reaching
-values as a subset of it falls through from one clause to the next. This is
-most visible in the $\gdtseq{}{}$ case (top-to-bottom composition), where the
-set of values reaching the right (or bottom) child is exactly the set of values
-that were uncovered by the left (or top) child on the set of values reaching
-the whole node. A GRHS covers every reaching value. The left-to-right semantics
-of $\gdtguard{}{\hspace{-0.6em}}$ are respected by refining the set of values reaching the
-wrapped subtree, depending on the particular guard. Bang guards and let
-bindings don't do anything beyond that refinement, whereas pattern guards
-additionally account for the possibility of a failed pattern match. Note that
-a failing pattern guard is the \emph{only} way in which the uncovered set
-can become non-empty!
+Taking the latter first, the uncovered set describes all the input
+values of the match that are not covered by the match.  We use the
+language of \emph{refinement types} to dsecribe this set (see \Cref{fig:syn}).
+The refinement type $\Theta = \reft{x_1{:}\tau_1, \ldots, x_n{:}\tau_n}{\Phi}$
+deontes the vector of values $x_1 \ldots x_n$ that satisfy the predicate $\Phi$.
+For example:
+$$
+\begin{array}{rcl}
+  \reft{ x{:}|Bool|}{ \true } & \text{denotes} & \{ \bot, |True|, |False| \} \\
+  \reft{ x{:}|Bool|}{ x \ntermeq \bot } & \text{denotes} & \{ |True|, |False| \} \\
+  \reft{ x{:}|Bool|}{ \ctcon{|True|}{x} } & \text{denotes} & \{ |True| \} \\
+  \reft{ mx{:}|Maybe Bool|}{ \ctcon{|Just x|}{mx}, x \ntermeq \bot } & \text{denotes} & \{ |Just True|, |Just False| \} \\
+\end{array}
+$$
+The syntax of $\Phi$ is given in \Cref{fig:syn}. It consisist of a collection
+of literals $\varphi$, combined with conjunction and disjunction.
+Unconventionally, however, a literal may bind one or more variables, and those
+bindings are in scope in conjunctions to the right. This can readily be formalised
+by giving a type system for $\Phi$, but we omit that here. \simon{It would be nice to add it.}
+The literal $\true$ means ``true'', as illustrated above; while
+$\false$ means ``false'', so that $\reft{Gamma}{\false} = \emptyset$.
 
-When $\ann$ hits a GRHS, it asks $\generate$ for inhabitants of $\Theta$
-to decide whether the GRHS is accessible or not. Since $\ann$ needs to compute
-and maintain the set of reaching values just the same as $\unc$, it has to call
-out to $\unc$ for the $\gdtseq{}{}$ case. Out of the three guard cases, the one
-handling bang guards is the only one doing more than just refining the set of
-reaching values for the subtree (thus respecting left-to-right semantics). A
-bang guard $\grdbang{x}$ is handled by testing whether the set of reaching
-values $\Theta$ is compatible with the assignment $x \termeq \bot$, which again
-is done by asking $\generate$ for concrete inhabitants of the resulting
-refinement type. If it \emph{is} inhabited, then the bang guard might diverge
-and we need to wrap the annotated subtree in a \lightning{}.
+\simon{I'm unhappy with having to subscribe our trees with G all the time, thus $t_G$.  Can we just us a
+  different letter for guard trees and annotated trees?}  The
+uncovered-set function $\unc(\Theta, t_G)$, defined in
+\Cref{fig:check}, computes a refinement type describing the values in
+$\Theta$ that are not covered by the guard tree $t_G$.  It is defined
+by a simple recursive descent over the guard tree, using the operation
+$\Theta \andtheta \varphi$ (also defined in \Cref{fig:check}) to
+extend $\Theta$ with an extra literal $\varphi$.
 
-Pattern guard semantics are important for $\unc$ and bang guard semantics are
-important for $\ann$. But what about let bindings? They are in fact completely
-uninteresting to the checking process, but making sense of them is important
-for the precision of the emptiness check involving $\generate$. Of course,
-``making sense'' of an expression is an open-ended endeavour, but we'll
-see a few reasonable ways to improve precision considerably at almost no cost,
-both in \cref{ssec:extinert} and \cref{ssec:extviewpat}.
+While $\unc$ finds a refinement type describing values that are \emph{not} matched by a
+guard tree, the function $\ann$ finds refinements decribing values that
+\emph{are} matched by a guard tree, or that cause matching to diverge.
+It does so by producing an \emph{annotated tree}, whose syntax is given in \Cref{fig:syn}.
+An annotated tree has the same general structure as the guard tree from whence it came:
+in particular the sequential compositions ``;'' are in the same places.  But
+in an annotated tree, each \texttt{Rhs} leaf is annotated with a refinement type
+describing the input values that will lead to that right-hand side; and each
+\texttt{MayDiverge} node is annotated with a refinement type that describes
+the input values on which matching will diverge.  Once again, $\ann$ can
+be defined by a simple recursive descent over the guard tree (\Cref{fig:check}), but note
+that the second equation uses $\unc$ as an auxiliary function\footnote{
+Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
+-- but the fomulation in \Cref{fig:check} emphasises clarity over effiiency.}.
 
+% Coverage checking works by gradually refining the set of reaching values
+% \ryan{Did you mean to write ``reachable values'' here? ``Reaching values''
+% reads strangely to me.}
+% \sg{I was thinking ``reaching values'' as in ``reaching definitions'': The set
+% of values that reach that particular piece of the guard tree.}
+% as they flow through the guard tree until it produces two outputs.
+% One output is the set of uncovered values that wasn't covered by any clause,
+% and the other output is an annotated guard tree skeleton
+% $\Ant$ with the same shape as the guard tree to check, capturing redundancy and
+% divergence information.
+%
+% For the example of |liftEq|'s guard tree $t_|liftEq|$, we represent the set of
+% values reaching the first clause by the \emph{refinement type} $\Theta_0 = \reft{(mx :
+% |Maybe a|, my : |Maybe a|)}{\true}$.   Refinement types are described in \cref{fig:syn}.
+% This type  is gradually refined until finally we have $\Theta_{|liftEq|} :=
+% \reft{(mx : |Maybe a|, my : |Maybe a|)}{\Phi}$ as the uncovered set, where the
+% predicate $\Phi$ is semantically equivalent to:
+% \[
+% \begin{array}{cl}
+%          & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Nothing} \vee (\ctcon{\mathtt{Nothing}}{mx} \wedge my \ntermeq \bot \wedge my \ntermeq \mathtt{Nothing}))) \\
+%   \wedge & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Just} \vee (\ctcon{\mathtt{Just}\;x}{mx} \wedge my \ntermeq \bot \wedge (my \ntermeq \mathtt{Just})))) \\
+% \end{array}
+% \]
+%
+% Every $\vee$ disjunct corresponds to one way in which a pattern guard in the
+% tree could fail. It is not easy for humans to read off inhabitants
+% from this representation, but we will give an intuitive treatment of how
+% to do so in the next subsection.
+%
+% The annotated guard tree skeleton corresponding to $t_|liftEq|$ looks like
+% this:
+%
+% \begin{forest}
+%   anttree
+%   [
+%     [{\lightning}
+%       [1]
+%       [{\lightning}
+%         [{\lightning} [2]]
+%         [{\lightning} [3]]]]]
+% \end{forest}
+%
+% A GRHS is deemed accessible (\checked{}) whenever there is a non-empty set of
+% values reaching it. For the first GRHS, the set that reaches it looks
+% like $\{ (mx, my) \mid mx \ntermeq \bot, \grdcon{\mathtt{Nothing}}{mx}, my
+% \ntermeq \bot, \grdcon{\mathtt{Nothing}}{my} \}$, which is inhabited by
+% $(\mathtt{Nothing}, \mathtt{Nothing})$. Similarly, we can find inhabitants for
+% the other two clauses.
+%
+% A \lightning{} denotes possible divergence in one of the bang guards and
+% involves testing the set of reaching values for compatibility with \ie $mx
+% \termeq \bot$. We cannot know in advance whether $mx$, $my$ or $t$ are
+% $\bot$ (hence the three uses of
+% \lightning{}), but we can certainly rule out $otherwise \termeq \bot$ simply by
+% knowing that it is defined as |True|. But since all GRHSs are accessible,
+% there is nothing to report in terms of redundancy and the \lightning{}
+% decorators are irrelevant.
+%
+% Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
+% guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
+% expressive enough to express all pattern matching in Haskell (cf. the
+% desugaring function $\ds$ in \cref{fig:desugar})! We have yet to find a
+% language extension that does not fit into this framework.
 
-\subsection{Generating inhabitants of a refinement type}
-\label{ssec:gen}
+\subsubsection{Why do we not report redundant GRHSs directly?}
+
+Why not compute the redundant GRHSs directly instead of building up a whole new
+tree? Because determining inaccessibility \vs redundancy is a non-local
+problem. Consider this example and its corresponding annotated tree after
+checking:
+\sg{I think this kind of detail should be motivated in a prior section and then
+referenced here for its solution.}
+
+\begin{minipage}{\textwidth}
+\begin{minipage}{0.22\textwidth}
+\centering
+\begin{code}
+g :: () -> Int
+g ()   | False   = 1
+       | True    = 2
+g _              = 3
+\end{code}
+\end{minipage}%
+\begin{minipage}{0.05\textwidth}
+\centering
+\[ \leadsto \]
+\end{minipage}%
+\begin{minipage}{0.2\textwidth}
+\centering
+\begin{forest}
+  anttree
+  [
+    [{\lightning}
+      [1]
+      [2]]
+    [3]]
+\end{forest}
+\end{minipage}
+\end{minipage}
+
+Is the first GRHS just inaccessible or even redundant? Although the match on
+|()| forces the argument, we can delete the first GRHS without changing program
+semantics, so clearly it is redundant.
+But that wouldn't be true if the second GRHS wasn't there to ``keep alive'' the
+|()| pattern!
+
+In general, at least one GRHS under a \lightning{} may not be flagged as
+redundant ($\times$).
+Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
+inaccessible) when it reaches a particular GRHS.
+
+\subsection{Generating inhabitants of a refinement type} \label{sec:inhabitants}
+
 
 \begin{figure}
 \centering
@@ -1346,6 +1343,155 @@ both in \cref{ssec:extinert} and \cref{ssec:extviewpat}.
 \caption{Generating inhabitants of $\Theta$ via $\nabla$}
 \label{fig:gen}
 \end{figure}
+
+The predicate literals $\varphi$ of refinement types look quite similar to the
+original $\Grd$ language, so how is checking them for emptiness an improvement
+over reasoning about about guard trees directly? To appreciate the transition,
+it is important to realise that semantics of $\Grd$s are \emph{highly
+non-local}! Left-to-right and top-to-bottom match semantics means that it is
+hard to view $\Grd$s in isolation; we always have to reason about whole
+$\Gdt$s. By contrast, refinement types are self-contained, which means the
+process of generating inhabitants can be treated separately from the process
+of coverage checking.
+
+Apart from generating inhabitants of the final uncovered set for non-exhaustive
+match warnings, there are two points at which we have to check whether
+a refinement type has become empty: To determine whether a right-hand side is
+inaccessible and whether a particular bang guard may lead to divergence and
+requires us to wrap a \lightning{}.
+
+Take the final uncovered set $\Theta_{|liftEq|}$ after checking |liftEq| above
+as an example. A bit of eyeballing |liftEq|'s definition reveals that |Nothing
+(Just _)| is an uncovered pattern, but eyeballing the constraint formula of
+$\Theta_{|liftEq|}$ seems impossible in comparison. A more systematic approach
+is to adopt a generate-and-test scheme: Enumerate possible values of the data
+types for each variable involved (the pattern variables |mx| and |my|, but also
+possibly the guard-bound |x|, |y| and |t|) and test them for compatibility with
+the recorded constraints.
+
+Starting from |mx my|, we enumerate all possibilities for the shape of |mx|,
+and similarly for |my|. The obvious first candidate in a lazy language is
+$\bot$! But that is a contradicting assignment for both |mx| and |my|
+indepedently. Refining to |Nothing Nothing| contradicts with the left part
+of the top-level $\wedge$. Trying |Just y| (|y| fresh) instead as the shape for
+|my| yields our first inhabitant! Note that |y| is unconstrained, so $\bot$ is
+a trivial inhabitant. Similarly for |(Just _) Nothing| and |(Just _) (Just _)|.
+
+Why do we have to test guard-bound variables in addition to the pattern
+variables? It is because of empty data types and strict fields. For example,
+|v| from \cref{ssec:strictness} does not have any uncovered patterns. And our
+approach should see that by looking at its uncovered set $\reft{x : |Maybe
+Void|}{x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}}$. Specifically, the
+candidate |SJust y| (for fresh |y|) for |x| should be rejected, because there
+is no inhabitant for |y|! $\bot$ is ruled out by the strict field and |Void|
+has no data constructors with which to instantiate |y|. Hence it is important
+to test guard-bound variables for inhabitants, too.
+
+
+\section{Formalism} \label{sec:formalism}
+
+\simon{This entire section is scheduled for deletion, onc ewe have movee out everything we need}
+
+The previous section gave insights into how we represent coverage checking
+problems as guard trees and provided an intuition for how to check them for
+exhaustiveness and redundancy. This section formalises these intuitions in
+terms of the syntax (\cf \cref{fig:syn}) we introduced earlier.
+
+As in the previous section, we divide this section into three main parts:
+desugaring, coverage checking, and finding inhabitants of the resulting
+refinement types. The latter subtask proves challenging enough to warrant two
+additional subsections.
+
+\sg{We should talk about why ``constructor applications'' in $\Expr, \Grd,
+\varphi$ and $\delta$ have different number of arguments. Not sure where.}
+
+\subsection{Desugaring to guard trees}
+
+\simon{I think this section has nothing useful left}
+
+\Cref{fig:desugar} outlines the desugaring step from source Haskell to our
+guard tree language $\Gdt$. It is assumed that the top-level match variables
+$x_1$ through $x_n$ in the $clause$ cases have special, fixed names. All other
+variables that aren't bound in arguments to $\ds$ have fresh names.
+
+Consider this example function:
+
+\begin{code}
+f (Just (!xs,_))  ys@Nothing   = 1
+f Nothing         (g -> True)  = 2
+\end{code}
+
+\noindent
+Under $\ds$, this desugars to
+
+\begin{forest}
+  grdtree,
+  [
+    [{$\grdbang{x_1}, \grdcon{|Just t_1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{xs}{t_2}, \grdlet{ys}{x_2}, \grdbang{ys}, \grdcon{|Nothing|}{ys}$} [1]]
+    [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_3}{|g x_2|}, \grdbang{y}, \grdcon{|True|}{t_3}$} [2]]]
+\end{forest}
+
+The definition of $\ds$ is straight-forward, but a little expansive because of
+the realistic source language. Its most intricate job is keeping track of all
+the renaming going on to resolve name mismatches. Other than that, the
+desugaring follows from the restrictions on the $\Grd$ language, such as the
+fact that source-level pattern guards also need to emit a bang guard on the
+variable representing the scrutinee.
+
+Note how our na{\"i}ve desugaring function generates an abundance of fresh
+temporary variables. In practice, the implementation of $\ds$ can be smarter
+than this by looking at the pattern (which might be a variable match or
+|@|-pattern) when choosing a name for a variable.
+
+\subsection{Checking guard trees}
+
+\simon{I think this section has nothing useful left}
+
+\Cref{fig:check} shows the two main functions for checking guard trees. $\unc$
+carries out exhaustiveness checking by computing the set of uncovered values
+for a particular guard tree, whereas $\ann$ computes the corresponding
+annotated tree, capturing redundancy information. $\red$ extracts a triple of
+accessible, inaccessible and redundant GRHS from such an annotated tree.
+
+Both $\unc$ and $\ann$ take as their second parameter the set of values
+\emph{reaching} the particular guard tree node. If no value reaches a
+particular tree node, that node is inaccessible. The definition of $\unc$
+follows the intuition we built up earlier: It refines the set of reaching
+values as a subset of it falls through from one clause to the next. This is
+most visible in the $\gdtseq{}{}$ case (top-to-bottom composition), where the
+set of values reaching the right (or bottom) child is exactly the set of values
+that were uncovered by the left (or top) child on the set of values reaching
+the whole node. A GRHS covers every reaching value. The left-to-right semantics
+of $\gdtguard{}{\hspace{-0.6em}}$ are respected by refining the set of values reaching the
+wrapped subtree, depending on the particular guard. Bang guards and let
+bindings don't do anything beyond that refinement, whereas pattern guards
+additionally account for the possibility of a failed pattern match. Note that
+a failing pattern guard is the \emph{only} way in which the uncovered set
+can become non-empty!
+
+When $\ann$ hits a GRHS, it asks $\generate$ for inhabitants of $\Theta$
+to decide whether the GRHS is accessible or not. Since $\ann$ needs to compute
+and maintain the set of reaching values just the same as $\unc$, it has to call
+out to $\unc$ for the $\gdtseq{}{}$ case. Out of the three guard cases, the one
+handling bang guards is the only one doing more than just refining the set of
+reaching values for the subtree (thus respecting left-to-right semantics). A
+bang guard $\grdbang{x}$ is handled by testing whether the set of reaching
+values $\Theta$ is compatible with the assignment $x \termeq \bot$, which again
+is done by asking $\generate$ for concrete inhabitants of the resulting
+refinement type. If it \emph{is} inhabited, then the bang guard might diverge
+and we need to wrap the annotated subtree in a \lightning{}.
+
+Pattern guard semantics are important for $\unc$ and bang guard semantics are
+important for $\ann$. But what about let bindings? They are in fact completely
+uninteresting to the checking process, but making sense of them is important
+for the precision of the emptiness check involving $\generate$. Of course,
+``making sense'' of an expression is an open-ended endeavour, but we'll
+see a few reasonable ways to improve precision considerably at almost no cost,
+both in \cref{ssec:extinert} and \cref{ssec:extviewpat}.
+
+
+\subsection{Generating inhabitants of a refinement type}
+\label{ssec:gen}
 
 The key function for the emptiness test is $\generate$ in \cref{fig:gen}, which
 generates a set of patterns which inhabit a given refinement type $\Theta$.
