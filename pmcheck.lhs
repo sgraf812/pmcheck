@@ -588,33 +588,36 @@ The examples below illustrate this:
 \begin{minipage}{0.4\textwidth}
 \centering
 \begin{code}
-g :: () -> Int
-g ()   | False   = 1
+u :: () -> Int
+u ()   | False   = 1
        | True    = 2
-g _              = 3
+u _              = 3
 \end{code}
 \end{minipage} %
 \begin{minipage}{0.4\textwidth}
 \centering
 \begin{code}
-g' :: () -> Int
-g' ()   | False   = 1
-g' _              = 3
+u' :: () -> Int
+u' ()   | False   = 1
+        | False   = 2
+u' _              = 3
 \end{code}
 \end{minipage}
 \end{minipage}
 
-Within |g|, the equations that return |1| and |3| could be deleted without
-changing the semantics of |g|, so they are classified as redundant. Within |g'|,
-however, the equation returning |1| cannot be removed so easily. Using the
-definition above, $|g'|~\bot~|=|~\bot$, but if the first equation were removed,
-then $|g'|~\bot~|= 3|$. As a result, \sysname warns that the first equation in |g'| is
-inaccessible, which suggests to the programmer that |g'| might benefit from
-a small refactor to avoid this (e.g., |g' () = 3|).
+Within |u|, the equations that return |1| and |3| could be deleted without
+changing the semantics of |u|, so they are classified as redundant. Within |u'|,
+one can never reach that right-hand sides of the equations that return |1| and |2|,
+but they cannot be removed so easily. Using the
+definition above, $|u'|~\bot~|=|~\bot$, but if the first two equations were removed,
+then $|u'|~\bot~|= 3|$. As a result, \sysname warns that the first two equations in |u'| are
+inaccessible, which suggests to the programmer that |u'| might benefit from
+a refactor to avoid this (e.g., |g' () = 3|).
 
-Observe that the first equations in |g| and |g'| have different warnings, but the
-only difference between the two functions is the presence of the |True| guard in
-|g|. This demonstrates that determining whether code is redundant or inaccessible
+Observe that |u| and |u'| have completely different warnings, but the
+only difference between the two functions is whether the second equation uses |True| or |False| in its guard.
+Moreover, this second equation affects the warnings for \emph{other} equations.
+This demonstrates that determining whether code is redundant or inaccessible
 is a non-local problem.
 Inaccessibility may seem like a tricky corner case, but GHC's users have
 reported many bugs of this sort (\Cref{sec:ghc-issues}).
@@ -976,8 +979,8 @@ defined as follows:
   match $t_G$.
 \item Matching a guard tree $(\gdtguard{(\grdcon{|K|~ y_1 \ldots y_n}{x})}{t_G})$ matches $x$ against constructor |K|.
   If the match succeeds, bind $y_1 \ldots y_n$ to the components, and match $t_G$; if the constructor match
-  fails the, the entire match fails.
-\item Matching a guard tree $(\gdtguard{(\grdlet{x}{e})}{t_G})$ binds $x$ (lazily) to $e$, and matches $t_G$;
+  fails, then the entire match fails.
+\item Matching a guard tree $(\gdtguard{(\grdlet{x}{e})}{t_G})$ binds $x$ (lazily) to $e$, and matches $t_G$.
 \end{itemize}
 The desugaring algorithm, $\ds$, is given in \Cref{fig:desugar}.
 It is a straightforward recursive descent over the source syntax, with a little
@@ -1185,7 +1188,7 @@ the input values on which matching will diverge.  Once again, $\ann$ can
 be defined by a simple recursive descent over the guard tree (\Cref{fig:check}), but note
 that the second equation uses $\unc$ as an auxiliary function\footnote{
 Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
--- but the fomulation in \Cref{fig:check} emphasises clarity over effiiency.}.
+-- but the fomulation in \Cref{fig:check} emphasises clarity over efficiency.}.
 
 % Coverage checking works by gradually refining the set of reaching values
 % \ryan{Did you mean to write ``reachable values'' here? ``Reaching values''
@@ -1402,7 +1405,7 @@ $$
   { x \ntermeq \bot,\, \ctcon{|Just y|}{x},\, \ctlet{b}{|y == 0|},\, b \ntermeq \bot, \ctcon{|True|}{b} }
 $$
 But this is not very helpful to report to the user. It would be far preferable
-to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, something like this
+to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, something like this:
 \begin{verbatim}
     Missing equations for function 'f':
       f Nothing  = ...
@@ -1410,30 +1413,30 @@ to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, some
 \end{verbatim}
 \simon{Layout is not well aligned.}
 Producing these inhabitants is done by $\generate(\Theta)$ in \Cref{fig:gen},
-which we disucss next, in \Cref{sec:generate}.
+which we discuss next in \Cref{sec:generate}.
 But before doing so, notice that the very same function $\generate$ allows
 us to report accessible, inaccessible, and redundant GRHSs.  The function $\red$,
 also defined in \Cref{fig:gen} does exactly this, returning a
 triple of (accessible, inaccessible, redundant) GRHSs:
 \begin{itemize}
 \item Having reached a leaf $\antrhs{\Theta}{n}$, if the refinement type $\Theta$ is
-  uninhabited ($\generate(\Theta) = \emptyset$), then no input values can cause execution to reach this right hand side,
+  uninhabited ($\generate(\Theta) = \emptyset$), then no input values can cause execution to reach this right-hand side,
   and it is redundant.
 \item Having reached a node $\antbang{\Theta}{t}$, if $\Theta$ is inhabited there is a possibility of
-  divergence. Now suppose that all the GHRHSs in $t$ are redundant.  Then we should pick the first
+  divergence. Now suppose that all the GRHSs in $t$ are redundant.  Then we should pick the first
   of them and mark it as inaccessible.
 \item The case for $\red(t;u)$ is trivial: just combine the classifications of $t$ and $u$.
 \end{itemize}
-To illustrate the second case consider \simon{Backward ref to where Ryan describes this}
+To illustrate the second case consider |u'| from \cref{sssec:inaccessibility}:
 \begin{code}
-  g ()  | False  = 1
-        | False  = 2
-  g _            = 3
+  u' ()  | False  = 1
+         | False  = 2
+  u' _            = 3
 \end{code}
 From the first two equations we will get the annotated tree
 $$\antbang{\Theta_1}{ (\antrhs{\Theta_2}{1} \; ; \; \antrhs{\Theta_3}{2}) }$$
 where $\Theta_2$ and $\Theta_3$ are uninhabited (because of the |False| guards).
-But we cannot delete both GHRHSs as redundant, because that would make the call $(f~\bot)$ return
+But we cannot delete both GRHSs as redundant, because that would make the call $(u'~\bot)$ return
 3 rather than diverging.  Rather, we want to report the first GRHSs as inaccessible,
 leaving all the others as redundant.
 
@@ -1455,11 +1458,11 @@ We do this in two steps:
   $\expand(\nabla, \mathsf{dom}(\Gamma))$; see \Cref{sec:expand}.
 \end{itemize}
 A normalised refinement type $\nabla = \ctxt{\Gamma}{\Delta}$ is similar to a
-refinment type $\Theta = \reft{\Gamma}{\Phi}$, but is in a much more restricted form:
+refinement type $\Theta = \reft{\Gamma}{\Phi}$, but is in a much more restricted form:
 \begin{itemize}
 \item $\Delta$ is simply a conjunction of literals $\delta$; there are no disjunctions.
   Instead, disjunction is reflects in the fact that $\construct$ returns a \emph{set} of nomalised refinement types.
-\item Unlike $\Phi$, the literals in $\Delta$ cannot bind variables.  The are all bound in $\Gamma$.
+\item Unlike $\Phi$, the literals in $\Delta$ cannot bind variables.  They are all bound in $\Gamma$.
 \end{itemize}
 Beyond these syntactic diffferences, we enforce the following semantics invariants on $\nabla$:
 \begin{enumerate}
