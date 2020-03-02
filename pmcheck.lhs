@@ -1258,7 +1258,7 @@ redundant ($\times$).
 Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
 inaccessible) when it reaches a particular GRHS.
 
-\subsection{Generating inhabitants of a refinement type} \label{sec:inhabitants}
+\subsection{Reporting errors} \label{sec:inhabitants}
 
 
 \begin{figure}
@@ -1343,6 +1343,28 @@ inaccessible) when it reaches a particular GRHS.
 \caption{Generating inhabitants of $\Theta$ via $\nabla$}
 \label{fig:gen}
 \end{figure}
+
+The final step is to report errors.  First, let us focus on reporting
+missing equations.  Consider the following definition
+\begin{code}
+  f :: Maybe Int -> Bool
+  f (Just 0) = True
+\end{code}
+If $t$ is the guard tree obtained from $f$, fhe function $\unc(t)$ will produce a refinement type describing values that are
+not matched, something like this:
+$$
+\unc(t) = \Theta_f = \reft{ x{:}|Maybe Int| }
+  { x \ntermeq \bot,\, \ctcon{|Just y|}{x},\, \ctlet{b}{(y == 0)},\, b \ntermeq \bot, \ctcon{|True|}{b} }
+$$
+  But this is not very helpful to report to the user. It would be far preferable
+  to produce one or more \emph{inhabitants} of $\Theta_f$ to report, something like this
+\begin{verbatim}
+    Missing equations for function 'f':
+      f Nothing  = ...
+      f (Just y) = ...,   where y /= 0
+\end{verbatim}
+
+\simon{Working here}
 
 The predicate literals $\varphi$ of refinement types look quite similar to the
 original $\Grd$ language, so how is checking them for emptiness an improvement
