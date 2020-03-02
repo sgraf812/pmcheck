@@ -952,7 +952,7 @@ bit of administrative bureaucracy to account for renaming.
 It also generates an abundance of fresh
 temporary variables; in practice, the implementation of $\ds$ can be smarter
 than this by looking at the pattern (which might be a variable match or
-|@|-pattern) when choosing a name for a temporary variable.
+as-pattern) when choosing a name for a temporary variable.
 
 % It is assumed that the top-level match variables
 % $x_1$ through $x_n$ in the $clause$ cases have special, fixed names. All other
@@ -1470,7 +1470,7 @@ variable representing the scrutinee.
 Note how our na{\"i}ve desugaring function generates an abundance of fresh
 temporary variables. In practice, the implementation of $\ds$ can be smarter
 than this by looking at the pattern (which might be a variable match or
-|@|-pattern) when choosing a name for a variable.
+as-pattern) when choosing a name for a variable.
 
 \subsection{Checking guard trees}
 
