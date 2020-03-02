@@ -1407,12 +1407,12 @@ We do this in two steps:
 \item Flatten $\Theta$ into a set of \emph{normalised refinement types} $\nabla$,
   by the call $\construct(\ctxt{\Gamma}{\varnothing}, \Phi)$; see \Cref{sec:flatten}.
 \item For each such $\nabla$, expand $\Gamma$ into a list of patterns, by the call
-  $\expand(\nabla, \mathsf{dom}(\Gamma))$.
+  $\expand(\nabla, \mathsf{dom}(\Gamma))$; see \Cref{sec:expand}.
 \end{itemize}
 A normalised refinement type $\nabla = \ctxt{\Gamma}{\Delta}$ is similar to a
 refinment type $\Theta = \reft{\Gamma}{\Phi}$, but is in a much more restricted form:
 \begin{itemize}
-\item $Delta$ is simply a conjunction of literals $\delta$; there are no disjuntions.
+\item $\Delta$ is simply a conjunction of literals $\delta$; there are no disjuntions.
 \item Unlike $\Phi$, the literals in $\Delta$ cannot bind variables.  The are all bound in $\Gamma$.
 \end{itemize}
 Beyond these syntactic diffferences, we enforce the following semantics invariants on $\nabla$:
@@ -1450,15 +1450,15 @@ we can assert that |x| has |Nothing| as a solution simply by writing $\Delta(x)
 
 \subsection{Expanding a normalised refinement type to a pattern} \label{sec:expand}
 
-Expanding a $\nabla$ to a pattern vector, by calling $\expand{\nabla}$ in \Cref{fig:gen},
-in $\expand$ is syntactically heavy, but straightforward.
+Expanding a $\nabla$ to a pattern vector, by calling $\expand(\nabla)$ in \Cref{fig:gen},
+is syntactically heavy, but straightforward.
 When there is a solution like $\Delta(x) \termeq |Just y|$
 in $\Delta$ for the head $x$ of the variable vector of interest, expand $y$ in
 addition to the rest of the vector and wrap it in a |Just|. Invariant \inert{3}
 guarantees that there is at most one such solution and $\expand$ is
 well-defined.
 
-\subsection{Flattening a refinement type} \label{ssec:flatten}
+\subsection{Normalising a refinement type} \label{sec:flatten}
 
 \begin{figure}
 \centering
