@@ -2571,6 +2571,22 @@ the same constructor twice (except after adding new type constraints), thus we
 have an amortised $\mathcal{O}(n)$ instantiations for the whole checking
 process.
 
+\subsection{Reporting uncovered patterns}
+
+The expansion function $\expand$ in \cref{fig:gen} exists purely for presenting
+uncovered patterns to the user. It is very simple and doesn't account for
+negative information, leading to surprising warnings. Consider a definition
+like |f True = ()|. The computed uncovered set of |f| is the refinement type
+$\reft{x:|Bool|}{x \ntermeq \bot, x \ntermeq |True|}$, which crucially
+contains no positive information! As a result, expanding the resulting $\nabla$
+(which looks quite similar) with $\expand$ just unhelpfully reports |_| as an
+uncovered pattern.
+
+Our implementation thus splits the $\nabla$ into (possibly multiple)
+sub-$\nabla$s with positive information on variables we have negative
+information on before handing off to $\expand$.
+
+
 \section{Evaluation}
 \label{sec:eval}
 
@@ -2623,20 +2639,6 @@ GHC 8.8.3 and HEAD on the following perf tests from GHC's test suite:
 T11303, T11276, T11303b, T11374, T11822, T11195, T17096,
 PmSeriesS, PmSeriesT, PmSeriesV, and PmSeriesG. These all live under the
 \texttt{testsuite/tests/pmcheck/should\_compile} directory.}
-
-\subsection{Reporting uncovered patterns}
-
-Our formalism in \cref{fig:gen} is subtly buggy when it comes to presenting
-uncovered patterns to the user. Consider a definition like |f True = ()|. The
-computed uncovered set of |f| is the refinement type $\{ x:|Bool| \mid x
-\ntermeq \bot, x \ntermeq |True| \}$, which crucially contains no positive
-information! As a result, the result of expanding the resulting $\nabla$ (which
-looks quite similar) with $\expand$ just unhelpfully reports |_| as an uncovered
-pattern.
-
-Our implementation thus splits the $\nabla$ into (possibly multiple)
-sub-$\nabla$s with positive information on variables we have negative
-information on before handing off to $\expand$.
 
 \subsection{GHC issues} \label{sec:ghc-issues}
 
