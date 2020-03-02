@@ -832,8 +832,9 @@ In this section, we describe our new coverage checking algorithm, \sysname.
   Again there are two things to do.
   The function $\red$ processes the annotated tree produced by $\ann$ to explicitly identify the
   accessible, inaccessible, or redundant clauses.
-  The function $\generate(\Theta)$ produces a representative \emph{inhabitant} of
-  the refinement types $\Theta$ (produced by $\unc$) that describes the uncovered values.
+  The function $\generate(\Theta)$ produces representative \emph{inhabitants}
+  of the refinement type $\Theta$ (produced by $\unc$) that describes the
+  uncovered values.
 \end{itemize}
 
 \sg{We should talk about why ``constructor applications'' in $\Expr, \Grd,
@@ -895,17 +896,16 @@ In this section, we describe our new coverage checking algorithm, \sysname.
 \label{fig:desugar}
 \end{figure}
 
-The first step is to desugar the source language into
-the language of \emph{guard trees}.  The syntax of the source
-language is given in \Cref{fig:srcsyn}. Definitions $\mathit{defn}$ consist
-of a list of $\mathit{clauses}$, each of which has a list of \emph{patterns},
-and a list of \emph{guarded right-hand sides} (GRHSs).
-Patterns include variables and constructor patterns, of course, but also
-a representative
-selection of extensions: wildcards, as-patterns, bang-patterns, and view patterns.
-We explore several other extensions in \Cref{sec:extensions}.
+The first step is to desugar the source language into the language of guard
+trees. The syntax of the source language is given in \Cref{fig:srcsyn}.
+Definitions $\mathit{defn}$ consist of a list of $\mathit{clauses}$, each of
+which has a list of \emph{patterns}, and a list of \emph{guarded right-hand
+sides} (GRHSs). Patterns include variables and constructor patterns, of course,
+but also a representative selection of extensions: wildcards, as-patterns, bang
+patterns, and view patterns. We explore several other extensions in
+\Cref{sec:extensions}.
 
-The language of guard trees $\Gdt$, is much smaller: its syntax is given in \Cref{fig:syn}.
+The language of guard trees $\Gdt$ is much smaller; its syntax is given in \Cref{fig:syn}.
 All of the syntactic redundancy of the source language is translated
 into a minimal form very similar to pattern guards.  We start with an example:
 
@@ -925,10 +925,17 @@ This desugars to the following guard tree:
 \end{forest}
 \\
 Here we use a graphical syntax for guard trees, also defined in \Cref{fig:syn}.
-The first line says ``evaluate $x_1$; then match $x_1$ against $Just~ t_1$; then match $t_1$ against $(t_2,t_3)$; and so on''.
-If any of those matches fail, we fall through into the second line.
+The first line says ``evaluate $x_1$; then match $x_1$ against $Just~ t_1$;
+then match $t_1$ against $(t_2,t_3)$; and so on''. If any of those matches
+fail, we fall through into the second line.
 
+<<<<<<< Updated upstream
 More formally, matching a guard tree may \emph{succeed} (with some bindings for the variables bound in the tree), \emph{fail}, or \emph{diverge}.  Matching is defined as follows:
+=======
+More formally, matching a guard tree may \emph{succeed} (with some bindings for
+the variables bound in the tree), \emph{fail}, or \emph{diverge}.  Matching is
+defined as follows:
+>>>>>>> Stashed changes
 \begin{itemize}
 \item Matching a guard tree $(\gdtrhs{n})$ succeeds.
 \item Matching a guard tree $(\gdtseq{t_G}{u_G})$ means matching against $t_G$; if that succeeds, the overall match succeeds;
@@ -957,9 +964,9 @@ can readily be compiled to a single form of matching in guard trees.
 The same holds for pattern guards.  For example, consider this (stylistically contrived) definition
 of |liftEq|, which is inexhaustive:
 \begin{code}
-liftEq Nothing  Nothing   = True
-liftEq mx       (Just y)  | Just x <- mx, x == y  = True
-                          | otherwise             = False
+liftEq Nothing  Nothing   =  True
+liftEq mx       (Just y)  |  Just x <- mx, x == y  = True
+                          |  otherwise             = False
 \end{code}
 \noindent
 It desugars thus:
