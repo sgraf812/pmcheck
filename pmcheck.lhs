@@ -1279,7 +1279,7 @@ inaccessible) when it reaches a particular GRHS.
     (\overline{k'}, \overline{n'}, \overline{m'}) &=& \red(u) \\
   \end{array} \\
 \red(\antbang{\Theta}{t}) &=& \begin{cases}
-    (\epsilon, m, \overline{m'}), & \text{if $\generate(\Theta) = \emptyset$ and $\red(t) = (\epsilon, \epsilon, m\,\overline{m'})$} \\
+    (\epsilon, m, \overline{m'}), & \text{if $\generate(\Theta) \not= \emptyset$ and $\red(t) = (\epsilon, \epsilon, m\,\overline{m'})$} \\
     \red(t), & \text{otherwise} \\
   \end{cases} \\
 \end{array}
