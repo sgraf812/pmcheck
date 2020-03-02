@@ -538,8 +538,8 @@ challenging to automatically check that the combination of |Text.null| and
 
 Nevertheless, |Text.null| and |Text.uncons| together are in fact exhaustive, and  GHC allows
 programmers to communicate this fact to the coverage checker using
-a \extension{COMPLETE} pragma\footnote{\url{https://downloads.haskell.org/~ghc/8.8.3/docs/html/users\_guide/glasgow\_exts.html\#pragma-COMPLETE}}
-.
+a \extension{COMPLETE} pragma
+\cite{complete-users-guide}.
 A \extension{COMPLETE} set is a combination of data constructors
 and pattern synonyms that should be regarded as exhaustive when a function matches
 on all of them.
@@ -2775,7 +2775,7 @@ in \cref{ssec:soundness}.
 
 \citeauthor{maranget:warnings} comes up with surprisingly tricky test cases
 which exponentially blew up compilation time of GHC at the time. We added them
-into our testsuite\footnote{\ticket{17264}} as regression tests and made sure
+into our testsuite \cite{gitlab:17264} as regression tests and made sure
 that throttling (\cref{ssec:throttling}) maintains linear performance
 characteristics.
 \ryan{The use of ``We'' in this sentence risks de-anonymizing us...}
@@ -2823,8 +2823,9 @@ Choosing $\{|True'|,|False|\}$ here will mark the third GRHS as redundant,
 while choosing $\{|True|,|False|\}$ won't. GHC's implementation used to try
 each \extension{COMPLETE} set in turn and had a complicated metric based on
 the number and kinds of warnings the choice of each one would generate to
-disambiguate\footnote{\href{https://downloads.haskell.org/~ghc/latest/docs/html/users\_guide/glasgow\_exts.html\#disambiguating-between-multiple-complete-pragmas}{``Disambiguating between multiple \extension{COMPLETE} pragmas'' in the user's guide of GHC 8.6.5}}
-, which was broken still\footnote{\ticket{13363}}.
+disambiguate
+\cite{complete-users-guide},
+which was broken still \cite{gitlab:13363}.
 
 On the front of efficiency, consider
 \begin{code}
@@ -2883,8 +2884,11 @@ exhaustivity checking \cite{liquidhaskell,refinement-reflection}.
 While exhaustiveness checks are optional in ordinary
 Haskell, they are mandatory for Liquid Haskell, as proofs written in Liquid
 Haskell require user-defined functions to be total (and therefore exhaustive)
-in order to be sound (\cf \cref{ssec:soundness}). For example, consider this
-non-exhaustive function:
+in order to be sound.
+% Ryan: Commenting this out since the Soundness section appears to have been removed.
+%
+% (\cf \cref{ssec:soundness})
+For example, consider this non-exhaustive function:
 
 \begin{code}
 fibPartial :: Integer -> Integer
