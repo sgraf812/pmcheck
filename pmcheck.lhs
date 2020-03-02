@@ -736,7 +736,7 @@ Stardust \cite{dunfieldthesis}.
   x,y,a,b     \in &\Var &         & \\
   \tau,\sigma \in &\Type&         & \\
   e \in           &\Expr&\Coloneqq& x \\
-                  &     &\mid     & \expconapp{K}{\tau}{\sigma}{\gamma}{e} \\
+                  &     &\mid     & \genconapp{K}{\tau}{\gamma}{e} \\
                   &     &\mid     & ... \\
 \end{array} &
 \begin{array}{rlcl}
@@ -837,9 +837,6 @@ In this section, we describe our new coverage checking algorithm, \sysname.
   uncovered values.
 \end{itemize}
 
-\sg{We should talk about why ``constructor applications'' in $\Expr, \Grd,
-\varphi$ and $\delta$ have different number of arguments. Not sure where.}
-
 
 \subsection{Desugaring to guard trees} \label{sec:desugar}
 
@@ -879,7 +876,6 @@ In this section, we describe our new coverage checking algorithm, \sysname.
     [ [{$\ds(guard_1)\,...\,\ds(guard_n)$} [{$k$}] ] ]
   \end{forest}} \\
 \\
-%TODO: Maybe make it explicit that we desugar to core here?
 \ds(pat \leftarrow expr) &=& \grdlet{x}{expr}, \ds(x, pat) \\
 \ds(expr) &=& \grdlet{b}{expr}, \ds(b, |True|) \\
 \ds(\mathtt{let} \; x \; \mathtt{=} \; expr) &=& \grdlet{x}{expr} \\
@@ -1606,7 +1602,7 @@ well-defined.
   \nabla &\addphi& \true &=& \nabla \\
   \ctxt{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
     \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{K \; \mathunderscore \; \overline{\sigma} \;  \overline{\gamma} \; \overline{e}} &=& \ctxt{\Gamma,x:\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \tau'} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y:\tau'}{e}} \\
+  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \ctxt{\Gamma,x:\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y:\tau'}{e}} \\
   &&&& \quad \text{where $\overline{a}\,\overline{y} \freein \Gamma$, $\overline{e:\tau'}$} \\
   \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{y} &=& \ctxt{\Gamma,x:\tau}{\Delta} \adddelta x \termeq y \\
   \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \ctxt{\Gamma,x:\tau}{\Delta} \\
@@ -1813,13 +1809,13 @@ than to add it blindly to $\Delta$.
 \begin{array}{c}
 
   \inst(\ctxt{\Gamma}{\Delta}, x, K) =
-    \ctxt{\Gamma,\overline{a},\overline{b},\overline{y:\sigma}}{\Delta}
+    \ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta}
       \adddelta \tau_x \typeeq \tau
       \adddelta \overline{\gamma}
-      \adddelta x \termeq \deltaconapp{K}{b}{y}
+      \adddelta x \termeq \deltaconapp{K}{a}{y}
       \adddelta \overline{y' \ntermeq \bot} \\
   \qquad \qquad
-    \text{where $K : \forall \overline{a}\,\overline{b}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{a}\,\overline{b}\,\overline{y} \freein \Gamma$, $x:\tau_x \in \Gamma$, $\overline{y'}$ bind strict fields} \\
+    \text{where $K : \forall \overline{a}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{a}\,\overline{y} \freein \Gamma$, $x:\tau_x \in \Gamma$, $\overline{y'}$ bind strict fields} \\
 
 \end{array}
 \]
