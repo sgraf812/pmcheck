@@ -262,10 +262,6 @@ We make the following contributions:
   of a refinement type, we can report accurate coverage errors (\Cref{sec:inhabitants}).
 
 \item
-  We underpin the intuitions of \Cref{sec:overview} with a detailed formal treatment in
-  \Cref{sec:formalism}.
-
-\item
   We demonstrate the compositionality of \sysname by augmenting it with
   several language extensions (\Cref{sec:extensions}). Although these extensions can change the source
   language in significant ways, the effort needed to incorporate them into the
@@ -323,7 +319,7 @@ Prior work on coverage checking (discussed in
 \Cref{sec:related}) accounts for some of these nuances, but
 not all of them. In this section we identify some key language features that
 make coverage checking difficult. While these features may seem disparate at first,
-we will later show in \Cref{sec:formalism} that these ideas can all fit
+we will later show in \Cref{sec:overview} that these ideas can all fit
 into a unified framework.
 
 \subsection{Guards} \label{ssec:guards}
@@ -1460,7 +1456,7 @@ because that would make the call |u' bot| return 3 rather
 than diverging.  Rather, we want to report the first GRHSs as
 inaccessible, leaving all the others as redundant.
 
-\subsection{Generating inhabitants of a refinement type} \label{sec:gen}
+\subsection{Generating inhabitants of a refinement type} \label{sec:generate}
 
 Thus far, all our functions have been very simple, syntax-directed
 transformations, but they all ultimately depend on the single function
@@ -1473,7 +1469,7 @@ that give the shape of values that inhabit $\Theta$.
 We do this in two steps:
 \begin{itemize}
 \item Flatten $\Theta$ into a set of \emph{normalised refinement types} $\nabla$,
-  by the call $\construct(\ctxt{\Gamma}{\varnothing}, \Phi)$; see \Cref{sec:flatten}.
+  by the call $\construct(\ctxt{\Gamma}{\varnothing}, \Phi)$; see \Cref{sec:normalise}.
 \item For each such $\nabla$, expand $\Gamma$ into a list of patterns, by the call
   $\expand(\nabla, \mathsf{dom}(\Gamma))$; see \Cref{sec:expand}.
 \end{itemize}
@@ -1499,7 +1495,7 @@ its \emph{solution}, informed by the single positive constraint $x \termeq
 \deltaconapp{K}{a}{y} \in \Delta$, if it exists. For example, $x \termeq
 |Nothing|$ can be understood as a function mapping |x| to |Nothing|. This
 reasoning is justified by \inert{3}. Under this view, $\Delta$ looks like a
-substitution. As we'll see later in \cref{ssec:extinert}, this view is
+substitution. As we'll see later in \cref{sec:normalise}, this view is
 supported by immense overlap with unification algorithms.
 
 \inert{2} is actually a condition on the represented substitution. Whenever we
@@ -1527,7 +1523,7 @@ addition to the rest of the vector and wrap it in a |Just|. Invariant \inert{3}
 guarantees that there is at most one such solution and $\expand$ is
 well-defined.
 
-\subsection{Normalising a refinement type} \label{sec:flatten}
+\subsection{Normalising a refinement type} \label{sec:normalise}
 
 \begin{figure}
 \centering
