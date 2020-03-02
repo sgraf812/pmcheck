@@ -716,7 +716,7 @@ Stardust \cite{dunfieldthesis}.
 \end{figure}
 
 
-\section{Lower your guards: a new coverage checker}
+\section{Lower Your Guards: a new coverage checker}
 \label{sec:overview}
 
 \begin{figure}
@@ -828,9 +828,9 @@ In this section, we describe our new coverage checking algorithm, \sysname.
   The function $\unc(t)$, on the other hand, returns a \emph{refinement type} $\Theta$
   \cite{rushby1998subtypes,boundschecking}
   that describes the set of \emph{uncovered values}, which are not matched by any of the clauses.
-\item Finally, an error reporting pass generates comprehensible error messages (\Cref{sec:inhabitants}).
+\item Finally, an error-reporting pass generates comprehensible error messages (\Cref{sec:inhabitants}).
   Again there are two things to do.
-  The function $\red$ processes the annotated tree produced by $\ann$, to explicitly identify the
+  The function $\red$ processes the annotated tree produced by $\ann$ to explicitly identify the
   accessible, inaccessible, or redundant clauses.
   The function $\generate(\Theta)$ produces a representative \emph{inhabitant} of
   the refinement types $\Theta$ (produced by $\unc$) that describes the uncovered values.
@@ -928,9 +928,9 @@ Here we use a graphical syntax for guard trees, also defined in \Cref{fig:syn}.
 The first line says ``evaluate $x_1$; then match $x_1$ against $Just~ t_1$; then match $t_1$ against $(t_2,t_3)$; and so on''.
 If any of those matches fail, we fall through into the second line.
 
-More formally, matching a guard tree may \emph{succeed} (with some bindings for the variables bound in the tree), \emph{fail}m, or \emph{diverge}.  Matching is defined as follows:
+More formally, matching a guard tree may \emph{succeed} (with some bindings for the variables bound in the tree), \emph{fail}, or \emph{diverge}.  Matching is defined as follows:
 \begin{itemize}
-\item Matching a guard tree $(\gdtrhs{n})$ suceeds.
+\item Matching a guard tree $(\gdtrhs{n})$ succeeds.
 \item Matching a guard tree $(\gdtseq{t_G}{u_G})$ means matching against $t_G$; if that succeeds, the overall match succeeds;
   if not, match against $u_G$.
 \item Matching a guard tree $(\gdtguard{\grdbang{x}}{t_G})$ evaluates $x$; if that diverges the match diverges; if not
@@ -974,8 +974,8 @@ It desugars thus:
 \end{forest}
 
 \noindent
-Notice that the pattern guard |(Just x <- mx)|, and the
-boolean guard |(x == y)|, have both turned into the same constructor-matching
+Notice that the pattern guard |(Just x <- mx)| and the
+boolean guard |(x == y)| have both turned into the same constructor-matching
 construct in the guard tree.
 
 In a way there is nothing very deep here, but it took us a surprisingly long
@@ -1103,9 +1103,9 @@ an \emph{uncovered set}, $\Theta$.
 
 Taking the latter first, the uncovered set describes all the input
 values of the match that are not covered by the match.  We use the
-language of \emph{refinement types} to dsecribe this set (see \Cref{fig:syn}).
+language of \emph{refinement types} to describe this set (see \Cref{fig:syn}).
 The refinement type $\Theta = \reft{x_1{:}\tau_1, \ldots, x_n{:}\tau_n}{\Phi}$
-deontes the vector of values $x_1 \ldots x_n$ that satisfy the predicate $\Phi$.
+denotes the vector of values $x_1 \ldots x_n$ that satisfy the predicate $\Phi$.
 For example:
 $$
 \begin{array}{rcl}
@@ -1115,7 +1115,7 @@ $$
   \reft{ mx{:}|Maybe Bool|}{ \ctcon{|Just x|}{mx}, x \ntermeq \bot } & \text{denotes} & \{ |Just True|, |Just False| \} \\
 \end{array}
 $$
-The syntax of $\Phi$ is given in \Cref{fig:syn}. It consisist of a collection
+The syntax of $\Phi$ is given in \Cref{fig:syn}. It consists of a collection
 of literals $\varphi$, combined with conjunction and disjunction.
 Unconventionally, however, a literal may bind one or more variables, and those
 bindings are in scope in conjunctions to the right. This can readily be formalised
@@ -1133,7 +1133,7 @@ $\Theta \andtheta \varphi$ (also defined in \Cref{fig:check}) to
 extend $\Theta$ with an extra literal $\varphi$.
 
 While $\unc$ finds a refinement type describing values that are \emph{not} matched by a
-guard tree, the function $\ann$ finds refinements decribing values that
+guard tree, the function $\ann$ finds refinements describing values that
 \emph{are} matched by a guard tree, or that cause matching to diverge.
 It does so by producing an \emph{annotated tree}, whose syntax is given in \Cref{fig:syn}.
 An annotated tree has the same general structure as the guard tree from whence it came:
@@ -1390,7 +1390,7 @@ to test guard-bound variables for inhabitants, too.
 
 \section{Formalism} \label{sec:formalism}
 
-\simon{This entire section is scheduled for deletion, onc ewe have movee out everything we need}
+\simon{This entire section is scheduled for deletion, once we have moved out everything we need}
 
 The previous section gave insights into how we represent coverage checking
 problems as guard trees and provided an intuition for how to check them for
