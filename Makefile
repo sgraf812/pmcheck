@@ -7,26 +7,26 @@ all: main
 REPL_FLAGS = -halt-on-error
 
 main:
-	lhs2TeX --poly pmcheck.lhs >pmcheck.tex
-	pdflatex $(REPL_FLAGS) pmcheck
-	bibtex   pmcheck
-	pdflatex $(REPL_FLAGS) pmcheck
-	pdflatex $(REPL_FLAGS) pmcheck
+	lhs2TeX --poly lyg.lhs >lyg.tex
+	pdflatex $(REPL_FLAGS) lyg
+	bibtex   lyg
+	pdflatex $(REPL_FLAGS) lyg
+	pdflatex $(REPL_FLAGS) lyg
 
 extended:
-	lhs2TeX --poly pmcheck_ext.lhs >pmcheck_ext.tex
-	pdflatex pmcheck_ext
-	bibtex   pmcheck_ext
-	pdflatex pmcheck_ext
-	pdflatex pmcheck_ext
+	lhs2TeX --poly lyg_ext.lhs >lyg_ext.tex
+	pdflatex lyg_ext
+	bibtex   lyg_ext
+	pdflatex lyg_ext
+	pdflatex lyg_ext
 
 clean:
 	$(RM) *.dvi *.aux *.log *.bbl *.blg *.toc *.out *.fls *.haux *.fdb_latexmk *~
 
 distclean: clean
-	$(RM) pmcheck.tex
-	$(RM) pmcheck.pdf
-	$(RM) pmcheck_ext.tex
-	$(RM) pmcheck_ext.pdf
+	$(RM) lyg.tex
+	$(RM) lyg.pdf
+	$(RM) lyg_ext.tex
+	$(RM) lyg_ext.pdf
 
 
