@@ -706,7 +706,7 @@ Stardust \cite{dunfieldthesis}.
 \centering
 \[
 \begin{array}{cc}
-\textbf{Meta variables} & \textbf{Pattern Syntax} \\
+\textbf{Meta variables} & \textbf{Pattern syntax} \\
 \begin{array}{rl}
   x,y,z,f,g,h &\text{Term variables} \\
   a,b,c       &\text{Type variables} \\
@@ -743,7 +743,7 @@ Stardust \cite{dunfieldthesis}.
 
 \begin{figure}
 \centering
-\[ \textbf{Guard Syntax} \]
+\[ \textbf{Guard syntax} \]
 \[
 \begin{array}{cc}
 \begin{array}{rlcl}
@@ -769,17 +769,17 @@ Stardust \cite{dunfieldthesis}.
 \end{array}
 \]
 
-\[ \textbf{Refinement Type Syntax} \]
+\[ \textbf{Refinement type syntax} \]
 \[
 \begin{array}{rcll}
   \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
   \varphi &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Literals} \\
   \Phi &\Coloneqq& \varphi \mid \Phi \wedge \Phi \mid \Phi \vee \Phi & \text{Formula} \\
-  \Theta &\Coloneqq& \reft{\Gamma}{\Phi} & \text{Refinement Type} \\
+  \Theta &\Coloneqq& \reft{\Gamma}{\Phi} & \text{Refinement type} \\
 \end{array}
 \]
 
-\[ \textbf{Clause Tree Syntax} \]
+\[ \textbf{Clause tree syntax} \]
 \[
 \begin{array}{rcll}
   t_G,u_G \in \Gdt &\Coloneqq& \gdtrhs{n} \mid \gdtseq{t_G}{u_G} \mid \gdtguard{g}{t_G}         \\
@@ -787,7 +787,7 @@ Stardust \cite{dunfieldthesis}.
 \end{array}
 \]
 
-\[ \textbf{Graphical Notation} \]
+\[ \textbf{Graphical notation} \]
 \[
 \begin{array}{cc}
   \begin{array}{rcll}
@@ -1121,7 +1121,7 @@ time to come up with the language of guard trees.  We recommend it!
 \end{array}
 \]
 
-\[ \textbf{Checking Guard Trees} \]
+\[ \textbf{Checking guard trees} \]
 \[ \ruleform{ \unc(\Theta, t_G) = \Theta } \]
 \[
 \begin{array}{lcl}
@@ -1336,7 +1336,7 @@ Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
 \end{array}
 \]
 
-\[ \textbf{Normalised Refinement Type Syntax} \]
+\[ \textbf{Normalised refinement type syntax} \]
 \[
 \begin{array}{rcll}
   \nabla &\Coloneqq& \false \mid \nreft{\Gamma}{\Delta} & \text{Normalised refinement type} \\
@@ -2327,19 +2327,33 @@ By making the connection between |y_1| and |y_2|, the checker could infer that
 the match was exhaustive.
 
 This can be fixed by maintaining equivalence classes of semantically equivalent
-expressions. We decided to perform an (approximation to) on-the-fly global
-value numbering~\cite{gvn} at the level of $\!\addphi\!$ for a very localised
-change:
+expressions in $\Delta$, similar to what we already do for variables. We simply extend
+the syntax of $\delta$ and change the last |let| case of $\!\addphi\!$. Then we can
+handle the new constraint in $\adddelta$, as follows:
 \[
-\begin{array}{r@@{\,}c@@{\,}lcl}
-  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \highlight{\nreft{\Gamma}{\Delta} \addphi \ctlet{x:\tau}{r_i} \quad \text{where $i$ is global value number of |e|}} \\
+\begin{array}{c}
+\begin{array}{cc}
+\begin{array}{c}
+  \delta = ... \mid \highlight{e \termeq x}
+\end{array}&
+\begin{array}{c}
+  \nreft{\Gamma}{\Delta} \addphi \ctlet{x:\tau}{e} = \highlight{\nreft{\Gamma,x:\tau}{\Delta} \adddelta e \termeq x}
+\end{array}
+\end{array} \\[0.5em]
+\begin{array}{c}
+  \highlight{\nreft{\Gamma}{\Delta} \adddelta e \termeq x = \begin{cases}
+    \nreft{\Gamma}{\Delta} \adddelta x \termeq |y|, & \text{if $e' \termeq |y| \in \Delta$ and $e \equiv_{\Delta} e'$} \\
+    \nreft{\Gamma}{\Delta, e \termeq \Delta(x)}, & \text{otherwise}
+  \end{cases}}
+\end{array}
 \end{array}
 \]
 
-Where |r_i| is the representative of the equivalence class of expressions with
-global value number $i$. For |safeLast|, \lyg is now able to see that
-$\Delta(|y_1|) \termeq \Delta(|y_2|)$ and hence that $\Delta(|y_2| \ntermeq
-|Nothing|$, so it will not emit any warnings.
+Where $\equiv_{\Delta}$ is (an approximation to) semantic equivalence modulo
+substitution under $\Delta$. A clever data structure is needed to answer
+queries of the form $e \termeq \mathunderscore \in \Delta$, efficiently. In our
+implementation, we use a trie to index expressions rapidly and sacrifice
+reasoning modulo $\Delta$ in doing so.
 
 \subsection{Pattern synonyms}
 \label{ssec:extpatsyn}
