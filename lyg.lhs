@@ -1337,7 +1337,7 @@ Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
 \[ \textbf{Normalised Refinement Type Syntax} \]
 \[
 \begin{array}{rcll}
-  \nabla &\Coloneqq& \false \mid \ctxt{\Gamma}{\Delta} & \text{Normalised refinement type} \\
+  \nabla &\Coloneqq& \false \mid \nreft{\Gamma}{\Delta} & \text{Normalised refinement type} \\
   \Delta &\Coloneqq& \varnothing \mid \Delta,\delta & \text{Set of constraints} \\
   \delta &\Coloneqq& \gamma \mid x \termeq \deltaconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Constraints} \\
 \end{array}
@@ -1347,7 +1347,7 @@ Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
 \[ \ruleform{ \generate(\Theta) = \mathcal{P}(\overline{p}) } \]
 \[
 \begin{array}{c}
-   \generate(\reft{\Gamma}{\Phi}) = \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \construct(\ctxt{\Gamma}{\varnothing}, \Phi) \right\}
+   \generate(\reft{\Gamma}{\Phi}) = \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \construct(\nreft{\Gamma}{\varnothing}, \Phi) \right\}
 \end{array}
 \]
 
@@ -1357,7 +1357,7 @@ Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
 \begin{array}{lcl}
 
   \construct(\nabla, \varphi) &=& \begin{cases}
-    \left\{ \ctxt{\Gamma'}{\Delta'} \right\} & \text{where $\ctxt{\Gamma'}{\Delta'} = \nabla \addphi \varphi$} \\
+    \left\{ \nreft{\Gamma'}{\Delta'} \right\} & \text{where $\nreft{\Gamma'}{\Delta'} = \nabla \addphi \varphi$} \\
     \emptyset & \text{otherwise} \\
   \end{cases} \\
   \construct(\nabla, \Phi_1 \wedge \Phi_2) &=& \bigcup \left\{ \construct(\nabla', \Phi_2) \mid \nabla' \in \construct(\nabla, \Phi_1) \right\} \\
@@ -1372,9 +1372,9 @@ Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
 \begin{array}{lcl}
 
   \expand(\nabla, \epsilon) &=& \epsilon \\
-  \expand(\ctxt{\Gamma}{\Delta}, x_1 ... x_n) &=& \begin{cases}
-    (K \; q_1 ... q_m) \, p_2 ... p_n & \parbox[t]{0.5\textwidth}{if $\rep{\Delta}{x_1} \termeq \deltaconapp{K}{a}{y} \in \Delta$\\ and $(q_1 ... q_m \, p_2 ... p_n) = \expand(\ctxt{\Gamma}{\Delta}, y_1 ... y_m x_2 ... x_n)$} \\
-    \_ \; p_2 ... p_n & \text{where $(p_2 ... p_n) = \expand(\ctxt{\Gamma}{\Delta}, x_2 ... x_n)$} \\
+  \expand(\nreft{\Gamma}{\Delta}, x_1 ... x_n) &=& \begin{cases}
+    (K \; q_1 ... q_m) \, p_2 ... p_n & \parbox[t]{0.5\textwidth}{if $\rep{\Delta}{x_1} \termeq \deltaconapp{K}{a}{y} \in \Delta$\\ and $(q_1 ... q_m \, p_2 ... p_n) = \expand(\nreft{\Gamma}{\Delta}, y_1 ... y_m x_2 ... x_n)$} \\
+    \_ \; p_2 ... p_n & \text{where $(p_2 ... p_n) = \expand(\nreft{\Gamma}{\Delta}, x_2 ... x_n)$} \\
   \end{cases} \\
 
 \end{array}
@@ -1479,11 +1479,11 @@ that give the shape of values that inhabit $\Theta$.
 We do this in two steps:
 \begin{itemize}
 \item Flatten $\Theta$ into a set of \emph{normalised refinement types} $\nabla$,
-  by the call $\construct(\ctxt{\Gamma}{\varnothing}, \Phi)$; see \Cref{sec:normalise}.
+  by the call $\construct(\nreft{\Gamma}{\varnothing}, \Phi)$; see \Cref{sec:normalise}.
 \item For each such $\nabla$, expand $\Gamma$ into a list of patterns, by the call
   $\expand(\nabla, \mathsf{dom}(\Gamma))$; see \Cref{sec:expand}.
 \end{itemize}
-A normalised refinement type $\nabla = \ctxt{\Gamma}{\Delta}$ is similar to a
+A normalised refinement type $\nabla = \nreft{\Gamma}{\Delta}$ is similar to a
 refinement type $\Theta = \reft{\Gamma}{\Phi}$, but is in a much more restricted form:
 \begin{itemize}
 \item $\Delta$ is simply a conjunction of literals $\delta$; there are no disjunctions.
@@ -1543,15 +1543,15 @@ well-defined.
 
   \nabla &\addphi& \false &=& \false \\
   \nabla &\addphi& \true &=& \nabla \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
-    \ctxt{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta \overline{y' \ntermeq \bot} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
+    \nreft{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta \overline{y' \ntermeq \bot} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
   &&&& \quad \text{where $\overline{y'}$ bind strict fields} \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \ctxt{\Gamma,x:\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y:\tau'}{e}} \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \nreft{\Gamma,x:\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y:\tau'}{e}} \\
   &&&& \quad \text{where $\overline{a}\,\overline{y} \freein \Gamma$, $\overline{e:\tau'}$} \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{y} &=& \ctxt{\Gamma,x:\tau}{\Delta} \adddelta x \termeq y \\
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \ctxt{\Gamma,x:\tau}{\Delta} \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{y} &=& \nreft{\Gamma,x:\tau}{\Delta} \adddelta x \termeq y \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \nreft{\Gamma,x:\tau}{\Delta} \\
   % TODO: Somehow make the coercion from delta to phi less ambiguous
-  \ctxt{\Gamma}{\Delta} &\addphi& \varphi &=& \ctxt{\Gamma}{\Delta} \adddelta \varphi
+  \nreft{\Gamma}{\Delta} &\addphi& \varphi &=& \nreft{\Gamma}{\Delta} \adddelta \varphi
 
 \end{array}
 \]
@@ -1562,33 +1562,33 @@ well-defined.
 \begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}l}
 
   \false &\adddelta& \delta &=& \false \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& \gamma &=& \begin{cases}
-    \ctxt{\Gamma}{(\Delta,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\ctxt{\Gamma}{(\Delta,\gamma)}}{\rep{\Delta}{x}}$} \\
+  \nreft{\Gamma}{\Delta} &\adddelta& \gamma &=& \begin{cases}
+    \nreft{\Gamma}{(\Delta,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\nreft{\Gamma}{(\Delta,\gamma)}}{\rep{\Delta}{x}}$} \\
     \false & \text{otherwise} \\
   \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
-    \ctxt{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
+  \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
+    \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
     \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K'}{b}{z} \in \Delta$ } \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \text{if $\rep{\Delta}{x} \ntermeq K \not\in \Delta$} \\
+    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \text{if $\rep{\Delta}{x} \ntermeq K \not\in \Delta$} \\
     \false & \text{otherwise} \\
   \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
+  \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
-    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{\rep{\Delta}{x}}$} \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{otherwise} \\
+    \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{\rep{\Delta}{x}}$} \\
+    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{otherwise} \\
   \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
+  \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
+    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
   \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
+  \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \termeq \bot \in \Delta$} \\
-    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
+    \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
+    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
   \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq y &=& \begin{cases}
-    \ctxt{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
-    \ctxt{\Gamma}{((\Delta\!\setminus\!\rep{\Delta}{x}), \rep{\Delta}{x}\!\termeq\!\rep{\Delta}{y})}\!\!\adddelta\!\!((\Delta\!\cap\!\rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
+  \nreft{\Gamma}{\Delta} &\adddelta& x \termeq y &=& \begin{cases}
+    \nreft{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
+    \nreft{\Gamma}{((\Delta\!\setminus\!\rep{\Delta}{x}), \rep{\Delta}{x}\!\termeq\!\rep{\Delta}{y})}\!\!\adddelta\!\!((\Delta\!\cap\!\rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
   \end{cases} \\
 \end{array}
 \]
@@ -1665,8 +1665,8 @@ calling out to the type-checker to assert that the constraint is
 consistent with existing constraints, we have to test \emph{all} variables in the
 domain of $\Gamma$ for inhabitants, because the new type constraint could have
 rendered a type empty. To demonstrate why this is necessary, imagine we have
-$\ctxt{x : a}{x \ntermeq \bot}$ and try to add $a \typeeq |Void|$. Although the
-type constraint is consistent, $x$ in $\ctxt{x : a}{x \ntermeq \bot, a \typeeq
+$\nreft{x : a}{x \ntermeq \bot}$ and try to add $a \typeeq |Void|$. Although the
+type constraint is consistent, $x$ in $\nreft{x : a}{x \ntermeq \bot, a \typeeq
 |Void|}$ is no longer inhabited. There is room for being smart about which
 variables we have to re-check: For example, we can exclude variables whose type
 is a non-GADT data type.
@@ -1732,9 +1732,9 @@ contradiction.
 \begin{array}{c}
 
   \prooftree
-    (\ctxt{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false
+    (\nreft{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false
   \justifies
-    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+    \inhabited{\nreft{\Gamma}{\Delta}}{x}
   \using
     \inhabitedbot
   \endprooftree
@@ -1742,9 +1742,9 @@ contradiction.
   \qquad
 
   \prooftree
-    {x:\tau \in \Gamma \quad \cons(\ctxt{\Gamma}{\Delta}, \tau) = \bot}
+    {x:\tau \in \Gamma \quad \cons(\nreft{\Gamma}{\Delta}, \tau) = \bot}
   \justifies
-    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+    \inhabited{\nreft{\Gamma}{\Delta}}{x}
   \using
     \inhabitednocpl
   \endprooftree
@@ -1753,10 +1753,10 @@ contradiction.
   \\
 
   \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons(\ctxt{\Gamma}{\Delta}, \tau)}
-                {\inst(\ctxt{\Gamma}{\Delta}, x, K) \not= \false}}
+    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons(\nreft{\Gamma}{\Delta}, \tau)}
+                {\inst(\nreft{\Gamma}{\Delta}, x, K) \not= \false}}
   \justifies
-    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+    \inhabited{\nreft{\Gamma}{\Delta}}{x}
   \using
     \inhabitedinst
   \endprooftree
@@ -1765,11 +1765,11 @@ contradiction.
 \]
 
 \[ \textbf{Find data constructors of $\tau$} \]
-\[ \ruleform{ \cons(\ctxt{\Gamma}{\Delta}, \tau) = \overline{K}} \]
+\[ \ruleform{ \cons(\nreft{\Gamma}{\Delta}, \tau) = \overline{K}} \]
 \[
 \begin{array}{c}
 
-  \cons(\ctxt{\Gamma}{\Delta}, \tau) = \begin{cases}
+  \cons(\nreft{\Gamma}{\Delta}, \tau) = \begin{cases}
     \overline{K} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ data type with constructors $\overline{K}$ \\ (after normalisation according to the type constraints in $\Delta$)} \\
     % TODO: We'd need a cosntraint like \delta's \false here... Or maybe we
     % just omit this case and accept that the function is partial
@@ -1785,8 +1785,8 @@ contradiction.
 \[
 \begin{array}{c}
 
-  \inst(\ctxt{\Gamma}{\Delta}, x, K) =
-    \ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta}
+  \inst(\nreft{\Gamma}{\Delta}, x, K) =
+    \nreft{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta}
       \adddelta \tau_x \typeeq \tau
       \adddelta \overline{\gamma}
       \adddelta x \termeq \deltaconapp{K}{a}{y}
@@ -2088,8 +2088,8 @@ supplementing that with a simple termination analysis in the future.
 % consistent with the inert set, we have to test \emph{all} variables in the
 % domain of $\Gamma$ for inhabitants, because the new type constraint could have
 % rendered a type empty. To demonstrate why this is necessary, imagine we have
-% $\ctxt{x : a}{x \ntermeq \bot}$ and try to add $a \typeeq |Void|$. Although the
-% type constraint is consistent, $x$ in $\ctxt{x : a}{x \ntermeq \bot, a \typeeq
+% $\nreft{x : a}{x \ntermeq \bot}$ and try to add $a \typeeq |Void|$. Although the
+% type constraint is consistent, $x$ in $\nreft{x : a}{x \ntermeq \bot, a \typeeq
 % |Void|}$ is no longer inhabited. There is room for being smart about which
 % variables we have to re-check: For example, we can exclude variables whose type
 % is a non-GADT data type.
@@ -2116,9 +2116,9 @@ supplementing that with a simple termination analysis in the future.
 % \begin{array}{c}
 %
 %   \prooftree
-%     (\ctxt{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false
+%     (\nreft{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false
 %   \justifies
-%     \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+%     \inhabited{\nreft{\Gamma}{\Delta}}{x}
 %   \using
 %     \inhabitedbot
 %   \endprooftree
@@ -2126,9 +2126,9 @@ supplementing that with a simple termination analysis in the future.
 %   \qquad
 %
 %   \prooftree
-%     {x:\tau \in \Gamma \quad \cons(\ctxt{\Gamma}{\Delta}, \tau) = \bot}
+%     {x:\tau \in \Gamma \quad \cons(\nreft{\Gamma}{\Delta}, \tau) = \bot}
 %   \justifies
-%     \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+%     \inhabited{\nreft{\Gamma}{\Delta}}{x}
 %   \using
 %     \inhabitednocpl
 %   \endprooftree
@@ -2137,10 +2137,10 @@ supplementing that with a simple termination analysis in the future.
 %   \\
 %
 %   \prooftree
-%     \Shortstack{{x:\tau \in \Gamma \quad K \in \cons(\ctxt{\Gamma}{\Delta}, \tau)}
-%                 {\inst(\ctxt{\Gamma}{\Delta}, x, K) \not= \false}}
+%     \Shortstack{{x:\tau \in \Gamma \quad K \in \cons(\nreft{\Gamma}{\Delta}, \tau)}
+%                 {\inst(\nreft{\Gamma}{\Delta}, x, K) \not= \false}}
 %   \justifies
-%     \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+%     \inhabited{\nreft{\Gamma}{\Delta}}{x}
 %   \using
 %     \inhabitedinst
 %   \endprooftree
@@ -2149,11 +2149,11 @@ supplementing that with a simple termination analysis in the future.
 % \]
 %
 % \[ \textbf{Find data constructors of $\tau$} \]
-% \[ \ruleform{ \cons(\ctxt{\Gamma}{\Delta}, \tau) = \overline{K}} \]
+% \[ \ruleform{ \cons(\nreft{\Gamma}{\Delta}, \tau) = \overline{K}} \]
 % \[
 % \begin{array}{c}
 %
-%   \cons(\ctxt{\Gamma}{\Delta}, \tau) = \begin{cases}
+%   \cons(\nreft{\Gamma}{\Delta}, \tau) = \begin{cases}
 %     \overline{K} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ data type with constructors $\overline{K}$ \\ (after normalisation according to the type constraints in $\Delta$)} \\
 %     % TODO: We'd need a cosntraint like \delta's \false here... Or maybe we
 %     % just omit this case and accept that the function is partial
@@ -2169,8 +2169,8 @@ supplementing that with a simple termination analysis in the future.
 % \[
 % \begin{array}{c}
 %
-%   \inst(\ctxt{\Gamma}{\Delta}, x, K) =
-%     \ctxt{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta}
+%   \inst(\nreft{\Gamma}{\Delta}, x, K) =
+%     \nreft{\Gamma,\overline{a},\overline{y:\sigma}}{\Delta}
 %       \adddelta \tau_x \typeeq \tau
 %       \adddelta \overline{\gamma}
 %       \adddelta x \termeq \deltaconapp{K}{a}{y}
@@ -2330,7 +2330,7 @@ value numbering~\cite{gvn} at the level of $\!\addphi\!$ for a very localised
 change:
 \[
 \begin{array}{r@@{\,}c@@{\,}lcl}
-  \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \highlight{\ctxt{\Gamma}{\Delta} \addphi \ctlet{x:\tau}{r_i} \quad \text{where $i$ is global value number of |e|}} \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \highlight{\nreft{\Gamma}{\Delta} \addphi \ctlet{x:\tau}{r_i} \quad \text{where $i$ is global value number of |e|}} \\
 \end{array}
 \]
 
@@ -2392,10 +2392,10 @@ The solution is to tweak the clause of $\!\adddelta\!$ dealing with positive
 ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
 \[
 \begin{array}{r@@{\,}c@@{\,}lcl}
-\ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{C}{a}{y} &=& \begin{cases}
-    \ctxt{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C}{b}{z} \in \Delta$ } \\
+\nreft{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{C}{a}{y} &=& \begin{cases}
+    \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C}{b}{z} \in \Delta$ } \\
     \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C'}{b}{z} \in \Delta$ \highlight{\text{and $C \cap C' = \emptyset$}}} \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{C}{a}{y})} & \text{if $\rep{\Delta}{x} \ntermeq C \not\in \Delta$ and $\overline{\inhabited{\ctxt{\Gamma}{\Delta}}{\Delta(y)}}$} \\
+    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{C}{a}{y})} & \text{if $\rep{\Delta}{x} \ntermeq C \not\in \Delta$ and $\overline{\inhabited{\nreft{\Gamma}{\Delta}}{\Delta(y)}}$} \\
     \false & \text{otherwise} \\
   \end{cases} \\
 \end{array}
@@ -2428,9 +2428,9 @@ that none of them is completely covered:
 \[
 \begin{array}{cc}
   \prooftree
-    (\ctxt{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false
+    (\nreft{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false
   \justifies
-    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+    \inhabited{\nreft{\Gamma}{\Delta}}{x}
   \using
     \inhabitedbot
   \endprooftree
@@ -2438,10 +2438,10 @@ that none of them is completely covered:
   &
 
   \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad \cons(\ctxt{\Gamma}{\Delta}, \tau)=\highlight{\overline{C_1,...,C_{n_i}}^i}}
-                {\highlight{\overline{\inst(\ctxt{\Gamma}{\Delta}, x, C_j) \not= \false}^i}}}
+    \Shortstack{{x:\tau \in \Gamma \quad \cons(\nreft{\Gamma}{\Delta}, \tau)=\highlight{\overline{C_1,...,C_{n_i}}^i}}
+                {\highlight{\overline{\inst(\nreft{\Gamma}{\Delta}, x, C_j) \not= \false}^i}}}
   \justifies
-    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+    \inhabited{\nreft{\Gamma}{\Delta}}{x}
   \using
     \inhabitedinst
   \endprooftree
@@ -2449,7 +2449,7 @@ that none of them is completely covered:
 \]
 \[
 \begin{array}{c}
-  \cons(\ctxt{\Gamma}{\Delta}, \tau) = \begin{cases}
+  \cons(\nreft{\Gamma}{\Delta}, \tau) = \begin{cases}
     \highlight{\overline{C_1,...,C_{n_i}}^i} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ \highlight{\text{type constructor with \extension{COMPLETE} sets $\overline{C_1,...,C_{n_i}}^i$}} \\ (after normalisation according to the type constraints in $\Delta$)} \\
     \highlight{\epsilon} & \text{otherwise} \\
   \end{cases}
@@ -2492,7 +2492,7 @@ checking in the same tree traversal as desugaring.
 \begin{array}{r@@{\,}c@@{\,}lcl}
 \epsilon &\addphiv& \varphi &=& \epsilon \\
 (\nabla_1\,...\,\nabla_n) &\addphiv& \varphi &=& \begin{cases}
-    (\ctxt{\Gamma}{\Delta}) \, (\nabla_2\,...\,\nabla_n \addphiv \varphi) & \text{if $\ctxt{\Gamma}{\Delta} = \nabla \addphi \varphi$} \\
+    (\nreft{\Gamma}{\Delta}) \, (\nabla_2\,...\,\nabla_n \addphiv \varphi) & \text{if $\nreft{\Gamma}{\Delta} = \nabla \addphi \varphi$} \\
     (\nabla_2\,...\,\nabla_n) \addphiv \varphi & \text{otherwise} \\
   \end{cases} \\
 \end{array}
