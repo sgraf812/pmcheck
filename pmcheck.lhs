@@ -3089,16 +3089,14 @@ more thoroughly tracks strictness when desugaring Haskell programs.
 the algorithm is parametric over the choice of oracle, in practice the
 implementation of \gmtm in GHC uses an extremely simple oracle that can only
 reason about guards in a limited fashion. More sophisticated uses of guards,
-such as in the |safeLast| function from \cref{sssec:viewpat}. But, will cause \gmtm
-to emit erroneous warnings.
+such as in this variation of the |safeLast| function from \cref{sssec:viewpat},
+will cause \gmtm to emit erroneous warnings:
 
-\sg{|safeLast| isn't about guards, strictly speaking. But we could have
 \begin{code}
 safeLast2 xs
   | (x : _)  <- reverse xs = Just x
   | []       <- reverse xs = Nothing
 \end{code}
-which is handled by \sysname, but not by \gmtm.}
 
 While \gmtm's term oracle is customizable, it is not as simple to customize
 as one might hope. The formalism in \citet{gadtpm} represents all guards as
@@ -3281,7 +3279,8 @@ v Nothing = 0
 \end{minipage}
 \end{minipage}
 
-OCaml incorrectly warns that |v| is missing a case on |Some _|. Idris does not warn,
+OCaml 4.07.1 incorrectly warns that |v| is missing a case on |Some _|.
+Idris 1.3.2 does not warn,
 but if one adds an extra |v (Just _) = 1| clause, it will not warn that the extra
 clause is redundant.
 
