@@ -2327,19 +2327,33 @@ By making the connection between |y_1| and |y_2|, the checker could infer that
 the match was exhaustive.
 
 This can be fixed by maintaining equivalence classes of semantically equivalent
-expressions. We decided to perform an (approximation to) on-the-fly global
-value numbering~\cite{gvn} at the level of $\!\addphi\!$ for a very localised
-change:
+expressions in $\Delta$, similar to what we already do for variables. We simply extend
+the syntax of $\delta$ and change the last |let| case of $\!\addphi\!$. Then we can
+handle the new constraint in $\adddelta$, as follows:
 \[
-\begin{array}{r@@{\,}c@@{\,}lcl}
-  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \highlight{\nreft{\Gamma}{\Delta} \addphi \ctlet{x:\tau}{r_i} \quad \text{where $i$ is global value number of |e|}} \\
+\begin{array}{c}
+\begin{array}{cc}
+\begin{array}{c}
+  \delta = ... \mid \highlight{e \termeq x}
+\end{array}&
+\begin{array}{c}
+  \nreft{\Gamma}{\Delta} \addphi \ctlet{x:\tau}{e} = \highlight{\nreft{\Gamma,x:\tau}{\Delta} \adddelta e \termeq x}
+\end{array}
+\end{array} \\[0.5em]
+\begin{array}{c}
+  \highlight{\nreft{\Gamma}{\Delta} \adddelta e \termeq x = \begin{cases}
+    \nreft{\Gamma}{\Delta} \adddelta x \termeq |y|, & \text{if $e' \termeq |y| \in \Delta$ and $e \equiv_{\Delta} e'$} \\
+    \nreft{\Gamma}{\Delta, e \termeq \Delta(x)}, & \text{otherwise}
+  \end{cases}}
+\end{array}
 \end{array}
 \]
 
-Where |r_i| is the representative of the equivalence class of expressions with
-global value number $i$. For |safeLast|, \lyg is now able to see that
-$\Delta(|y_1|) \termeq \Delta(|y_2|)$ and hence that $\Delta(|y_2| \ntermeq
-|Nothing|$, so it will not emit any warnings.
+Where $\equiv_{\Delta}$ is (an approximation to) semantic equivalence modulo
+substitution under $\Delta$. A clever data structure is needed to answer
+queries of the form $e \termeq \mathunderscore \in \Delta$, efficiently. In our
+implementation, we use a trie to index expressions rapidly and sacrifice
+reasoning modulo $\Delta$ in doing so.
 
 \subsection{Pattern synonyms}
 \label{ssec:extpatsyn}
