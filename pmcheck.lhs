@@ -123,9 +123,9 @@
 One of a compiler's roles is to warn if a function defined by pattern matching
 does not cover its inputs---that is, if there are missing or redundant
 patterns. Generating such warnings accurately is difficult
-for modern languages due to the myriad interaction of language features
+for modern languages due to the myriad of interacting language features
 when pattern matching. This is especially true in Haskell, a language with
-a complicated pattern language that is made even more complicated by extensions
+a complicated pattern language that is made even more complex by extensions
 offered by the Glasgow Haskell Compiler (GHC). Although GHC has spent a
 significant amount of effort towards improving its
 pattern-match coverage warnings, there are still several cases where
@@ -195,16 +195,13 @@ Even worse is that |f| never matches on any patterns besides |0|, making it not 
 defined. Attempting to invoke |f 1|, for instance, will fail.
 
 To avoid these mishaps, compilers for languages with pattern matching often
-emit warnings
-if a function is missing clauses (i.e., if it is \emph{non-exhaustive}), if
-a function has completely overlapping clauses (i.e., if it is \emph{redundant}),
-or if a function has a right-hand side that cannot be reached (i.e., if it is
-\emph{inaccessible}).
-We refer
-to the combination of checking for exhaustivity, redundancy, and accessibility as
-\emph{pattern-match coverage checking}. Coverage checking is the first line
-of defence in catching programmer mistakes when defining code that uses
-pattern matching.
+emit warnings (or errors) if a function is missing clauses (i.e., if it is
+\emph{non-exhaustive}), if one of its right-hand sides will never be entered
+(i.e., if it is \emph{inaccessible}), or if one of its equations can be deleted
+altogether (i.e., if it is \emph{redundant}). We refer to the combination of
+checking for exhaustivity, redundancy, and accessibility as \emph{pattern-match
+coverage checking}. Coverage checking is the first line of defence in catching
+programmer mistakes when defining code that uses pattern matching.
 
 Coverage checking for a set of equations matching on algebraic data
 types is a well studied (although still surprisingly tricky) problem---see
@@ -226,22 +223,20 @@ scope by pattern matching \cite{outsideinx}.
 % pattern-related language extensions. Designing a coverage checker that can cope
 % with all of these features is no small task.
 
-The current state of the art for coverage checking in a richer language of this sort
-is \emph{GADTs Meet Their Match} \cite{gadtpm}, or \gmtm{} for short.
-It presents an algorithm that handles the intricacies of
-checking GADTs, lazy patterns, and pattern guards. However \gmtm{} is monolithic and
-does not account for a number of
-important language features; it gives incorrect results in certain cases;
-its formulation in terms of structural pattern matching
-makes it hard to avoid some serious performance problems;
-and its implementation in GHC, while a big step forward over its predecessors,
-has proved complex and hard to maintain.
+The current state of the art for coverage checking in a richer language of this
+sort is \emph{GADTs Meet Their Match} \cite{gadtpm}, or \gmtm{} for short. It
+presents an algorithm that handles the intricacies of checking GADTs, lazy
+patterns, and pattern guards. However \gmtm{} is monolithic and does not
+account for a number of important language features; it gives incorrect results
+in certain cases; its formulation in terms of structural pattern matching makes
+it hard to avoid some serious performance problems; and its implementation in
+GHC, while a big step forward over its predecessors, has proved complex and
+hard to maintain.
 
-In this paper we propose a new, compositional coverage-checking
-algorithm, called Lower Your Guards (\sysname), that
-is simpler, more modular, \emph{and} more powerful than \gmtm.
-Moreover, it avoids \gmtm's performance pitfalls.
-We make the following contributions:
+In this paper we propose a new, compositional coverage-checking algorithm,
+called Lower Your Guards (\sysname), that is simpler, more modular, \emph{and}
+more powerful than \gmtm. Moreover, it avoids \gmtm's performance pitfalls. We
+make the following contributions:
 
 \begin{itemize}
 \item
@@ -896,7 +891,7 @@ In this section, we describe our new coverage checking algorithm, \sysname.
   \raisebox{3px}{\begin{forest}
     baseline,
     grdtree,
-    [ [{$\ds(x_1, pat_1)\,...\,\ds(x_n, pat_n)$} [{$k$}] ] ]
+    [ [{$\ds(x_1, pat_1)\,...\,\ds(x_n, pat_n)$} [{$k_{rhs}$}] ] ]
   \end{forest}} \\
 \ds(f \; pat_1\,...\,pat_n \; grhs_1\,...\,grhs_m) &=&
   \raisebox{3px}{\begin{forest}
@@ -2667,9 +2662,10 @@ types anymore.
 The implementation of \sysname in GHC accumulates quite a few tricks that
 go beyond the pure formalism. This section is dedicated to describing these.
 
+\sg{Delete this paragraph?}
 Warning messages need to reference source syntax in order to be comprehensible
 by the user. At the same time, coverage checks involving GADTs need a
-type-checked program, so the only reasonable design to run the coverage checker
+type-checked program, so the only reasonable design is to run the coverage checker
 between type-checking and desugaring to GHC Core, a typed intermediate
 representation lacking the connection to source syntax. We perform coverage
 checking in the same tree traversal as desugaring.
@@ -2715,8 +2711,8 @@ sure how to sell that.}
 \label{fig:fastcheck}
 \end{figure}
 
-The set of reaching values is an argument to both $\unc$ and $\ann$. given a
-particular set of reaching values and a guard tree, one can see by a simple
+The set of reaching values is an argument to both $\unc$ and $\ann$. Given a
+particular set of input values and a guard tree, one can see by a simple
 inductive argument that both $\unc$ and $\ann$ are always called at the same
 arguments! Hence for an implementation it makes sense to compute both results
 together, if only for not having to recompute the results of $\unc$ again in
@@ -2727,13 +2723,12 @@ we can see that we syntactically duplicate $\Theta$ every time we have a
 pattern guard. That can amount to exponential growth of the refinement
 predicate in the worst case and for the time to prove it empty!
 
-Clearly, the space usage won't actually grow exponentially due to sharing in
-the implementation, but the problems for runtime performance remain.
+% Clearly, the space usage won't actually grow exponentially due to sharing in
+% the implementation, but the problems for runtime performance remain.
 What we really want is to summarise a $\Theta$ into a more compact canonical
 form before doing these kinds of \emph{splits}. But that's exactly what
-$\nabla$ is! Therefore, in our implementation we don't really build up a
-refinement type but pass around the result of calling $\construct$ on what
-would have been the set of reaching values.
+$\nabla$ is! Therefore, in our implementation we don't pass around
+refinement types, but the result of calling $\construct$ directly.
 
 You can see the resulting definition in \cref{fig:fastcheck}. The readability
 of the interleaving of both functions is clouded by unwrapping of pairs. Other
