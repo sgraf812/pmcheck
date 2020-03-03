@@ -2227,19 +2227,17 @@ supplementing that with a simple termination analysis in the future.
 
 \sysname is well equipped to handle the fragment of Haskell it was designed to
 handle. But GHC (and other languages, for that matter) extends Haskell in
-non-trivial ways. This section exemplifies how our solution can be easily
-supplemented to deal with new language features or measures for increasing
-the precision of the checking process.
+non-trivial ways. This section exemplifies easy accomodation of new langauge
+features and measures to increase precision of the checking process.
 
 \subsection{Long-distance information}
 \label{ssec:ldi}
 
-Coverage checking as described also works for |case| expressions (with the
-appropriate desugaring function) and nested function definitions, like in the
-following example:
+Coverage checking should also work for |case| expressions and nested function
+definitions, like
 \begin{code}
-f True = 1
-f x = ... (case x of{ False -> 2; True -> 3 }) ...
+f True  = 1
+f x     = ... (case x of{ False -> 2; True -> 3 }) ...
 \end{code}
 
 \noindent
@@ -2248,65 +2246,54 @@ reader can easily make the ``long distance connection'' that the last GRHS of
 the |case| expression is redundant! That simply follows by context-sensitive
 reasoning, knowing that |x| was already matched against |True|.
 
-In fact, \sysname does exactly the same kind of reasoning when
-checking |f|! Specifically, the set of values reaching the second GRHS (which
-we test for inhabitants to determine whether the GRHS is accessible)
-$\Theta_{rhs2}$ encodes the information we are after. We just have to start
-checking the |case| expression starting from $\Theta_{rhs2}$ as the initial set
-of reaching values instead of $\reft{x:|Bool|}{\true}$.
-
+In terms of \sysname, the input values of the second GRHS $\Theta_{2}$ (which
+determine whether the GRHS is accessible) encode the information we are after.
+We just have to start checking the |case| expression starting from $\Theta_{2}$
+as the initial set of reaching values instead of $\reft{x:|Bool|}{\true}$.
 
 \subsection{Empty case}
 
 As can be seen in \cref{fig:srcsyn}, Haskell function definitions need to have
 at least one clause. That leads to an awkward situation when pattern matching
 on empty data types, like |Void|:
+
+\begin{minipage}{0.2\textwidth}
 \begin{code}
-absurd :: Void -> a
-absurd _   = undefined
-absurd !_  = undefined
+absurd1 _   = undefined
+absurd2 !_  = undefined
 \end{code}
+\end{minipage}%
+\begin{minipage}{0.5\textwidth}
+\begin{code}
+absurd1, absurd2, absurd3 :: Void -> a
+absurd3 x = case x of {}
+\end{code}
+\end{minipage}%
 
 \noindent
-Clearly, neither option is satisfactory to implement |absurd|: The first one
-would actually return |undefined| when called with $\bot$, thus masking the
-original $\bot$ with the error thrown by |undefined|. The second one would
-diverge alright, but it is unfortunate that we still have to provide a RHS that
-we know will never be entered. In fact, \sysname will mark the
-second option as having an inaccessible RHS!
-
-GHC provides an extension, called \extension{EmptyCase}, that introduces the
-following bit of new syntax:
-\begin{code}
-absurd x = case x of {}
-\end{code}
-
-\noindent
+|absurd1| returns |undefined| when called with $\bot$, thus masking the original $\bot$
+with the error thrown by |undefined|. |absurd2| would diverge alright, but
+\sysname will report its RHS as inaccessible! Hence GHC provides an extension,
+called \extension{EmptyCase}, that allows the definition of |absurd3| above.
 Such a |case| expression without any alternatives evaluates its argument to
 WHNF and crashes when evaluation returns.
 
-Although we did not give the syntax of |case| expressions in \cref{fig:srcsyn},
-it is quite easy to see that $\Gdt$ lacks expressive power to desugar
+It is quite easy to see that $\Gdt$ lacks expressive power to desugar
 \extension{EmptyCase} into, since all leaves in a guard tree need to have
 corresponding RHSs. Therefore, we need to introduce $\gdtempty$ to $\Gdt$ and
-$\antempty$ to $\Ant$. The new $\gdtempty$ case has to be handled by the
-checking functions and is a neutral element to $\gdtseq{}{}$ as far as $\unc$
-is concerned:
+$\antempty$ to $\Ant$. This is how they affect the checking process:
 \[
-\begin{array}{lcl}
-\unc(\Theta, \gdtempty) &=& \Theta \\
-\ann(\Theta, \gdtempty) &=& \antempty \\
+\begin{array}{cc}
+\unc(\Theta, \gdtempty) = \Theta
+\quad&\quad
+\ann(\Theta, \gdtempty) = \antempty
 \end{array}
 \]
 
 Since \extension{EmptyCase}, unlike regular |case|, evaluates its scrutinee
 to WHNF \emph{before} matching any of the patterns, the set of reaching
-values is refined with a $x \ntermeq \bot$ constraint before traversing the
-guard tree. So, for checking an empty |case|, the call to $\unc$ looks like
-$\unc(\Theta \andtheta (x \ntermeq \bot), \gdtempty)$, where $\Theta$ is the
-context-sensitive set of reaching values, possibly enriched with long distance
-information (\cf \cref{ssec:ldi}).
-
+values is refined with a $x \ntermeq \bot$ constraint \emph{before} traversing
+the guard tree, thus $\unc(\reft{\Gamma}{x \ntermeq \bot}, \gdtempty)$.
 
 \subsection{View patterns}
 \label{ssec:extviewpat}
@@ -2325,26 +2312,15 @@ guard tree:
     [{$\grdlet{|y_2|}{|reverse x_1|}, \grdbang{|y_2|}, \grdcon{|Just t_1|}{|y_2|}, \grdbang{|t_1|}, \grdcon{|(t_2, t_3)|}{|t_1|}$} [2]]]
 \end{forest}
 
-Although |y_1| and |y_2| bind syntactically equivalent expressions, our simple
-desugaring function doesn't see that and allocated fresh names for each of
-them. That in turn means that both the match on |y_1| and |y_2| by itself are
-non-exhaustive. But due to referential transparency, the result of |reverse x_1|
-doesn't change! By making the connection between |y_1| and |y_2|, the checker
-could infer that the match was exhaustive.
+As far as \sysname is concerned, the matches on both |y_1| and |y_2| are
+non-exhaustive. But that's actually too conservative: Both bind the same value!
+By making the connection between |y_1| and |y_2|, the checker could infer that
+the match was exhaustive.
 
-This can be fixed at any level of abstraction (\ie in $\ds$ or $\!\addphi\!$)
-by maintaining equivalence classes of semantically equivalent expressions. For
-the example above, handling $\grdlet{|y_2|}{|reverse x_1|}$ in the second
-branch would entail looking up the equivalence class of |reverse x_1| and
-finding out that it is also bound by |y_1|, so we can handle
-$\grdlet{|y_2|}{|y_1|}$ instead and make sense of the $|y_1| \ntermeq
-|Nothing|$ constraint that fell through from the first branch to conclude
-that the match is exhaustive.
-
-In fact, that is just like performing an on-the-fly global value numbering
-(GVN) of expression~\cite{gvn}! We decided to perform (an approximation to) GVN
-at the level of $\!\addphi\!$, because it is more broadly applicable there and
-a very localised change:
+This can be fixed by maintaining equivalence classes of semantically equivalent
+expressions. We decided to perform an (approximation to) on-the-fly global
+value numbering~\cite{gvn} at the level of $\!\addphi\!$ for a very localised
+change:
 \[
 \begin{array}{r@@{\,}c@@{\,}lcl}
   \ctxt{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \highlight{\ctxt{\Gamma}{\Delta} \addphi \ctlet{x:\tau}{r_i} \quad \text{where $i$ is global value number of |e|}} \\
@@ -2352,9 +2328,9 @@ a very localised change:
 \]
 
 Where |r_i| is the representative of the equivalence class of expressions with
-global value number $i$. Thus, our implementation will not emit any warnings
-for a definition like |safeLast|.
-
+global value number $i$. For |safeLast|, \sysname is now able to see that
+$\Delta(|y_1|) \termeq \Delta(|y_2|)$ and hence that $\Delta(|y_2| \ntermeq
+|Nothing|$, so it will not emit any warnings.
 
 \subsection{Pattern synonyms}
 \label{ssec:extpatsyn}
@@ -2393,17 +2369,17 @@ n = case P of Q -> 1; P -> 2
 \end{code}
 
 Knowing that the definitions of |P| and |Q| completely overlap, we can see that
-|Q| will cover all values that could reach |P|, so clearly |P| is redundant.
-A sound approximation to that would be not to warn at all. And that's reasonable,
-after all we established in \cref{ssec:patsyn} that reasoning about pattern
-synonym definitions is undesirable.
+the match on |Q| will cover all values that could reach |P|, so clearly |P| is
+redundant. A sound approximation to that would be not to warn at all. And
+that's reasonable, after all we established in \cref{ssec:patsyn} that
+reasoning about pattern synonym definitions is undesirable.
 
-But equipped with long distance information from the scrutinee expression, the
+But equipped with long-distance information from the scrutinee expression, the
 checker would mark the \emph{first case alternative} as redundant, which
 clearly is unsound! Deleting the first alternative would change its semantics
 from returning 1 to returning 2. In general, we cannot assume that arbitrary
-pattern synonym definitions are disjunct. That is in stark contrast to data
-constructors, which never overlap.
+pattern synonym definitions are disjunct, in stark contrast to data
+constructors.
 
 The solution is to tweak the clause of $\!\adddelta\!$ dealing with positive
 ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
@@ -2421,6 +2397,7 @@ ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
 Where the suggestive notation $C \cap C' = \emptyset$ is only true if $C$ and
 $C'$ don't overlap, if both are data constructors, for example.
 
+\sg{Omit this paragraph?}
 Note that the slight relaxation means that the constructed $\nabla$ might
 violate $\inert{3}$, specifically when $C \cap C' \not= \emptyset$. In practice
 that condition only matters for the well-definedness of $\expand$, which in
@@ -2479,14 +2456,14 @@ $\cons$ was changed to return a list of all available \extension{COMPLETE} sets,
 and \inhabitedinst tries to find an inhabiting ConLike in each one of them in
 turn. Note that \inhabitednocpl is gone, because it coincides with
 \inhabitedinst for the case where the list returned by $\cons$ was empty. The
-judgment has become simpler and and more general at the same time!
-
-Note that checking against multiple \extension{COMPLETE} sets so frequently is
+judgment has become simpler and and more general at the same time! Note that
+checking against multiple \extension{COMPLETE} sets so frequently is
 computationally intractable. We will worry about that in \cref{sec:impl}.
 
 
 \subsection{Literals}
 
+\sg{Omit this subsection?}
 The source syntax in \cref{fig:srcsyn} deliberately left out literal patterns
 $l$. Literals are very similar to nullary data constructors, with one caveat:
 They don't come with a builtin \texttt{COMPLETE} set. Before
@@ -2508,7 +2485,6 @@ Considering overloaded literals to be disjunct would mean marking the first
 alternative as redundant, which is unsound. Hence we regard overloaded literals
 as possibly overlapping, so they behave exactly like nullary pattern synonyms
 without a \extension{COMPLETE} set.
-
 
 \subsection{Newtypes}
 
@@ -2584,7 +2560,7 @@ without a \extension{COMPLETE} set.
 \label{fig:newtypes}
 \end{figure}
 
-Newtypes have strange semantics. Here are two key examples that distinguish
+Newtypes have strange semantics. Here are three key examples that distinguish
 it from data types:
 \begin{minipage}{\textwidth}
 \begin{minipage}[b]{0.33\textwidth}
@@ -2661,16 +2637,15 @@ coercions and at the level of $\Delta$ consider equivalence classes modulo
 coercions. That entails a slew of modifications and has deep ramifications
 throughout the presentation.
 
-
 \subsection{Strictness}
 
+\sg{Omit this subsection? I find it rather entertaining.}
 Instead of extending the source language, let's discuss ripping out a language
 feature, for a change! So far, we have focused on Haskell as the source
-language of the checking process, which is lazy by default. Although the
-desugaring function makes sure that the difference in evaluation strategy of
-the source language quickly becomes irrelevant, it raises the question of how
-much our approach could be simplified if we targeted a source language that was
-strict by default, such as OCaml or Idris.
+language, which is lazy by default. Although after desugaring  the difference
+in evaluation strategy of the source language becomes irrelevant, it raises the
+question of how much our approach could be simplified if we targeted a source
+language that was strict by default, such as OCaml or Idris.
 
 First off, both languages offer language support for laziness and lazy pattern
 matches, so the question rather becomes whether the gained simplification is
@@ -2679,14 +2654,12 @@ use of laziness. If the answer is ``No'', then there isn't anything to
 simplify, just relatively more $x \termeq \bot$ constraints to handle.
 
 Otherwise, in a completely eager language we could simply drop $\grdbang{x}$
-from $\Grd$ and $\antbang{}{\hspace{-0.6em}}$ from $\Ant$. Actually, $\Ant$ and $\red$ could go
-altogether and $\ann$ could just collect the redundant GRHS directly!
-
-Since there wouldn't be any bang guards, there is no reason to have $x \termeq
-\bot$ and $x \ntermeq \bot$ constraints either. Most importantly, the
-\inhabitedbot judgment form has to go, because $\bot$ does not inhabit any
+from $\Grd$ and $\antbang{}{\hspace{-0.6em}}$ from $\Ant$. Actually, $\Ant$ and
+$\red$ could go altogether and $\ann$ could just collect the redundant GRHS
+directly! Since there wouldn't be any bang guards, there is no reason to have
+$x \termeq \bot$ and $x \ntermeq \bot$ constraints either. Most importantly,
+the \inhabitedbot judgment form has to go, because $\bot$ does not inhabit any
 types anymore.
-
 
 \section{Implementation}
 \label{sec:impl}
