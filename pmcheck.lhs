@@ -2696,10 +2696,7 @@ sure how to sell that.}
     (\overline{\nabla}_1, t_A) &=& \uncann(\overline{\nabla}, t_G) \\
     (\overline{\nabla}_2, u_A) &=& \uncann(\overline{\nabla}_1, u_G)
   \end{array} \\
-\uncann(\overline{\nabla}, \gdtguard{(\grdbang{x})}{t_G}) &=& \begin{cases}
-    (\overline{\nabla}', t_A), & \overline{\nabla} \addphiv (x \termeq \bot) = \epsilon \\
-    (\overline{\nabla}', \antbang{\overline{\nabla}}{t_A}) & \text{otherwise} \\
-  \end{cases} \\
+\uncann(\overline{\nabla}, \gdtguard{(\grdbang{x})}{t_G}) &=& \antbang{(\overline{\nabla} \addphiv (x \termeq \bot))}{t_A} \\
   && \quad \text{where } (\overline{\nabla}', t_A) = \uncann(\overline{\nabla} \addphiv (x \ntermeq \bot), t_G) \\
 \uncann(\overline{\nabla}, \gdtguard{(\grdlet{x}{e})}{t}) &=& \uncann(\overline{\nabla} \addphiv (\ctlet{x}{e}), t) \\
 \uncann(\overline{\nabla}, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t_G}) &=& ((\overline{\nabla} \addphiv (x \ntermeq K)) \, \overline{\nabla}', t_A) \\
@@ -2728,83 +2725,74 @@ predicate in the worst case and for the time to prove it empty!
 What we really want is to summarise a $\Theta$ into a more compact canonical
 form before doing these kinds of \emph{splits}. But that's exactly what
 $\nabla$ is! Therefore, in our implementation we don't pass around
-refinement types, but the result of calling $\construct$ directly.
+and annotate refinement types, but the result of calling $\construct$ on them
+directly.
 
 You can see the resulting definition in \cref{fig:fastcheck}. The readability
-of the interleaving of both functions is clouded by unwrapping of pairs. Other
-than that, all references to $\Theta$ were replaced by a vector of $\nabla$s.
-$\uncann$ requires that each $\nabla$ individually is non-empty, \ie not
-$\false$. This invariant is maintained by adding $\varphi$ constraints through
-$\addphiv$, which filters out any $\nabla$ that would become empty. All
-mentions of $\generate$ are gone, because we never were interested in
-inhabitants in the first place, only whether there where any inhabitants at
-all! In this new representation, whether a vector of $\nabla$ is inhabited is
-easily seen by syntactically comparing it to the empty vector, $\epsilon$.
+is clouded by unwrapping of pairs. $\uncann$ requires that each $\nabla$
+individually is non-empty, \ie not $\false$. This invariant is maintained by
+adding $\varphi$ constraints through $\addphiv$, which filters out any $\nabla$
+that would become empty.
 
 \subsection{Throttling for graceful degradation} \label{ssec:throttling}
 
 Even with the tweaks from \cref{ssec:interleaving}, checking certain pattern
-matches remains NP-hard \sg{Cite something here or earlier, bring an example}.
-Naturally, there will be cases where we have to conservatively approximate in
-order not to slow down compilation too much. After all, coverage checking
-is just a static analysis pass without any effect on the produced binary!
-Consider the following example:
+matches remains NP-hard \citet{adaptivepm}. Naturally, there will be cases
+where we have to conservatively approximate in order not to slow down
+compilation too much. Consider the following example and its corresponding
+guard tree:
+\\
+\begin{minipage}[b]{0.32\textwidth}
 \begin{code}
-f1, f2 :: Int -> Bool
+data T = A | B; f1, f2 :: Int -> T
 g _
-  | True <- f1 0,  True <- f2 0  = ()
-  | True <- f1 1,  True <- f2 1  = ()
+  | A <- f1 1,  A <- f2 1  = ()
+  | A <- f1 2,  A <- f2 2  = ()
   ...
-  | True <- f1 N,  True <- f2 N  = ()
+  | A <- f1 N,  A <- f2 N  = ()
 \end{code}
-
-\noindent
-Here's the corresponding guard tree:
-
+\end{minipage}%
+\begin{minipage}[b]{0.68\textwidth}
+\scalebox{0.95}{
 \begin{forest}
   grdtree,
   [
-    [{$\grdlet{t_1}{|f1 0|}, \grdbang{t_1}, \grdcon{|True|}{t_1}, \grdlet{t_2}{|f2 0|}, \grdbang{t_2}, \grdcon{|True|}{t_2}$} [1]]
-    [{$\grdlet{t_3}{|f1 1|}, \grdbang{t_3}, \grdcon{|True|}{t_3}, \grdlet{t_4}{|f2 1|}, \grdbang{t_4}, \grdcon{|True|}{t_4}$} [2]]
+    [{$\grdlet{a_1}{|f1 1|}, \grdbang{a_1}, \grdcon{|A|}{a_1}, \grdlet{b_1}{|f2 1|}, \grdbang{b_1}, \grdcon{|A|}{b_1}$} [1]]
+    [{$\grdlet{a_2}{|f1 2|}, \grdbang{a_2}, \grdcon{|A|}{a_2}, \grdlet{b_2}{|f2 2|}, \grdbang{b_2}, \grdcon{|A|}{b_2}$} [2]]
     [... [...]]
-    [{$\grdlet{t_{2*N+1}}{|f1 N|}, \grdbang{t_{2*N+1}}, \grdcon{|True|}{t_{2*N+1}}, \grdlet{t_{2*N+2}}{|f2 N|}, \grdbang{t_{2*N+2}}, \grdcon{|True|}{t_{2*N+2}}$} [N]]]
-\end{forest}
+    [{$\grdlet{a_{N}}{|f1 N|}, \grdbang{a_{N}}, \grdcon{|A|}{a_{N}}, \grdlet{b_{N}}{|f2 N|}, \grdbang{b_{N}}, \grdcon{|A|}{b_{N}}$} [N]]]
+\end{forest}}
+\end{minipage}
 
 Each of the $N$ GRHS can fall through in two distinct ways: By failure of
-either pattern guard involving |f1| or |f2|. Each way corresponds to a way in
-which the vector of reaching $\nabla$s is split. For example, the single,
-unconstrained $\nabla$ reaching the first equation will be split in one $\nabla$
-that records that either $t_1 \ntermeq |True|$ or that $t_2 \ntermeq |True|$.
-Now two $\nabla$s fall through and reach the second branch, where they are
-split into four $\nabla$s. This exponential pattern repeats $N$ times, and
-leads to horrible performance!
+either pattern guard involving |f1| or |f2|. Initially, we start out with
+a single input $\nabla$. After the first equation it will split into two
+sub-$\nabla$s, after the second into four, and so on. This exponential pattern
+repeats $N$ times, and leads to horrible performance!
 
-There are a couple of ways to go about this. First off, that it is always OK to
-overapproximate the set of reaching values! Instead of \emph{refining} $\nabla$
-with the pattern guard, leading to a split, we could just continue with the
-original $\nabla$, thus forgetting about the $t_1 \ntermeq |True|$ or $t_2
-\ntermeq |True|$ constraints. In terms of the modeled refinement type, $\nabla$
-is still a superset of both refinements.
+Instead of \emph{refining} $\nabla$ with the pattern guard, leading to a split,
+we could just continue with the original $\nabla$, thus forgetting about the
+$a_1 \ntermeq |A|$ or $b_1 \ntermeq |A|$ constraints. In terms of the modeled
+refinement type, $\nabla$ is still a superset of both refinements, and thus a
+sound overapproximation.
 
-Another realisation is that each of the temporary variables binding the pattern
-guard expressions are only scrutinised once, within the particular branch they
-are bound. That makes one wonder why we record a fact like $t_1 \ntermeq
-|True|$ in the first place. Some smart "garbage collection" process might get
-rid of this additional information when falling through to the next equation,
-where the variable is out of scope and can't be accessed. The same procedure
-could even find out that in the particular case of the split that the $\nabla$
-falling through from the |f1| match models a superset of the $\nabla$ falling
-through from the |f2| match (which could additionally diverge when calling
-|f2|). This approach seemed far to complicated for us to pursue.
+% Another realisation is that each of the temporary variables binding the pattern
+% guard expressions are only scrutinised once, within the particular branch they
+% are bound. That makes one wonder why we record a fact like $a_1 \ntermeq
+% |A|$ in the first place. Some smart "garbage collection" process might get
+% rid of this additional information when falling through to the next equation,
+% where the variable is out of scope and can't be accessed. The same procedure
+% could even find out that in the particular case of the split that the $\nabla$
+% falling through from the |f1| match models a superset of the $\nabla$ falling
+% through from the |f2| match (which could additionally diverge when calling
+% |f2|). This approach seemed far to complicated for us to pursue.
 
-Instead, we implement \emph{throttling}: We limit the number of reaching
-$\nabla$s to a constant. Whenever a split would exceed this limit, we continue
-with the original reaching $\nabla$ (which as we established is a superset,
-thus a conservative estimate) instead. Intuitively, throttling corresponds to
-\emph{forgetting} what we matched on in that particular subtree.
-
-Throttling is refreshingly easy to implement! Only the last clause of
-$\uncann$, where splitting is performed, needs to change:
+In our implementation, we call this \emph{throttling}: We limit the number of
+reaching $\nabla$s to a constant. Whenever a split would exceed this limit, we
+continue with the original input $\nabla$s, a conservative estimate, instead.
+Intuitively, throttling corresponds to \emph{forgetting} what we matched on in
+that particular subtree. Throttling is refreshingly easy to implement! Only the
+last clause of $\uncann$, where splitting is performed, needs to change:
 \[
 \begin{array}{r@@{\,}c@@{\,}lcl}
 \uncann(\overline{\nabla}, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t_G}) &=& (\throttle{\overline{\nabla}}{(\overline{\nabla} \addphiv (x \ntermeq K)) \, \overline{\nabla}'}, t_A) \\
@@ -2828,22 +2816,21 @@ implementation (dynamically configurable via a command-line flag) without
 noticing any false positives in terms of exhaustiveness warnings outside of the
 test suite.
 
-For the sake of our above example we'll use 4 as the limit. The initial $\nabla$
-will be split by the first equation in two, which in turn results in 4 $\nabla$s
-reaching the third equation. Here, splitting would result in 8 $\nabla$s, so
-we throttle, so that the same four $\nabla$s reaching the third equation also
-reach the fourth equation, and so on. Basically, every equation is checked for
-overlaps \emph{as if} it was the third equation, because we keep on forgetting
-what was matched beyond that.
-
+% For the sake of our above example we'll use 4 as the limit. The initial $\nabla$
+% will be split by the first equation in two, which in turn results in 4 $\nabla$s
+% reaching the third equation. Here, splitting would result in 8 $\nabla$s, so
+% we throttle, so that the same four $\nabla$s reaching the third equation also
+% reach the fourth equation, and so on. Basically, every equation is checked for
+% overlaps \emph{as if} it was the third equation, because we keep on forgetting
+% what was matched beyond that.
 
 \subsection{Maintaining residual \extension{COMPLETE} sets}
 \label{ssec:residual-complete}
 
-Our implementation applies a few hacks to make the inhabitation test as
+Our implementation tries hard to make the inhabitation test \sg{rename} as
 efficient as possible. For example, we represent $\Delta$s by a mapping from
-variables to their positive and negative constraints for easier indexing.
-But there are also asymptotical improvements. Consider the following function:
+variables to their positive and negative constraints for easier indexing. But
+there are also asymptotical improvements. Consider the following function:
 \begin{minipage}{\textwidth}
 \begin{minipage}[t]{0.33\textwidth}
 \begin{code}
@@ -2854,7 +2841,6 @@ pattern P = ...
 \end{minipage}
 \begin{minipage}[t]{0.22\textwidth}
 \begin{code}
-f :: T -> Int
 f A1     = 1
 f A2     = 2
 ...
@@ -2863,7 +2849,7 @@ f A1000  = 1000
 \end{minipage}
 \end{minipage}
 
-|f| is exhaustively defined. For seeing that we need to perform an inhabitation
+|f| is exhaustively defined. To see that we need to perform an inhabitation
 test for the match variable |x| after the last clause. The test will conclude
 that the builtin \extension{COMPLETE} set was completely overlapped. But in
 order to conclude that, our algorithm tries to instantiate |x| (via
@@ -2897,12 +2883,9 @@ like |f True = ()|. The computed uncovered set of |f| is the refinement type
 $\reft{x:|Bool|}{x \ntermeq \bot, x \ntermeq |True|}$, which crucially
 contains no positive information! As a result, expanding the resulting $\nabla$
 (which looks quite similar) with $\expand$ just unhelpfully reports |_| as an
-uncovered pattern.
-
-Our implementation thus splits the $\nabla$ into (possibly multiple)
-sub-$\nabla$s with positive information on variables we have negative
+uncovered pattern. Our implementation thus splits the $\nabla$ into (possibly
+multiple) sub-$\nabla$s with positive information on variables we have negative
 information on before handing off to $\expand$.
-
 
 \section{Evaluation}
 \label{sec:eval}
