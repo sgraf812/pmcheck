@@ -856,7 +856,7 @@ In this section, we describe our new coverage checking algorithm, \sysname.
 \item Next, the resulting guard
   tree is then processed by two different functions (\Cref{sec:check}).   The function $\ann(t)$ produces
   an \emph{annotated tree} $t_A : \Ant$, which has the same general branching structure as $t$ but
-  desribes which clauses are accessible, inaccessible, or redundant.
+  describes which clauses are accessible, inaccessible, or redundant.
   The function $\unc(t)$, on the other hand, returns a \emph{refinement type} $\Theta$
   \cite{rushby1998subtypes,boundschecking}
   that describes the set of \emph{uncovered values}, which are not matched by any of the clauses.
@@ -1391,8 +1391,8 @@ Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
 
   \expand(\nabla, \epsilon) &=& \epsilon \\
   \expand(\ctxt{\Gamma}{\Delta}, x_1 ... x_n) &=& \begin{cases}
-    (K \; q_1 ... q_m) \, p_2 ... p_n & \parbox[t]{0.5\textwidth}{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$\\ and $(q_1 ... q_m \, p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, y_1 ... y_m x_2 ... x_n)$} \\
-    \_ \; p_2 ... p_n & \text{where $(p_2 ... p_n) \in \expand(\ctxt{\Gamma}{\Delta}, x_2 ... x_n)$} \\
+    (K \; q_1 ... q_m) \, p_2 ... p_n & \parbox[t]{0.5\textwidth}{if $\rep{\Delta}{x_1} \termeq \deltaconapp{K}{a}{y} \in \Delta$\\ and $(q_1 ... q_m \, p_2 ... p_n) = \expand(\ctxt{\Gamma}{\Delta}, y_1 ... y_m x_2 ... x_n)$} \\
+    \_ \; p_2 ... p_n & \text{where $(p_2 ... p_n) = \expand(\ctxt{\Gamma}{\Delta}, x_2 ... x_n)$} \\
   \end{cases} \\
 
 \end{array}
@@ -1533,9 +1533,8 @@ into |y| and say that |y| is the representative of |x|'s equivalence class.
 This is so that every new constraint we record on |y| also affects |x| and vice
 versa. The process of finding the solution of |x| in $x \termeq y, y \termeq
 |Nothing|$ then entails \emph{walking} the substitution, because we have to look
-up (in the sense of understanding $\Delta$ as a partial function) twice: The
-first lookup will find |x|'s representative |y|, the second lookup on |y| will
-then find the solution |Nothing|.
+up constraints twice: The first lookup will find |x|'s representative |y|, the
+second lookup on |y| will then find the solution |Nothing|.
 
 In denoting looking up the representative by $\Delta(x)$ (\cf \cref{fig:gen}),
 we can assert that |x| has |Nothing| as a solution simply by writing $\Delta(x)
@@ -1664,12 +1663,12 @@ term variables with new constraints, \ie $|y| \termeq |u|$. The original
 constraint, although not conflicting, is not added to the normalised refinement
 type because of \inert{2}.
 
-If there is solution involving a different constructor like $\Delta(x)
+If there is a solution involving a different constructor like $\Delta(x)
 \termeq |Nothing|$, the new constraint is incompatible with the
 existing solution. There are two other ways in which the constraint can be
-incompatible: If there was a negative constructor constraint $\Delta(x) \ntermeq
+incompatible: if there was a negative constructor constraint $\Delta(x) \ntermeq
 |Just|$ or if any of the fields were not inhabited, which is checked by the
-$\inhabited{\nabla}{\Delta(x)}$ judgment in \cref{fig:inh}.
+$\inhabited{\nabla}{\Delta(x)}$ judgment (\cf \cref{sec:test}) in \cref{fig:inh}.
 % Otherwise, the constraint is compatible and is added to $\Delta$.
 
 Adding a negative constructor constraint $x \ntermeq Just$ is quite
@@ -1682,14 +1681,12 @@ Adding a type constraint $\gamma$ drives this paranoia to a maximum: After
 calling out to the type-checker to assert that the constraint is
 consistent with existing constraints, we have to test \emph{all} variables in the
 domain of $\Gamma$ for inhabitants, because the new type constraint could have
-rendered a type empty.
-\sg{I think we can omit the following example here:
-To demonstrate why this is necessary, imagine we have
+rendered a type empty. To demonstrate why this is necessary, imagine we have
 $\ctxt{x : a}{x \ntermeq \bot}$ and try to add $a \typeeq |Void|$. Although the
 type constraint is consistent, $x$ in $\ctxt{x : a}{x \ntermeq \bot, a \typeeq
 |Void|}$ is no longer inhabited. There is room for being smart about which
 variables we have to re-check: For example, we can exclude variables whose type
-is a non-GADT data type.}
+is a non-GADT data type.
 
 The last case of $\!\adddelta\!$ equates two variables ($x \termeq y$) by
 merging their equivalence classes. Consider the case where $x$ and $y$ aren't in
@@ -1742,7 +1739,7 @@ contradiction.
 % has no data constructors with which to instantiate |y|. Hence it is important
 % to test guard-bound variables for inhabitants, too.
 
-\subsection{Testing for contradiction}
+\subsection{Testing for contradiction} \label{sec:test}
 
 \begin{figure}
 \centering
@@ -1847,8 +1844,6 @@ a data type under the type constraints in $\nabla$. Rule \inhabitednocpl will
 accept unconditionally when its type is not a data type, \ie for $x : |Int ->
 Int|$.
 
-\sg{We could omit this remark and the example in the rest of this section,
-hoping that the reviewers won't ask questions about it. Shall we?}
 Note that the outlined approach is complete in the sense that
 $\inhabited{\nabla}{x}$ is derivable (if and) only if |x| is actually inhabited
 in $\nabla$, because that means we don't have any $\nabla$s floating around in
@@ -2380,12 +2375,12 @@ source syntax and IR syntax by adding the syntactic concept of a
 \end{array}
 \]
 
-\sg{For coverage checking purposes, we assume that pattern synonym matches
-are strict, just like data constructor matches. This is not generally true, but
-\ticket{17357} has a discussion of why being conservative is too disruptive to
-be worth the trouble. Should we talk about that? It concerns the definition of
-$\ds$, namely whether to add a $\grdbang{x}$ on the match var or not. Maybe a
-footnote?}
+% \sg{For coverage checking purposes, we assume that pattern synonym matches
+% are strict, just like data constructor matches. This is not generally true, but
+% \ticket{17357} has a discussion of why being conservative is too disruptive to
+% be worth the trouble. Should we talk about that? It concerns the definition of
+% $\ds$, namely whether to add a $\grdbang{x}$ on the match var or not. Maybe a
+% footnote?}
 
 Assuming every definition encountered so far is changed to handle ConLikes $C$
 now instead of data constructors $K$, everything should work almost fine. Why
