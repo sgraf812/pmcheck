@@ -2353,7 +2353,8 @@ Where $\equiv_{\Delta}$ is (an approximation to) semantic equivalence modulo
 substitution under $\Delta$. A clever data structure is needed to answer
 queries of the form $e \termeq \mathunderscore \in \Delta$, efficiently. In our
 implementation, we use a trie to index expressions rapidly and sacrifice
-reasoning modulo $\Delta$ in doing so.
+reasoning modulo $\Delta$ in doing so. Plugging in an SMT solver to decide
+$\equiv_{\Delta}$ would be more precise, but certainly less efficient.
 
 \subsection{Pattern synonyms}
 \label{ssec:extpatsyn}
