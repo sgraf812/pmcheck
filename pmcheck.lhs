@@ -234,7 +234,7 @@ GHC, while a big step forward over its predecessors, has proved complex and
 hard to maintain.
 
 In this paper we propose a new, compositional coverage-checking algorithm,
-called Lower Your Guards (\sysname), that is simpler, more modular, \emph{and}
+called Lower Your Guards (\lyg), that is simpler, more modular, \emph{and}
 more powerful than \gmtm (see \cref{ssec:gmtm}). Moreover, it avoids \gmtm's
 performance pitfalls. We make the following contributions:
 
@@ -245,7 +245,7 @@ performance pitfalls. We make the following contributions:
   implementation of \gmtm.
 
 \item
-  We describe a new, compositional coverage checking algorithm, \sysname{}, in \Cref{sec:overview}.
+  We describe a new, compositional coverage checking algorithm, \lyg{}, in \Cref{sec:overview}.
   The key insight is to abandon the notion of structural pattern
   matching altogether, and instead desugar all
   the complexities of pattern matching into a very simple language
@@ -257,13 +257,13 @@ performance pitfalls. We make the following contributions:
   of a refinement type, we can report accurate coverage errors (\Cref{sec:inhabitants}).
 
 \item
-  We demonstrate the compositionality of \sysname by augmenting it with
+  We demonstrate the compositionality of \lyg by augmenting it with
   several language extensions (\Cref{sec:extensions}). Although these extensions can change the source
   language in significant ways, the effort needed to incorporate them into the
   algorithm is comparatively small.
 
 \item
-  We discuss how to optimize the performance of \sysname (\Cref{sec:impl}) and
+  We discuss how to optimize the performance of \lyg (\Cref{sec:impl}) and
   implement a proof of concept in GHC (\Cref{sec:eval}).
 \end{itemize}
 
@@ -388,8 +388,8 @@ not3 True            = False
 \end{minipage}
 \noindent
 Clearly all are equivalent.  Our coverage checking algorithm should find that all three
-are exhaustive, and indeed, \sysname does so. We explore the subset of guards that
-\sysname can check in more detail in \ryan{Cite relevant section}\sg{I think
+are exhaustive, and indeed, \lyg does so. We explore the subset of guards that
+\lyg can check in more detail in \ryan{Cite relevant section}\sg{I think
 that's mostly in Related Work? Not sure we give a detailed account anywhere}.
 
 \subsection{Programmable patterns}
@@ -484,7 +484,7 @@ length (Text.uncons -> Just (_, xs))  = 1 + length xs
 % are not too complex.
 Again, it would be unreasonable to expect a coverage checking algorithm to
 prove that |length| is exhaustive, but one might hope for a coverage checking algorithm that handles
-some common usage patterns.  For example, \sysname{} indeed \emph{is} able to
+some common usage patterns.  For example, \lyg{} indeed \emph{is} able to
 prove that |safeLast| function is exhaustive:
 \begin{code}
 safeLast :: [a] -> Maybe a
@@ -601,7 +601,7 @@ changing the semantics of |u|, so they are classified as redundant. Within |u'|,
 one can never reach that right-hand sides of the equations that return |1| and |2|,
 but they cannot be removed so easily. Using the
 definition above, $|u'|~\bot~|=|~\bot$, but if the first two equations were removed,
-then $|u'|~\bot~|= 3|$. As a result, \sysname warns that the first two equations in |u'| are
+then $|u'|~\bot~|= 3|$. As a result, \lyg warns that the first two equations in |u'| are
 inaccessible, which suggests to the programmer that |u'| might benefit from
 a refactor to avoid this (e.g., |g' () = 3|).
 
@@ -697,8 +697,8 @@ other coverage checking algorithms that account for GADTs,
 including those for OCaml \cite{ocamlgadts},
 Dependent ML \cite{deadcodexi,xithesis,dependentxi}, and
 Stardust \cite{dunfieldthesis}.
-\sysname continues this tradition---see
-\ryan{What section?}\sg{It's a little implicit at the moment, because it just works. Not sure what to reference here.} for \sysname's take on GADTs.
+\lyg continues this tradition---see
+\ryan{What section?}\sg{It's a little implicit at the moment, because it just works. Not sure what to reference here.} for \lyg's take on GADTs.
 
 \begin{figure}
 \centering
@@ -827,13 +827,13 @@ Stardust \cite{dunfieldthesis}.
 \label{fig:syn}
 \end{figure}
 
-In this section, we describe our new coverage checking algorithm, \sysname.
+In this section, we describe our new coverage checking algorithm, \lyg.
 \Cref{fig:pipeline} depicts a high-level overview, which divides into three steps:
 \begin{itemize}
 \item First, we desugar the complex source Haskell syntax into a \emph{guard tree} $t:\Gdt$ (\Cref{sec:desugar}).
   The language of guard trees is tiny but expressive, and allows the subsequent passes to be entirely
   independent of the source syntax.
-  \sysname{} can readily be adapted to other languages simply by changing the desugaring
+  \lyg{} can readily be adapted to other languages simply by changing the desugaring
     algorithm.
 \item Next, the resulting guard
   tree is then processed by two different functions (\Cref{sec:check}).   The function $\ann(t)$ produces
@@ -851,10 +851,10 @@ In this section, we describe our new coverage checking algorithm, \sysname.
   uncovered values.
 \end{itemize}
 
-\sysname's main contribution when compared to other coverage checkers, such
+\lyg's main contribution when compared to other coverage checkers, such
 as \gmtm, is its
 incorporation of many small improvements and insights, rather than a single
-defining breakthrough. In particular, \sysname's advantages are:
+defining breakthrough. In particular, \lyg's advantages are:
 
 \begin{itemize}
   \item
@@ -1075,7 +1075,7 @@ time to come up with the language of guard trees.  We recommend it!
 % two guards left-to-right, we try to match each of the GRHSs in turn,
 % top-to-bottom (and their individual guards left-to-right).
 %
-% Hence \sysname desugars the source syntax to the following \emph{guard
+% Hence \lyg desugars the source syntax to the following \emph{guard
 % tree} (see \cref{fig:syn} for the syntax):
 %
 % \begin{forest}
@@ -2036,7 +2036,7 @@ supplementing that with a simple termination analysis in the future.
 % disjunction corresponds to a plain union.
 %
 % After tearing down abstraction after abstraction in the previous sections we
-% are nearly at the heart of \sysname: \Cref{fig:add} depicts how to add a
+% are nearly at the heart of \lyg: \Cref{fig:add} depicts how to add a
 % $\varphi$ constraint to an inert set $\nabla$.
 %
 % It does so by expressing a $\varphi$ in terms of once again simpler constraints
@@ -2230,7 +2230,7 @@ supplementing that with a simple termination analysis in the future.
 
 \section{Possible extensions} \label{sec:extensions}
 
-\sysname is well equipped to handle the fragment of Haskell it was designed to
+\lyg is well equipped to handle the fragment of Haskell it was designed to
 handle. But GHC (and other languages, for that matter) extends Haskell in
 non-trivial ways. This section exemplifies easy accomodation of new langauge
 features and measures to increase precision of the checking process,
@@ -2247,12 +2247,12 @@ f x     = ... (case x of{ False -> 2; True -> 3 }) ...
 \end{code}
 
 \noindent
-\sysname as is will not produce any warnings for this definition. But the
+\lyg as is will not produce any warnings for this definition. But the
 reader can easily make the ``long distance connection'' that the last GRHS of
 the |case| expression is redundant! That simply follows by context-sensitive
 reasoning, knowing that |x| was already matched against |True|.
 
-In terms of \sysname, the input values of the second GRHS $\Theta_{2}$ (which
+In terms of \lyg, the input values of the second GRHS $\Theta_{2}$ (which
 determine whether the GRHS is accessible) encode the information we are after.
 We just have to start checking the |case| expression starting from $\Theta_{2}$
 as the initial set of reaching values instead of $\reft{x:|Bool|}{\true}$.
@@ -2279,7 +2279,7 @@ absurd3 x = case x of {}
 \noindent
 |absurd1| returns |undefined| when called with $\bot$, thus masking the original $\bot$
 with the error thrown by |undefined|. |absurd2| would diverge alright, but
-\sysname will report its RHS as inaccessible! Hence GHC provides an extension,
+\lyg will report its RHS as inaccessible! Hence GHC provides an extension,
 called \extension{EmptyCase}, that allows the definition of |absurd3| above.
 Such a |case| expression without any alternatives evaluates its argument to
 WHNF and crashes when evaluation returns.
@@ -2318,7 +2318,7 @@ guard tree:
     [{$\grdlet{|y_2|}{|reverse x_1|}, \grdbang{|y_2|}, \grdcon{|Just t_1|}{|y_2|}, \grdbang{|t_1|}, \grdcon{|(t_2, t_3)|}{|t_1|}$} [2]]]
 \end{forest}
 
-As far as \sysname is concerned, the matches on both |y_1| and |y_2| are
+As far as \lyg is concerned, the matches on both |y_1| and |y_2| are
 non-exhaustive. But that's actually too conservative: Both bind the same value!
 By making the connection between |y_1| and |y_2|, the checker could infer that
 the match was exhaustive.
@@ -2334,7 +2334,7 @@ change:
 \]
 
 Where |r_i| is the representative of the equivalence class of expressions with
-global value number $i$. For |safeLast|, \sysname is now able to see that
+global value number $i$. For |safeLast|, \lyg is now able to see that
 $\Delta(|y_1|) \termeq \Delta(|y_2|)$ and hence that $\Delta(|y_2| \ntermeq
 |Nothing|$, so it will not emit any warnings.
 
@@ -2666,7 +2666,7 @@ types anymore.
 \section{Implementation}
 \label{sec:impl}
 
-The implementation of \sysname in GHC accumulates quite a few tricks that
+The implementation of \lyg in GHC accumulates quite a few tricks that
 go beyond the pure formalism. This section is dedicated to describing these.
 
 \sg{Delete this paragraph?}
@@ -2893,7 +2893,7 @@ information on before handing off to $\expand$.
 \section{Evaluation}
 \label{sec:eval}
 
-We have implemented \sysname in a to-be-released version of GHC.
+We have implemented \lyg in a to-be-released version of GHC.
 To put the new coverage checker to the
 test, we performed a survey of real-world Haskell code using the
 \texttt{head.hackage} repository
@@ -2902,12 +2902,12 @@ test, we performed a survey of real-world Haskell code using the
 patches necessary to make them build with a development version of GHC.
 We identified those libraries which compiled without coverage warnings using
 GHC 8.8.3 (which uses \gmtm as its checking algorithm) but emitted warnings
-when compiled using our \sysname version of GHC.
+when compiled using our \lyg version of GHC.
 
 Of the 361 libraries in \texttt{head.hackage}, seven of them revealed coverage
-issues that only \sysname warned about. Two of the libraries, \texttt{pandoc} and
+issues that only \lyg warned about. Two of the libraries, \texttt{pandoc} and
 \texttt{pandoc-types}, has cases that
-were flagged as redundant due to \sysname's improved treatment of guards and
+were flagged as redundant due to \lyg's improved treatment of guards and
 term equalities. One library, \texttt{geniplate-mirror}, has a case that was
 redundant by way of long-distance information. Another library,
 \texttt{generic-data}, has a case that is redundant due to bang patterns.
@@ -2921,7 +2921,7 @@ go' _ _ _ xs | False = error (show xs)
 go' _ _ _ xs = err xs
 \end{code}
 
-The first clause is clearly unreachable, and \sysname now flags it as such.
+The first clause is clearly unreachable, and \lyg now flags it as such.
 However, the authors of \texttt{HsYAML} likely left in this clause because it is
 useful for debugging purposes. One can uncomment the second clause and remove
 the |False| guard to quickly try out a code path that prints a more detailed
@@ -2959,12 +2959,12 @@ similar caliber and would also benefit from |keepAlive|.
 \end{tabular}
 
 \caption{The relative compile-time performance of GHC 8.8.3 (which implements \gmtm) and HEAD
-         (which implements \sysname) on test cases designed to stress-test coverage checking.}
+         (which implements \lyg) on test cases designed to stress-test coverage checking.}
 \label{fig:perf}
 \end{figure}
 }
 
-To compare the effiency of \gmtm and \sysname quantitatively, we
+To compare the effiency of \gmtm and \lyg quantitatively, we
 collected a series of test cases from GHC's test suite that are designed to test
 the compile-time performance of coverage checking. \Cref{fig:perf} lists each of these 11 test
 cases. Test cases with a \texttt{T} prefix are taken from user-submitted bug reports
@@ -2974,17 +2974,17 @@ which presents several test cases that caused GHC to exhibit exponential running
 during coverage checking.
 
 We compiled each test case with GHC 8.8.3,
-which uses \gmtm as its checking algorithm, and GHC HEAD, which uses \sysname.
+which uses \gmtm as its checking algorithm, and GHC HEAD, which uses \lyg.
 We measured (1) the time spent in the desugarer, the phase of compilation in
 which coverage checking occurs, and (2) how many megabytes were allocated during
 desugaring. \Cref{fig:perf} shows these figures as well as the percent change
 going from 8.8.3 to HEAD. Most cases exhibit a noticeable improvement under
-\sysname, with the exceptions of \texttt{T11276} and \texttt{PmSeriesG}.
+\lyg, with the exceptions of \texttt{T11276} and \texttt{PmSeriesG}.
 \ryan{Sebastian: Why are these so bad?}
 
 \subsection{GHC issues} \label{sec:ghc-issues}
 
-Implementing \sysname in GHC has fixed over 30 bug reports related
+Implementing \lyg in GHC has fixed over 30 bug reports related
 to coverage checking. These include:
 
 \begin{itemize}
@@ -2997,7 +2997,7 @@ to coverage checking. These include:
     \cite{gitlab:10746,gitlab:13717,gitlab:14813,gitlab:15450,gitlab:17376}
 
   \item
-    More accurate warnings due to \sysname's desugaring
+    More accurate warnings due to \lyg's desugaring
     \cite{gitlab:11984,gitlab:12949,gitlab:14098,gitlab:15385,gitlab:17646}
 
   \item
@@ -3035,7 +3035,7 @@ these constraints can only arise from matching against data constructors.
 \gmtm does not consider strict matches that arise from strict fields of
 data constructors or bang patterns. A consequence of this is that \gmtm
 would incorrectly warn that |v| (\cref{ssec:strictness}) is missing a case for
-|SJust|, even though such a case is unreachable. \sysname, on the other hand,
+|SJust|, even though such a case is unreachable. \lyg, on the other hand,
 more thoroughly tracks strictness when desugaring Haskell programs.
 
 \subsubsection{\gmtm's treatment of guards is shallow}
@@ -3062,12 +3062,12 @@ it is difficult for \gmtm to accurately give warnings for the |safeLast|
 function, since it would require recognizing that both clauses scrutinise
 the same expression in their view patterns.
 
-\sysname makes analysing term equalities simpler by first desugaring guards
+\lyg makes analysing term equalities simpler by first desugaring guards
 from the surface syntax to guard trees. The $\addphi$ function, which is
 roughly a counterpart to \gmtm's term oracle, can then reason
 about terms arising from patterns. While $\addphi$ is already more powerful
 than a trivial term oracle, its real strength lies in the fact that it can
-easily be extended, as \sysname's treatment of view patterns
+easily be extended, as \lyg's treatment of view patterns
 (\cref{ssec:extviewpat}) demonstrates. While \gmtm's term oracle could be
 improved to accomplish the same thing, it is unlikely to be as
 straightforward of a process as extending $\addphi$.
@@ -3080,7 +3080,7 @@ straightforward of a process as extending $\addphi$.
 SMT solver to give more accurate coverage warnings for programs that use
 guards. For instance, their implementation can conclude that
 the |signum| function from \cref{ssec:guards} is exhaustive. This is something
-that \sysname cannot do out of the box, although it would be possible to
+that \lyg cannot do out of the box, although it would be possible to
 extend $\addphi$ with SMT-like reasoning about booleans and linear integer arithmetic.
 % \ryan{Sebastian: is this the thing that would need to be extended?}
 % \sg{Yes, I imagine that $\addphi$ would match on arithmetic expressions and then
@@ -3111,21 +3111,21 @@ longer be a complete match according to their formalism.
 \citet{dependent-copattern} design a coverage checking algorithm for a dependently
 typed language with both pattern matching and \emph{copattern} matching, which is
 a feature that GHC lacks. While the source language for their algorithm is much more
-sophisticated than GHC's, their algorithm is similar to \sysname in that it first
+sophisticated than GHC's, their algorithm is similar to \lyg in that it first
 desugars definitions by clauses to \emph{case trees}. Case trees present a simplified
 form of pattern matching that is easier to check for coverage, much like guard trees
-in \sysname. Guard trees could take inspiration from case trees should a future
+in \lyg. Guard trees could take inspiration from case trees should a future
 version of GHC add dependent types or copatterns.
 
 \subsection{Positive and negative information}
 \label{ssec:negative-information}
 
-\sysname's use of positive and negative constructor constraints is inspired by
+\lyg's use of positive and negative constructor constraints is inspired by
 \citet{sestoft1996ml}, which uses positive and negative information to
 implement a pattern-match compiler for ML. Sestoft utilises positive and
 negative information to generate decision trees that avoid scrutinizing the
 same terms repeatedly. This insight is equally applicable to coverage checking
-and is one of the primary reasons for \sysname's efficiency.
+and is one of the primary reasons for \lyg's efficiency.
 
 But also accurate redundancy warnings involving \extension{COMPLETE} sets hinge
 on negative constraints. For why this isn't possible in other checkers that
@@ -3229,7 +3229,7 @@ clause is redundant.
 
 \subsection{Refinement types in coverage checking}
 
-In addition to \sysname, Liquid Haskell uses refinement types to perform a limited form of
+In addition to \lyg, Liquid Haskell uses refinement types to perform a limited form of
 exhaustivity checking \cite{liquidhaskell,refinement-reflection}.
 While exhaustiveness checks are optional in ordinary
 Haskell, they are mandatory for Liquid Haskell, as proofs written in Liquid
