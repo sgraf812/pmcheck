@@ -1605,7 +1605,7 @@ well-defined.
 \end{array}
 \]
 
-\caption{Adding a constraint to the inert set $\nabla$}
+\caption{Adding a constraint to the normalised refinement type $\nabla$}
 \label{fig:add}
 \end{figure}
 
@@ -1616,39 +1616,33 @@ is where all the work is done, in \Cref{fig:add}.
 
 It does so by expressing a $\varphi$ in terms of once again simpler constraints
 $\delta$ and calling out to $\!\adddelta\!$. Specifically, for a lack of
-binding constructs in $\delta$, pattern bindings extend the context and
-disperse into separate type constraints and a positive constructor constraint
-arising from the binding. The fourth case of $\!\adddelta\!$ finally performs
-some limited, but important reasoning about let bindings: In case the
-right-hand side was a constructor application (which is not to be confused with
-a pattern binding, if only for the difference in binding semantics!), we add
-appropriate positive constructor and type constraints, as well as recurse into
-the field expressions, which might in turn contain nested constructor
-applications. All other let bindings are simply discarded. We'll see an
-extension in \cref{ssec:extviewpat} which will expand here. The last case of
-$\!\addphi\!$ turns the syntactically and semantically identical subset of
-$\varphi$ into $\delta$ and adds that constraint via $\!\adddelta\!$.
+binding constructs in $\delta$, pattern guards extend the context and
+disperse into type constraints and a positive constructor constraint
+arising from the binding. The fourth case of $\!\addphi\!$ finally performs
+some limited, but important reasoning about let bindings: It makes sense of
+possibly nested constructor applications, such as $\ctlet{|x|}{|Just True|}$.
+Note that the sixth case will simply discard let bindings we can't make sense
+of. We'll see an extension in \cref{ssec:extviewpat} which will expand here.
+% The last case of $\!\addphi\!$
+% turns the syntactically and semantically identical subset of $\varphi$ into
+% $\delta$ and adds that constraint via $\!\adddelta\!$.
 
 Which brings us to the prime unification procedure, $\!\adddelta\!$.
-Consider adding a positive constructor constraint like $x \termeq |Just y|$:
-The unification procedure will first look for any positive constructor constraint
-involving the representative of $x$ with \emph{that same constructor}. Let's say
-there is $\Delta(x) = z$ and $z \termeq |Just u| \in \Delta$. Then
-$\!\adddelta\!$ decomposes the new constraint just like a classic unification
-algorithm operating on the transitively implied equality $|Just y| \termeq
-|Just u|$, by equating type and term variables with new constraints, \ie $|y|
-\termeq |u|$. The original constraint, although not conflicting (thus maintaining
-wellformed-ness condition \inert{1}), is not added to the inert set because of
-\inert{2}.
+When adding $x \termeq |Just y|$, the unification procedure will first look for
+a solution for $x$ with \emph{that same constructor}. Let's say there is
+$\Delta(x) \termeq |Just u| \in \Delta$. Then $\!\adddelta\!$ operates on the
+transitively implied equality $|Just y| \termeq |Just u|$ by equating type and
+term variables with new constraints, \ie $|y| \termeq |u|$. The original
+constraint, although not conflicting, is not added to the normalised refinement
+type because of \inert{2}.
 
-If there was no positive constructor constraint with the same constructor, it
-will look for such a constraint involving a different constructor, like $x
-\termeq |Nothing|$, in which case the new constraint is incompatible with the
+If there is solution involving a different constructor like $\Delta(x)
+\termeq |Nothing|$, the new constraint is incompatible with the
 existing solution. There are two other ways in which the constraint can be
-incompatible: If there was a negative constructor constraint $x \ntermeq
+incompatible: If there was a negative constructor constraint $\Delta(x) \ntermeq
 |Just|$ or if any of the fields were not inhabited, which is checked by the
-$\inhabited{\nabla}{x}$ judgment in \cref{fig:inh}. Otherwise, the constraint
-is compatible and is added to $\Delta$.
+$\inhabited{\nabla}{\Delta(x)}$ judgment in \cref{fig:inh}.
+% Otherwise, the constraint is compatible and is added to $\Delta$.
 
 Adding a negative constructor constraint $x \ntermeq Just$ is quite
 similar, as is handling of positive and negative constraints involving $\bot$.
@@ -1657,28 +1651,25 @@ contradict with positive constraints, we still have to test if there are any
 inhabitants left.
 
 Adding a type constraint $\gamma$ drives this paranoia to a maximum: After
-calling out to the type-checker (the logic of which we do not and would not
-replicate in this paper or our implementation) to assert that the constraint is
-consistent with the inert set, we have to test \emph{all} variables in the
+calling out to the type-checker to assert that the constraint is
+consistent with existing constraints, we have to test \emph{all} variables in the
 domain of $\Gamma$ for inhabitants, because the new type constraint could have
-rendered a type empty. To demonstrate why this is necessary, imagine we have
+rendered a type empty.
+\sg{I think we can omit the following example here:
+To demonstrate why this is necessary, imagine we have
 $\ctxt{x : a}{x \ntermeq \bot}$ and try to add $a \typeeq |Void|$. Although the
 type constraint is consistent, $x$ in $\ctxt{x : a}{x \ntermeq \bot, a \typeeq
 |Void|}$ is no longer inhabited. There is room for being smart about which
 variables we have to re-check: For example, we can exclude variables whose type
-is a non-GADT data type.
+is a non-GADT data type.}
 
 The last case of $\!\adddelta\!$ equates two variables ($x \termeq y$) by
-merging their equivalence classes. Consider the case where $x$ and $y$ don't
-already belong to the same equivalence class and thus have different representatives
-$\Delta(x)$ and $\Delta(y)$. $\Delta(y)$ is arbitrarily chosen to be the new
-representative of the merged equivalence class. Now, to uphold the
-well-formedness condition \inert{2}, all constraints mentioning $\Delta(x)$
-have to be removed and renamed in terms of $\Delta(y)$ and then re-added to
-$\Delta$. That might fail, because $\Delta(x)$ might have a constraint that
-conflicts with constraints on $\Delta(y)$, so it is better to use $\!\adddelta\!$ rather
-than to add it blindly to $\Delta$.
-
+merging their equivalence classes. Consider the case where $x$ and $y$ aren't in
+the same equivalence class. Then $\Delta(y)$ is arbitrarily chosen to be the new
+representative of the merged equivalence class. To uphold \inert{2}, all
+constraints mentioning $\Delta(x)$ have to be removed and renamed in terms of
+$\Delta(y)$ and then re-added to $\Delta$, one of which in turn might uncover a
+contradiction.
 
 % The predicate literals $\varphi$ of refinement types look quite similar to the
 % original $\Grd$ language, so how is checking them for emptiness an improvement
@@ -1805,13 +1796,21 @@ than to add it blindly to $\Delta$.
 The process for adding a constraint to an inert set above (which turned out to
 be a unification procedure in disguise) makes use of an
 \emph{contradiction test} $\inhabited{\nabla}{x}$, depicted in \cref{fig:inh}.
-This tests whether $\nabla$ whether there are any values of $x$ that satisfy $\nabla$.
-If not, $\nabla$ is contradictory, and does not uphold \inert{1}.
+This tests whether there are any values of $x$ that satisfy $\nabla$. If not,
+$\nabla$ is contradictory, and does not uphold \inert{1}.
 
 \simon{Is this right?}
 \sg{While the explanation seems fine, I'm not sure if the term
-``contradiction test'' is a good fit. After all, we're testing
-just a single variable, not the whole $\nabla$.}
+``contradiction test'' and ``contradictory'' is a good fit. After all, we're
+testing just a single variable, not the whole $\nabla$. I think
+$\inhabited{\nabla}{x}$ is really about \extension{COMPLETE} sets: Only if we
+know a \extension{COMPLETE} set we can possibly enumerate and test all the
+inhabitants of a type, some of which are impossible by negative constructor
+constraints or type info. That's basically what $\inhabited{\nabla}{x}$ is
+doing. If we don't know even a single \extension{COMPLETE} set for a type, we
+can never determine if a type/variable is empty (\inhabitednocpl). I think the
+$\nabla$ itself is consistent according to \inert{1} regardless of
+$\inhabited{\nabla}{x}$, no two constraints are contradictory.}
 
 The \inhabitedbot judgment of $\inhabited{\nabla}{x}$ tries to instantiate $x$ to
 $\bot$ to conclude that $x$ is inhabited. \inhabitedinst instantiates $x$ to one
@@ -1820,11 +1819,13 @@ a data type under the type constraints in $\nabla$. Rule \inhabitednocpl will
 accept unconditionally when its type is not a data type, \ie for $x : |Int ->
 Int|$.
 
+\sg{We could omit this remark and the example in the rest of this section,
+hoping that the reviewers won't ask questions about it. Shall we?}
 Note that the outlined approach is complete in the sense that
 $\inhabited{\nabla}{x}$ is derivable (if and) only if |x| is actually inhabited
-in $\nabla$, because that means we don't have any $\nabla$s floating around
-in the checking process that actually aren't inhabited and trigger false
-positive warnings. But that also means that the $\inhabited{}{}$ relation is
+in $\nabla$, because that means we don't have any $\nabla$s floating around in
+the checking process that actually aren't inhabited and trigger false positive
+warnings. But that also means that the $\inhabited{}{}$ relation is
 undecidable! Consider the following example:
 \begin{code}
 data T = MkT !!T
