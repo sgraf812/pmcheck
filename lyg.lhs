@@ -706,7 +706,7 @@ Stardust \cite{dunfieldthesis}.
 \centering
 \[
 \begin{array}{cc}
-\textbf{Meta variables} & \textbf{Pattern Syntax} \\
+\textbf{Meta variables} & \textbf{Pattern syntax} \\
 \begin{array}{rl}
   x,y,z,f,g,h &\text{Term variables} \\
   a,b,c       &\text{Type variables} \\
@@ -743,7 +743,7 @@ Stardust \cite{dunfieldthesis}.
 
 \begin{figure}
 \centering
-\[ \textbf{Guard Syntax} \]
+\[ \textbf{Guard syntax} \]
 \[
 \begin{array}{cc}
 \begin{array}{rlcl}
@@ -769,17 +769,17 @@ Stardust \cite{dunfieldthesis}.
 \end{array}
 \]
 
-\[ \textbf{Refinement Type Syntax} \]
+\[ \textbf{Refinement type syntax} \]
 \[
 \begin{array}{rcll}
   \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
   \varphi &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Literals} \\
   \Phi &\Coloneqq& \varphi \mid \Phi \wedge \Phi \mid \Phi \vee \Phi & \text{Formula} \\
-  \Theta &\Coloneqq& \reft{\Gamma}{\Phi} & \text{Refinement Type} \\
+  \Theta &\Coloneqq& \reft{\Gamma}{\Phi} & \text{Refinement type} \\
 \end{array}
 \]
 
-\[ \textbf{Clause Tree Syntax} \]
+\[ \textbf{Clause tree syntax} \]
 \[
 \begin{array}{rcll}
   t_G,u_G \in \Gdt &\Coloneqq& \gdtrhs{n} \mid \gdtseq{t_G}{u_G} \mid \gdtguard{g}{t_G}         \\
@@ -787,7 +787,7 @@ Stardust \cite{dunfieldthesis}.
 \end{array}
 \]
 
-\[ \textbf{Graphical Notation} \]
+\[ \textbf{Graphical notation} \]
 \[
 \begin{array}{cc}
   \begin{array}{rcll}
@@ -1121,7 +1121,7 @@ time to come up with the language of guard trees.  We recommend it!
 \end{array}
 \]
 
-\[ \textbf{Checking Guard Trees} \]
+\[ \textbf{Checking guard trees} \]
 \[ \ruleform{ \unc(\Theta, t_G) = \Theta } \]
 \[
 \begin{array}{lcl}
@@ -1336,7 +1336,7 @@ Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
 \end{array}
 \]
 
-\[ \textbf{Normalised Refinement Type Syntax} \]
+\[ \textbf{Normalised refinement type syntax} \]
 \[
 \begin{array}{rcll}
   \nabla &\Coloneqq& \false \mid \nreft{\Gamma}{\Delta} & \text{Normalised refinement type} \\
