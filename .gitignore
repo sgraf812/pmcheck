@@ -239,4 +239,5 @@ TSWLatexianTemp*
 *.sta
 
 # TeX files, because we generate them
+appendix.tex
 lyg.tex

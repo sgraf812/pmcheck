@@ -7,6 +7,7 @@ all: main
 REPL_FLAGS = -halt-on-error
 
 main:
+	lhs2TeX --poly appendix.lhs >appendix.tex
 	lhs2TeX --poly lyg.lhs >lyg.tex
 	pdflatex $(REPL_FLAGS) lyg
 	bibtex   lyg
@@ -14,6 +15,7 @@ main:
 	pdflatex $(REPL_FLAGS) lyg
 
 extended:
+	lhs2TeX --poly appendix_ext.lhs >appendix_ext.tex
 	lhs2TeX --poly lyg_ext.lhs >lyg_ext.tex
 	pdflatex lyg_ext
 	bibtex   lyg_ext
@@ -24,6 +26,7 @@ clean:
 	$(RM) *.dvi *.aux *.log *.bbl *.blg *.toc *.out *.fls *.haux *.fdb_latexmk *~
 
 distclean: clean
+	$(RM) appendix.tex
 	$(RM) lyg.tex
 	$(RM) lyg.pdf
 	$(RM) lyg_ext.tex
