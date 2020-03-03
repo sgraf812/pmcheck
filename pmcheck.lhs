@@ -3009,7 +3009,7 @@ going from 8.8.3 to HEAD. Most cases exhibit a noticeable improvement under
 
 \subsection{GHC issues} \label{sec:ghc-issues}
 
-Implementing \sysname in GHC has fixed a litany of bug reports related
+Implementing \sysname in GHC has fixed over 30 bug reports related
 to coverage checking. These include:
 
 \begin{itemize}
