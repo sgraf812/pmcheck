@@ -1495,11 +1495,16 @@ refinement type $\Theta = \reft{\Gamma}{\Phi}$, but is in a much more restricted
 Beyond these syntactic differences, we enforce the following semantic invariants on $\nabla$:
 \begin{enumerate}
   \item[\inv{1}] \emph{Mutual compatibility}: No two constraints in $\nabla$
-    should conflict with each other.
+    should \emph{conflict} with each other, where $x \termeq \bot$ conflicts with
+    $x \ntermeq \bot$ and $x \termeq K \; \mathunderscore \; \mathunderscore$
+    conflicts with $x \ntermeq K$ for all $x$.
   \item[\inv{2}] \emph{Triangular form}: A $x \termeq y$ constraint implies
     absence of any other constraints mentioning |x| in its left-hand side.
   \item[\inv{3}] \emph{Single solution}: There is at most one positive
     constructor constraint $x \termeq \deltaconapp{K}{a}{y}$ for a given |x|.
+  \item[\inv{4}] \emph{???}: If $x:\tau$ and $\tau$ is a data type,
+    there must be at least one constructor $K$ (or $\bot$) which $x$ can be
+    instantiated to.
 \end{enumerate}
 
 It is often helpful to think of a $\Delta$ as a partial function from |x| to
