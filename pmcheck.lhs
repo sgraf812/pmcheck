@@ -210,7 +210,7 @@ But the coverage-checking problem becomes \emph{much} harder when one includes t
 raft of innovations that have become part of a modern programming language
 like Haskell, including: view patterns, pattern guards, pattern synonyms,
 overloaded literals, bang patterns, lazy patterns, as-patterns, strict data contructors,
-empty case expressions, and long-distance effects (\Cref{ssec:ldi}).
+empty case expressions, and long-distance effects (\Cref{sec:extensions}).
 Particularly tricky are GADTs \cite{recdatac}, where the \emph{type} of a match can determine
 what \emph{values} can possibly appear; and local type-equality constraints brought into
 scope by pattern matching \cite{outsideinx}.
@@ -235,8 +235,8 @@ hard to maintain.
 
 In this paper we propose a new, compositional coverage-checking algorithm,
 called Lower Your Guards (\sysname), that is simpler, more modular, \emph{and}
-more powerful than \gmtm. Moreover, it avoids \gmtm's performance pitfalls. We
-make the following contributions:
+more powerful than \gmtm (see \cref{ssec:gmtm}). Moreover, it avoids \gmtm's
+performance pitfalls. We make the following contributions:
 
 \begin{itemize}
 \item
@@ -699,24 +699,6 @@ Dependent ML \cite{deadcodexi,xithesis,dependentxi}, and
 Stardust \cite{dunfieldthesis}.
 \sysname continues this tradition---see
 \ryan{What section?}\sg{It's a little implicit at the moment, because it just works. Not sure what to reference here.} for \sysname's take on GADTs.
-
-\simon{I deleted the soundness section: it didn't seem to pay its way}
-% \subsection{Soundness} \label{ssec:soundness}
-%
-% \sg{I'm not happy with the lack of mathematical rigor in the definitions and
-% the lack of content here.}
-%
-% Quite similar to a totality checker for a dependently typed language (like
-% \citet{dependent-copattern}), we can define soundness of a coverage checker
-% by the following three conditions:
-%
-% \begin{enumerate}
-%   \item[1.] If there is an uncovered pattern, the checker should report it.
-%   \item[2.] If the checker reports a redundant equation, its omission should not change semantics of the definition.
-%   \item[3.] If the checker reports an inaccessible equation, replacing its right-hand side by |undefined| should not change semantics of the definition.
-% \end{enumerate}
-%
-% \sg{TODO: Say more? Less?}
 
 \begin{figure}
 \centering
@@ -1352,7 +1334,7 @@ Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
 \end{array}
 \]
 
-\[ \textbf{Inert Set Syntax} \]
+\[ \textbf{Normalised Refinement Type Syntax} \]
 \[
 \begin{array}{rcll}
   \nabla &\Coloneqq& \false \mid \ctxt{\Gamma}{\Delta} & \text{Normalised refinement type} \\
@@ -1510,11 +1492,11 @@ refinement type $\Theta = \reft{\Gamma}{\Phi}$, but is in a much more restricted
 \end{itemize}
 Beyond these syntactic differences, we enforce the following semantic invariants on $\nabla$:
 \begin{enumerate}
-  \item[\inert{1}] \emph{Mutual compatibility}: No two constraints in $\nabla$
+  \item[\inv{1}] \emph{Mutual compatibility}: No two constraints in $\nabla$
     should conflict with each other.
-  \item[\inert{2}] \emph{Triangular form}: A $x \termeq y$ constraint implies
+  \item[\inv{2}] \emph{Triangular form}: A $x \termeq y$ constraint implies
     absence of any other constraints mentioning |x| in its left-hand side.
-  \item[\inert{3}] \emph{Single solution}: There is at most one positive
+  \item[\inv{3}] \emph{Single solution}: There is at most one positive
     constructor constraint $x \termeq \deltaconapp{K}{a}{y}$ for a given |x|.
 \end{enumerate}
 
@@ -1522,11 +1504,11 @@ It is often helpful to think of a $\Delta$ as a partial function from |x| to
 its \emph{solution}, informed by the single positive constraint $x \termeq
 \deltaconapp{K}{a}{y} \in \Delta$, if it exists. For example, $x \termeq
 |Nothing|$ can be understood as a function mapping |x| to |Nothing|. This
-reasoning is justified by \inert{3}. Under this view, $\Delta$ looks like a
+reasoning is justified by \inv{3}. Under this view, $\Delta$ looks like a
 substitution. As we'll see later in \cref{sec:normalise}, this view is
 supported by immense overlap with unification algorithms.
 
-\inert{2} is actually a condition on the represented substitution. Whenever we
+\inv{2} is actually a condition on the represented substitution. Whenever we
 find out that $x \termeq y$, for example when matching a variable pattern |y|
 against a match variable |x|, we have to merge all the other constraints on |x|
 into |y| and say that |y| is the representative of |x|'s equivalence class.
@@ -1546,7 +1528,7 @@ Expanding a $\nabla$ to a pattern vector, by calling $\expand(\nabla)$ in \Cref{
 is syntactically heavy, but straightforward.
 When there is a solution like $\Delta(x) \termeq |Just y|$
 in $\Delta$ for the head $x$ of the variable vector of interest, expand $y$ in
-addition to the rest of the vector and wrap it in a |Just|. Invariant \inert{3}
+addition to the rest of the vector and wrap it in a |Just|. Invariant \inv{3}
 guarantees that there is at most one such solution and $\expand$ is
 well-defined.
 
@@ -1554,7 +1536,7 @@ well-defined.
 
 \begin{figure}
 \centering
-\[ \textbf{Add a formula literal to the inert set} \]
+\[ \textbf{Add a formula literal to $\nabla$} \]
 \[ \ruleform{ \nabla \addphi \varphi = \nabla } \]
 \[
 \begin{array}{r@@{\,}c@@{\,}lcl}
@@ -1573,7 +1555,7 @@ well-defined.
 \end{array}
 \]
 
-\[ \textbf{Add a constraint to the inert set} \]
+\[ \textbf{Add a constraint to $\nabla$} \]
 \[ \ruleform{ \nabla \adddelta \delta = \nabla } \]
 \[
 \begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}l}
@@ -1604,8 +1586,8 @@ well-defined.
     \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
   \end{cases} \\
   \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq y &=& \begin{cases}
-    \ctxt{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
-    \ctxt{\Gamma}{((\Delta \setminus \rep{\Delta}{x}), \rep{\Delta}{x} \termeq \rep{\Delta}{y})} \adddelta ((\Delta \cap \rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
+    \ctxt{\Gamma\!}{\!\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
+    \ctxt{\Gamma\!}{\!((\Delta\!\setminus\!\rep{\Delta}{x}), \rep{\Delta}{x}\!\termeq\!\rep{\Delta}{y})}\!\!\adddelta\!\!((\Delta\!\cap\!\rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
   \end{cases} \\
 \end{array}
 \]
@@ -1661,7 +1643,7 @@ $\Delta(x) \termeq |Just u| \in \Delta$. Then $\!\adddelta\!$ operates on the
 transitively implied equality $|Just y| \termeq |Just u|$ by equating type and
 term variables with new constraints, \ie $|y| \termeq |u|$. The original
 constraint, although not conflicting, is not added to the normalised refinement
-type because of \inert{2}.
+type because of \inv{2}.
 
 If there is a solution involving a different constructor like $\Delta(x)
 \termeq |Nothing|$, the new constraint is incompatible with the
@@ -1691,7 +1673,7 @@ is a non-GADT data type.
 The last case of $\!\adddelta\!$ equates two variables ($x \termeq y$) by
 merging their equivalence classes. Consider the case where $x$ and $y$ aren't in
 the same equivalence class. Then $\Delta(y)$ is arbitrarily chosen to be the new
-representative of the merged equivalence class. To uphold \inert{2}, all
+representative of the merged equivalence class. To uphold \inv{2}, all
 constraints mentioning $\Delta(x)$ have to be removed and renamed in terms of
 $\Delta(y)$ and then re-added to $\Delta$, one of which in turn might uncover a
 contradiction.
@@ -1818,11 +1800,11 @@ contradiction.
 \label{fig:inh}
 \end{figure}
 
-The process for adding a constraint to an inert set above (which turned out to
-be a unification procedure in disguise) makes use of an
+The process for adding a constraint to a normalised type above (which turned
+out to be a unification procedure in disguise) makes use of an
 \emph{contradiction test} $\inhabited{\nabla}{x}$, depicted in \cref{fig:inh}.
 This tests whether there are any values of $x$ that satisfy $\nabla$. If not,
-$\nabla$ is contradictory, and does not uphold \inert{1}.
+$\nabla$ is contradictory, and does not uphold \inv{1}.
 
 \simon{Is this right?}
 \sg{While the explanation seems fine, I'm not sure if the term
@@ -1834,7 +1816,7 @@ inhabitants of a type, some of which are impossible by negative constructor
 constraints or type info. That's basically what $\inhabited{\nabla}{x}$ is
 doing. If we don't know even a single \extension{COMPLETE} set for a type, we
 can never determine if a type/variable is empty (\inhabitednocpl). I think the
-$\nabla$ itself is consistent according to \inert{1} regardless of
+$\nabla$ itself is consistent according to \inv{1} regardless of
 $\inhabited{\nabla}{x}$, no two constraints are contradictory.}
 
 The \inhabitedbot judgment of $\inhabited{\nabla}{x}$ tries to instantiate $x$ to
@@ -1990,28 +1972,28 @@ supplementing that with a simple termination analysis in the future.
 % well-formedness constraints:
 %
 % \begin{enumerate}
-%   \item[\inert{1}] \emph{Mutual compatibility}: No two constraints in $\nabla$
+%   \item[\inv{1}] \emph{Mutual compatibility}: No two constraints in $\nabla$
 %     should conflict with each other.
-%   \item[\inert{2}] \emph{Triangular form}: A $x \termeq y$ constraint implies
+%   \item[\inv{2}] \emph{Triangular form}: A $x \termeq y$ constraint implies
 %     absence of any other constraints mentioning |x| in its left-hand side.
-%   \item[\inert{3}] \emph{Single solution}: There is at most one positive
+%   \item[\inv{3}] \emph{Single solution}: There is at most one positive
 %     constructor constraint $x \termeq \deltaconapp{K}{a}{y}$ for a given |x|.
 % \end{enumerate}
 %
 % \noindent
 % We refer to such a $\nabla$ as an \emph{inert set}, in the sense that its
 % constraints are of canonical form and already checked for mutual compatibility
-% (\inert{1}), in analogy to a typechecker's implementation.
+% (\inv{1}), in analogy to a typechecker's implementation.
 %
 % It is helpful at times to think of a $\Delta$ as a partial function from |x| to
 % its \emph{solution}, informed by the single positive constraint $x \termeq
 % \deltaconapp{K}{a}{y} \in \Delta$, if it exists. For example, $x \termeq
 % |Nothing|$ can be understood as a function mapping |x| to |Nothing|. This
-% reasoning is justified by \inert{3}. Under this view, $\Delta$ looks like a
+% reasoning is justified by \inv{3}. Under this view, $\Delta$ looks like a
 % substitution. As we'll see later in \cref{ssec:extinert}, this view is
 % supported by immense overlap with unification algorithms.
 %
-% \inert{2} is actually a condition on the represented substitution. Whenever we
+% \inv{2} is actually a condition on the represented substitution. Whenever we
 % find out that $x \termeq y$, for example when matching a variable pattern |y|
 % against a match variable |x|, we have to merge all the other constraints on |x|
 % into |y| and say that |y| is the representative of |x|'s equivalence class.
@@ -2037,7 +2019,7 @@ supplementing that with a simple termination analysis in the future.
 % Expanding a $\nabla$ to a pattern vector in $\expand$ is syntactically heavy,
 % but straightforward: When there is a solution like $\Delta(x) \termeq |Just y|$
 % in $\Delta$ for the head $x$ of the variable vector of interest, expand $y$ in
-% addition to the rest of the vector and wrap it in a |Just|. \inert{3}
+% addition to the rest of the vector and wrap it in a |Just|. \inv{3}
 % guarantees that there is at most one such solution and $\expand$ is
 % well-defined.
 %
@@ -2081,8 +2063,8 @@ supplementing that with a simple termination analysis in the future.
 % algorithm operating on the transitively implied equality $|Just y| \termeq
 % |Just u|$, by equating type and term variables with new constraints, \ie $|y|
 % \termeq |u|$. The original constraint, although not conflicting (thus maintaining
-% wellformed-ness condition \inert{1}), is not added to the inert set because of
-% \inert{2}.
+% wellformed-ness condition \inv{1}), is not added to the inert set because of
+% \inv{2}.
 %
 % If there was no positive constructor constraint with the same constructor, it
 % will look for such a constraint involving a different constructor, like $x
@@ -2116,7 +2098,7 @@ supplementing that with a simple termination analysis in the future.
 % already belong to the same equivalence class and thus have different representatives
 % $\Delta(x)$ and $\Delta(y)$. $\Delta(y)$ is arbitrarily chosen to be the new
 % representative of the merged equivalence class. Now, to uphold the
-% well-formedness condition \inert{2}, all constraints mentioning $\Delta(x)$
+% well-formedness condition \inv{2}, all constraints mentioning $\Delta(x)$
 % have to be removed and renamed in terms of $\Delta(y)$ and then re-added to
 % $\Delta$. That might fail, because $\Delta(x)$ might have a constraint that
 % conflicts with constraints on $\Delta(y)$, so it is better to use $\!\adddelta\!$ rather
@@ -2251,7 +2233,8 @@ supplementing that with a simple termination analysis in the future.
 \sysname is well equipped to handle the fragment of Haskell it was designed to
 handle. But GHC (and other languages, for that matter) extends Haskell in
 non-trivial ways. This section exemplifies easy accomodation of new langauge
-features and measures to increase precision of the checking process.
+features and measures to increase precision of the checking process,
+demonstrating the modularity and extensibility of our approach.
 
 \subsection{Long-distance information}
 \label{ssec:ldi}
@@ -2422,7 +2405,7 @@ $C'$ don't overlap, if both are data constructors, for example.
 
 \sg{Omit this paragraph?}
 Note that the slight relaxation means that the constructed $\nabla$ might
-violate $\inert{3}$, specifically when $C \cap C' \not= \emptyset$. In practice
+violate $\inv{3}$, specifically when $C \cap C' \not= \emptyset$. In practice
 that condition only matters for the well-definedness of $\expand$, which in
 case of multiple solutions (\ie $x \termeq P, x\termeq Q$) has to commit to one
 them for the purposes of reporting warnings. Fixing that requires a bit of
@@ -2471,9 +2454,6 @@ that none of them is completely covered:
   \end{cases}
 \end{array}
 \]
-
-\sg{What do you think of the indexing on $C_i$? It's not entirely accurate, but
-do we want to cloud the presentation with \ie $\overline{C_{i,1},...,C_{i,n_i}}^i$?}
 
 $\cons$ was changed to return a list of all available \extension{COMPLETE} sets,
 and \inhabitedinst tries to find an inhabiting ConLike in each one of them in
@@ -2639,8 +2619,7 @@ achieves the same, but is a more surgical change, probably saving some space.}
 But |g1| crushes this simple hack. We would mark its second GRHS as
 inaccessible when it is clearly redundant, because the $x \ntermeq \bot$
 constraint on the match variable |x| wasn't propagated to the wrapped |()|.
-The inner bang pattern has nothing to evaluate. This is arguably a small
-downside and doesn't even regress in terms of soundness.
+The inner bang pattern has nothing to evaluate.
 
 \sg{We could save about 1/4 of a page by stopping here and omitting the
 changes to $\adddelta$.}
@@ -2697,10 +2676,6 @@ type-checked program, so the only reasonable design is to run the coverage check
 between type-checking and desugaring to GHC Core, a typed intermediate
 representation lacking the connection to source syntax. We perform coverage
 checking in the same tree traversal as desugaring.
-
-\sg{New implementation (pre !2753) has 3850 lines, out of which 1753 is code.
-Previous impl as of GHC 8.6.5 had 3118 lines, out of which 1438 were code. Not
-sure how to sell that.}
 
 \subsection{Interleaving $\unc$ and $\ann$}
 \label{ssec:interleaving}
@@ -3131,20 +3106,6 @@ f _     = 2
 course incorrect. Also, replacing the wild card by a match on |False| would no
 longer be a complete match according to their formalism.
 
-% \sg{We can shorten this as needed. It's just a rant at this point, I'm afraid...}
-%
-% Apart from that, his algorithm would report |Nothing| as a missing clause of
-% the definition |g (Just True) = 1|, but would fail to report the nested |Just
-% False|, which is clearly unsound according to our definition
-% in \cref{ssec:soundness}.
-%
-% \citeauthor{maranget:warnings} comes up with surprisingly tricky test cases
-% which exponentially blew up compilation time of GHC at the time. We added them
-% into our testsuite \cite{gitlab:17264} as regression tests and made sure
-% that throttling (\cref{ssec:throttling}) maintains linear performance
-% characteristics.
-% \ryan{The use of ``We'' in this sentence risks de-anonymizing us...}
-
 \subsubsection{Elaborating dependent (co)pattern matching}
 
 \citet{dependent-copattern} design a coverage checking algorithm for a dependently
@@ -3159,12 +3120,12 @@ version of GHC add dependent types or copatterns.
 \subsection{Positive and negative information}
 \label{ssec:negative-information}
 
-\sysname's use of positive and negative constructor constraints in inert sets is
-inspired by \citet{sestoft1996ml}, which uses positive and negative information
-to implement a pattern-match compiler for ML. Sestoft utilises positive and
-negative information to generate decision trees that avoid
-scrutinizing the same terms repeatedly. This insight is equally applicable to
-coverage checking and is one of the primary reasons for \sysname's efficiency.
+\sysname's use of positive and negative constructor constraints is inspired by
+\citet{sestoft1996ml}, which uses positive and negative information to
+implement a pattern-match compiler for ML. Sestoft utilises positive and
+negative information to generate decision trees that avoid scrutinizing the
+same terms repeatedly. This insight is equally applicable to coverage checking
+and is one of the primary reasons for \sysname's efficiency.
 
 But also accurate redundancy warnings involving \extension{COMPLETE} sets hinge
 on negative constraints. For why this isn't possible in other checkers that
@@ -3274,9 +3235,6 @@ While exhaustiveness checks are optional in ordinary
 Haskell, they are mandatory for Liquid Haskell, as proofs written in Liquid
 Haskell require user-defined functions to be total (and therefore exhaustive)
 in order to be sound.
-% Ryan: Commenting this out since the Soundness section appears to have been removed.
-%
-% (\cf \cref{ssec:soundness})
 For example, consider this non-exhaustive function:
 
 \begin{code}
