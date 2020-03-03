@@ -3065,6 +3065,16 @@ use |fibPartial| in a proof will yield an inconsistent environment (and therefor
 fail to verify) unless the user can
 prove that |fibPartial| is only ever invoked with the arguments |0| or |1|.
 
+\section{Conclusion}
+
+In this paper, we describe Lower Your Guards, a coverage checking algorithm that
+distills rich pattern matching into simple guard trees. Guard trees are
+amenable to analyses that are not easily expressible in coverage checkers
+that work over structural pattern matches. This allows \lyg to report more
+accurate warnings while also avoiding performance issues when checking
+complex programs. Moreover, \lyg is extensible, and we anticipate that this will
+streamline the process of checking new forms of patterns in the future.
+
 \bibliography{references}
 
 %% Appendix
