@@ -388,9 +388,10 @@ not3 True            = False
 \end{minipage}
 \noindent
 Clearly all are equivalent.  Our coverage checking algorithm should find that all three
-are exhaustive, and indeed, \lyg does so. We explore the subset of guards that
-\lyg can check in more detail in \ryan{Cite relevant section}\sg{I think
-that's mostly in Related Work? Not sure we give a detailed account anywhere}.
+are exhaustive, and indeed, \lyg does so.
+% We explore the subset of guards that
+% \lyg can check in more detail in \ryan{Cite relevant section}\sg{I think
+% that's mostly in Related Work? Not sure we give a detailed account anywhere}.
 
 \subsection{Programmable patterns}
 
@@ -691,14 +692,15 @@ for |T2 T1|).
 
 Concluding that |g2| is exhaustive requires some non-trivial reasoning about
 equality constraints. In GHC, the same engine that typechecks GADT pattern matches is
-also used to rule out cases made unreachable by type equalities.
+also used to rule out cases made unreachable by type equalities, and \lyg
+adopts a similar approach.
 Besides GHC's current coverage checker \cite{gadtpm}, there are a variety of
 other coverage checking algorithms that account for GADTs,
 including those for OCaml \cite{ocamlgadts},
 Dependent ML \cite{deadcodexi,xithesis,dependentxi}, and
 Stardust \cite{dunfieldthesis}.
-\lyg continues this tradition---see
-\ryan{What section?}\sg{It's a little implicit at the moment, because it just works. Not sure what to reference here.} for \lyg's take on GADTs.
+% \lyg continues this tradition---see
+% \ryan{What section?}\sg{It's a little implicit at the moment, because it just works. Not sure what to reference here.} for \lyg's take on GADTs.
 
 \begin{figure}
 \centering
