@@ -1587,8 +1587,8 @@ well-defined.
     \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
   \end{cases} \\
   \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq y &=& \begin{cases}
-    \ctxt{\Gamma\!}{\!\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
-    \ctxt{\Gamma\!}{\!((\Delta\!\setminus\!\rep{\Delta}{x}), \rep{\Delta}{x}\!\termeq\!\rep{\Delta}{y})}\!\!\adddelta\!\!((\Delta\!\cap\!\rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
+    \ctxt{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
+    \ctxt{\Gamma}{((\Delta\!\setminus\!\rep{\Delta}{x}), \rep{\Delta}{x}\!\termeq\!\rep{\Delta}{y})}\!\!\adddelta\!\!((\Delta\!\cap\!\rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
   \end{cases} \\
 \end{array}
 \]
