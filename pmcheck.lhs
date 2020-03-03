@@ -2982,11 +2982,50 @@ similar caliber and would also benefit from |keepAlive|.
 
 \subsection{Performance tests}
 
-\ryan{I ran out of time today, but we should measure the difference between
-GHC 8.8.3 and HEAD on the following perf tests from GHC's test suite:
-T11303, T11276, T11303b, T11374, T11822, T11195, T17096,
-PmSeriesS, PmSeriesT, PmSeriesV, and PmSeriesG. These all live under the
-\texttt{testsuite/tests/pmcheck/should\_compile} directory.}
+\begin{figure}
+
+\begin{tabular}{c || r r r || r r r ||}
+\cline{2-7}
+\textbf{}                                  & \multicolumn{3}{c||}{\textbf{Time (milliseconds)}} & \multicolumn{3}{c||}{\textbf{Bytes allocated}} \\ \cline{2-7}
+\textbf{}                                  & \multicolumn{1}{c||}{8.8.3} & \multicolumn{1}{c||}{HEAD} & \multicolumn{1}{c||}{\% change}
+                                           & \multicolumn{1}{c||}{8.8.3} & \multicolumn{1}{c||}{HEAD} & \multicolumn{1}{c||}{\% change} \\ \hline
+\multicolumn{1}{||c||}{\texttt{T11276}}    &     1.159   &  1.689 &  45.73\% &      1,856,464 &  2,387,512 &    28.61\% \\
+\multicolumn{1}{||c||}{\texttt{T11303}}    &    28.056   & 17.964 & -35.97\% &     60,189,288 & 39,876,408 &   -33.75\% \\
+\multicolumn{1}{||c||}{\texttt{T11303b}}   &     1.147   &  0.392 & -65.82\% &      1,649,528 &    464,504 &   -71.84\% \\
+\multicolumn{1}{||c||}{\texttt{T11374}}    &     4.623   &  3.003 & -35.04\% &      6,159,712 &  3,194,616 &   -48.14\% \\
+\multicolumn{1}{||c||}{\texttt{T11822}}    & 1,063.495   & 16.032 & -98.49\% &  2,006,687,040 & 27,907,752 &   -98.61\% \\
+\multicolumn{1}{||c||}{\texttt{T11195}}    & 2,677.682   & 22.266 & -99.17\% &  3,084,609,976 & 39,488,216 &   -98.72\% \\
+\multicolumn{1}{||c||}{\texttt{T17096}}    & 7,469.693   & 16.641 & -99.78\% & 17,251,358,480 & 35,406,936 &   -99.79\% \\
+\multicolumn{1}{||c||}{\texttt{PmSeriesS}} &    44.463   &  2.579 & -94.20\% &     52,852,744 &  6,189,144 &   -88.29\% \\
+\multicolumn{1}{||c||}{\texttt{PmSeriesT}} &    48.299   &  6.864 & -85.79\% &     61,434,928 & 17,577,224 &   -71.39\% \\
+\multicolumn{1}{||c||}{\texttt{PmSeriesV}} &   130.754   &  4.544 & -96.52\% &    139,083,856 &  9,525,800 &   -93.15\% \\
+\multicolumn{1}{||c||}{\texttt{PmSeriesG}} &     1.197   &  8.082 & 575.19\% &      1,206,112 & 18,899,376 & 1,466.97\% \\ \hline
+\end{tabular}
+
+\caption{The relative compile-time performance of GHC 8.8.3 (which implements \gmtm) and HEAD
+         (which implements \sysname) on test cases designed to stress-test coverage checking.}
+\label{fig:perf}
+\end{figure}
+
+To compare the effiency of \gmtm and \sysname quantitatively, we
+collected a series of test cases from GHC's test suite that are designed to test
+the compile-time performance of coverage checking. \Cref{fig:perf} lists each of these 11 test
+cases. Test cases with a \texttt{T} prefix are taken from user-submitted bug reports
+about the poor performance of \gmtm. Test cases with a
+\texttt{PmSeries} prefix are adapted from \citet{maranget:warnings},
+which presents several test cases that caused GHC to exhibit exponential running times
+during coverage checking.
+Series S, T, and V are taken directly from \citet{maranget:warnings}, while Series G is a
+variation on Series S that uses pattern guards.
+
+We compiled each test case with GHC 8.8.3,
+which uses \gmtm as its checking algorithm, and GHC HEAD, which uses \sysname.
+We measured (1) the time spent in the desugarer, the phase of compilation in
+which coverage checking occurs, and (2) how many bytes were allocated during
+desugaring. \Cref{fig:perf} shows these figures as well as the percent change
+going from 8.8.3 to HEAD. Most cases exhibit a noticeable improvement under
+\sysname, with the exceptions of \texttt{T11276} and \texttt{PmSeriesG}.
+\ryan{Sebastian: Why are these so bad?}
 
 \subsection{GHC issues} \label{sec:ghc-issues}
 
@@ -3080,8 +3119,6 @@ easily be extended, as \sysname's treatment of view patterns
 improved to accomplish the same thing, it is unlikely to be as
 straightforward of a process as extending $\addphi$.
 
-\ryan{Should we mention something about the performance of \gmtm here?}
-
 \subsection{Comparison with similar coverage checkers}
 
 \subsubsection{Structural and semantic pattern matching analysis in Haskell}
@@ -3091,13 +3128,13 @@ SMT solver to give more accurate coverage warnings for programs that use
 guards. For instance, their implementation can conclude that
 the |signum| function from \cref{ssec:guards} is exhaustive. This is something
 that \sysname cannot do out of the box, although it would be possible to
-extend $\addphi$ with SMT-like reasoning about booleans and integer arithmetic.
-\ryan{Sebastian: is this the thing that would need to be extended?}
-\sg{Yes, I imagine that $\addphi$ would match on arithmetic expressions and then
-add some kind of new $\delta$ constraint to $\Delta$. $\adddelta$ would then
-have to do the actual linear arithmetic reasoning, \eg conclude from
-$x \not< e, x \ntermeq e, x \not> e$ (and $x \ntermeq \bot$) that $x$ is not
-inhabited, quite similar to a \extension{COMPLETE} set.}
+extend $\addphi$ with SMT-like reasoning about booleans and linear integer arithmetic.
+% \ryan{Sebastian: is this the thing that would need to be extended?}
+% \sg{Yes, I imagine that $\addphi$ would match on arithmetic expressions and then
+% add some kind of new $\delta$ constraint to $\Delta$. $\adddelta$ would then
+% have to do the actual linear arithmetic reasoning, \eg conclude from
+% $x \not< e, x \ntermeq e, x \not> e$ (and $x \ntermeq \bot$) that $x$ is not
+% inhabited, quite similar to a \extension{COMPLETE} set.}
 
 \subsubsection{Warnings for pattern matching}
 \label{ssec:maranget}
@@ -3105,7 +3142,7 @@ inhabited, quite similar to a \extension{COMPLETE} set.}
 \citet{maranget:warnings} presents a coverage checking algorithm for OCaml. While
 OCaml is a strict language, the algorithm claims to be general enough to handle
 languages with non-strict semantics such as Haskell. That claim however builds on
-a broken understanding of laziness. Given the following definition
+a broken understanding of laziness. Given the following definition:
 \begin{code}
 f True  = 1
 f _     = 2
@@ -3116,19 +3153,19 @@ f _     = 2
 course incorrect. Also, replacing the wild card by a match on |False| would no
 longer be a complete match according to their formalism.
 
-\sg{We can shorten this as needed. It's just a rant at this point, I'm afraid...}
-
-Apart from that, his algorithm would report |Nothing| as a missing clause of
-the definition |g (Just True) = 1|, but would fail to report the nested |Just
-False|, which is clearly unsound according to our definition
-in \cref{ssec:soundness}.
-
-\citeauthor{maranget:warnings} comes up with surprisingly tricky test cases
-which exponentially blew up compilation time of GHC at the time. We added them
-into our testsuite \cite{gitlab:17264} as regression tests and made sure
-that throttling (\cref{ssec:throttling}) maintains linear performance
-characteristics.
-\ryan{The use of ``We'' in this sentence risks de-anonymizing us...}
+% \sg{We can shorten this as needed. It's just a rant at this point, I'm afraid...}
+%
+% Apart from that, his algorithm would report |Nothing| as a missing clause of
+% the definition |g (Just True) = 1|, but would fail to report the nested |Just
+% False|, which is clearly unsound according to our definition
+% in \cref{ssec:soundness}.
+%
+% \citeauthor{maranget:warnings} comes up with surprisingly tricky test cases
+% which exponentially blew up compilation time of GHC at the time. We added them
+% into our testsuite \cite{gitlab:17264} as regression tests and made sure
+% that throttling (\cref{ssec:throttling}) maintains linear performance
+% characteristics.
+% \ryan{The use of ``We'' in this sentence risks de-anonymizing us...}
 
 \subsubsection{Elaborating dependent (co)pattern matching}
 
