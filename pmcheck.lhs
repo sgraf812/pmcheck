@@ -174,7 +174,7 @@ checker, both in accuracy and performance.
 
 %% Keywords
 %% comma separated list
-\keywords{Haskell, pattern matching, Generalized Algebraic Data Types, \OutsideIn{X}}  %% \keywords are mandatory in final camera-ready submission
+\keywords{Haskell, pattern matching, guards, strictness}  %% \keywords are mandatory in final camera-ready submission
 
 \section{Introduction}
 
@@ -373,8 +373,8 @@ not b  | False <- b  = True
 \centering
 \begin{code}
 not2 :: Bool -> Bool
-not2 False = True
-not2 True = False
+not2 False  = True
+not2 True   = False
 \end{code}
 \end{minipage}
 \begin{minipage}{0.33\textwidth}
