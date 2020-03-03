@@ -841,7 +841,7 @@ Stardust \cite{dunfieldthesis}.
 \end{array}
 \]
 
-\caption{IR Syntax}
+\caption{IR syntax}
 \label{fig:syn}
 \end{figure}
 
@@ -867,6 +867,39 @@ In this section, we describe our new coverage checking algorithm, \sysname.
   The function $\generate(\Theta)$ produces representative \emph{inhabitants}
   of the refinement type $\Theta$ (produced by $\unc$) that describes the
   uncovered values.
+\end{itemize}
+
+\sysname's main contribution when compared to other coverage checkers, such
+as \gmtm, is its
+incorporation of many small improvements and insights, rather than a single
+defining breakthrough. In particular, \sysname's advantages are:
+
+\begin{itemize}
+  \item
+    Correctly accounting for strictness in identifying redundant and inaccessible
+    code (\cref{ssec:strict-fields}).
+
+  \item
+    Using detailed term-level reasoning
+    (\cref{fig:gen,fig:add,fig:inh}),
+    which \gmtm does not.
+
+  \item
+    Using \emph{negative information} to sidestep serious performance issues in
+    \gmtm without changing the worst-case complexity (\cref{ssec:negative-information}).
+    This also enables
+    graceful degradation (\cref{ssec:throttling})
+    and the ability to handle \extension{COMPLETE}
+    sets properly (\cref{ssec:residual-complete}).
+
+  \item
+    Achieving modularity by clearly separating the source syntax (\cref{fig:srcsyn})
+    from the intermediate language (\cref{fig:syn}).
+
+  \item
+    Fixing various bugs present in \gmtm, both in the paper \cite{gadtpm} and
+    in GHC's implementation thereof (\cref{sec:ghc-issues}).
+
 \end{itemize}
 
 
@@ -3129,6 +3162,7 @@ in \sysname. Guard trees could take inspiration from case trees should a future
 version of GHC add dependent types or copatterns.
 
 \subsection{Positive and negative information}
+\label{ssec:negative-information}
 
 \sysname's use of positive and negative constructor constraints in inert sets is
 inspired by \citet{sestoft1996ml}, which uses positive and negative information
@@ -3204,6 +3238,7 @@ only can find a subset of all uncovered patterns in doing so
 (\cref{ssec:maranget}).
 
 \subsection{Strict fields in inhabitation testing}
+\label{ssec:strict-fields}
 
 To our knowledge, the $\mathsf{Inst}$ function in \cref{fig:inh} is the first
 inhabitation test in a coverage checking algorithm to take strict fields into
