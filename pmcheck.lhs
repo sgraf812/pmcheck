@@ -2967,6 +2967,8 @@ similar caliber and would also benefit from |keepAlive|.
 
 \subsection{Performance tests}
 
+{\floatstyle{plain}
+\restylefloat{figure}
 \begin{figure}
 
 \begin{tabular}{c || r r r || r r r ||}
@@ -2991,6 +2993,7 @@ similar caliber and would also benefit from |keepAlive|.
          (which implements \sysname) on test cases designed to stress-test coverage checking.}
 \label{fig:perf}
 \end{figure}
+}
 
 To compare the effiency of \gmtm and \sysname quantitatively, we
 collected a series of test cases from GHC's test suite that are designed to test
