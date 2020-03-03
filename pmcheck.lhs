@@ -2980,8 +2980,7 @@ similar caliber and would also benefit from |keepAlive|.
 \multicolumn{1}{||c||}{\texttt{T17096}}    & 7,469.693   & 16.641 & -99.78\% & 17,251,358,480 & 35,406,936 &   -99.79\% \\
 \multicolumn{1}{||c||}{\texttt{PmSeriesS}} &    44.463   &  2.579 & -94.20\% &     52,852,744 &  6,189,144 &   -88.29\% \\
 \multicolumn{1}{||c||}{\texttt{PmSeriesT}} &    48.299   &  6.864 & -85.79\% &     61,434,928 & 17,577,224 &   -71.39\% \\
-\multicolumn{1}{||c||}{\texttt{PmSeriesV}} &   130.754   &  4.544 & -96.52\% &    139,083,856 &  9,525,800 &   -93.15\% \\
-\multicolumn{1}{||c||}{\texttt{PmSeriesG}} &     1.197   &  8.082 & 575.19\% &      1,206,112 & 18,899,376 & 1,466.97\% \\ \hline
+\multicolumn{1}{||c||}{\texttt{PmSeriesV}} &   130.754   &  4.544 & -96.52\% &    139,083,856 &  9,525,800 &   -93.15\% \\ \hline
 \end{tabular}
 
 \caption{The relative compile-time performance of GHC 8.8.3 (which implements \gmtm) and HEAD
@@ -2998,8 +2997,6 @@ about the poor performance of \gmtm. Test cases with a
 \texttt{PmSeries} prefix are adapted from \citet{maranget:warnings},
 which presents several test cases that caused GHC to exhibit exponential running times
 during coverage checking.
-Series S, T, and V are taken directly from \citet{maranget:warnings}, while Series G is a
-variation on Series S that uses pattern guards.
 
 We compiled each test case with GHC 8.8.3,
 which uses \gmtm as its checking algorithm, and GHC HEAD, which uses \sysname.
