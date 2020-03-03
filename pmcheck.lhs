@@ -2954,7 +2954,7 @@ error message. Moreover, leaving the first clause in the code ensures that it
 is typechecked and less susceptible to bitrotting over time.
 
 We may consider
-adding a primitive function |keepAlive :: a -> a| primitive function such that
+adding a primitive function |keepAlive| such that
 |keepAlive False| does not get marked as redundant in order to support use
 cases like \texttt{HsYAML}'s. The unreachable code in \texttt{Cabal} and
 \texttt{network} is of a
