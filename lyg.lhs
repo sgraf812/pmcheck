@@ -1485,16 +1485,17 @@ We do this in two steps:
 \item For each such $\nabla$, expand $\Gamma$ into a list of patterns, by the call
   $\expand(\nabla, \mathsf{dom}(\Gamma))$; see \Cref{sec:expand}.
 \end{itemize}
-A normalised refinement type $\nabla = \nreft{\Gamma}{\Delta}$ is similar to a
-refinement type $\Theta = \reft{\Gamma}{\Phi}$, but is in a much more restricted form:
+A normalised refinement type $\nabla$ is either empty ($\false$) or of the form
+$\nreft{\Gamma}{\Delta}$. It is similar to a refinement type $\Theta =
+\reft{\Gamma}{\Phi}$, but is in a much more restricted form:
 \begin{itemize}
 \item $\Delta$ is simply a conjunction of literals $\delta$; there are no disjunctions.
   Instead, disjunction reflects in the fact that $\construct$ returns a \emph{set} of nomalised refinement types.
 \item Unlike $\Phi$, the literals in $\Delta$ cannot bind variables.  They are all bound in $\Gamma$.
 \end{itemize}
-Beyond these syntactic differences, we enforce the following semantic invariants on $\nabla$:
+Beyond these syntactic differences, we enforce the following semantic invariants on a $\nabla = \nreft{\Gamma}{\Delta}$:
 \begin{enumerate}
-  \item[\inv{1}] \emph{Mutual compatibility}: No two constraints in $\nabla$
+  \item[\inv{1}] \emph{Mutual compatibility}: No two constraints in $\Delta$
     should \emph{conflict} with each other, where $x \termeq \bot$ conflicts with
     $x \ntermeq \bot$ and $x \termeq K \; \mathunderscore \; \mathunderscore$
     conflicts with $x \ntermeq K$ for all $x$.
@@ -1502,9 +1503,9 @@ Beyond these syntactic differences, we enforce the following semantic invariants
     absence of any other constraints mentioning |x| in its left-hand side.
   \item[\inv{3}] \emph{Single solution}: There is at most one positive
     constructor constraint $x \termeq \deltaconapp{K}{a}{y}$ for a given |x|.
-  \item[\inv{4}] \emph{???}: If $x:\tau$ and $\tau$ is a data type,
-    there must be at least one constructor $K$ (or $\bot$) which $x$ can be
-    instantiated to.
+  \item[\inv{4}] \emph{Incompletely matched}: If $x:\tau \in \Gamma$ and $\tau$
+  reduces to a data type under type constraints in $\Delta$, there must be at
+  least one constructor $K$ (or $\bot$) which $x$ can be instantiated to.
 \end{enumerate}
 
 It is often helpful to think of a $\Delta$ as a partial function from |x| to
@@ -1654,34 +1655,32 @@ constraint, although not conflicting, is not added to the normalised refinement
 type because of \inv{2}.
 
 If there is a solution involving a different constructor like $\Delta(x)
-\termeq |Nothing|$, the new constraint is incompatible with the
-existing solution. There are two other ways in which the constraint can be
-incompatible: if there was a negative constructor constraint $\Delta(x) \ntermeq
-|Just|$ or if any of the fields were not inhabited, which is checked by the
-$\inhabited{\nabla}{\Delta(x)}$ judgment (\cf \cref{sec:test}) in \cref{fig:inh}.
-% Otherwise, the constraint is compatible and is added to $\Delta$.
+\termeq |Nothing|$ or if there was a negative constructor constraint $\Delta(x)
+\ntermeq |Just|$, the new constraint is incompatible with the
+existing solution. Otherwise, the constraint is compatible and is added to
+$\Delta$.
 
-Adding a negative constructor constraint $x \ntermeq Just$ is quite
-similar, as is handling of positive and negative constraints involving $\bot$.
-The idea is that whenever we add a negative constraint that doesn't
-contradict with positive constraints, we still have to test if there are any
-inhabitants left.
+Adding a negative constructor constraint $x \ntermeq Just$ is quite similar,
+except that we have to make sure that $x$ still satisfies \inv{4}, which is
+checked by the $\inhabited{\nabla}{\Delta(x)}$ judgment (\cf \cref{sec:test})
+in \cref{fig:inh}. Handling positive and negative constraints involving $\bot$
+is analogous.
 
-Adding a type constraint $\gamma$ drives this paranoia to a maximum: After
-calling out to the type-checker to assert that the constraint is
-consistent with existing constraints, we have to test \emph{all} variables in the
-domain of $\Gamma$ for inhabitants, because the new type constraint could have
-rendered a type empty. To demonstrate why this is necessary, imagine we have
-$\nreft{x : a}{x \ntermeq \bot}$ and try to add $a \typeeq |Void|$. Although the
-type constraint is consistent, $x$ in $\nreft{x : a}{x \ntermeq \bot, a \typeeq
-|Void|}$ is no longer inhabited. There is room for being smart about which
-variables we have to re-check: For example, we can exclude variables whose type
-is a non-GADT data type.
+Adding a type constraint $\gamma$ entails calling out to the type checker to
+assert that the constraint is consistent with existing type constraints.
+Afterwards, we have to ensure \inv{4} is upheld for \emph{all} variables in the
+domain of $\Gamma$, because the new type constraint could have rendered a type
+empty. To demonstrate why this is necessary, imagine we have $\nreft{x : a}{x
+\ntermeq \bot}$ and try to add $a \typeeq |Void|$. Although the type constraint
+is consistent, $x$ in $\nreft{x : a}{x \ntermeq \bot, a \typeeq |Void|}$ is no
+longer inhabited. There is room for being smart about which variables we have
+to re-check: For example, we can exclude variables whose type is a non-GADT
+data type.
 
 The last case of $\!\adddelta\!$ equates two variables ($x \termeq y$) by
-merging their equivalence classes. Consider the case where $x$ and $y$ aren't in
-the same equivalence class. Then $\Delta(y)$ is arbitrarily chosen to be the new
-representative of the merged equivalence class. To uphold \inv{2}, all
+merging their equivalence classes. Consider the case where $x$ and $y$ aren't
+in the same equivalence class. Then $\Delta(y)$ is arbitrarily chosen to be the
+new representative of the merged equivalence class. To uphold \inv{2}, all
 constraints mentioning $\Delta(x)$ have to be removed and renamed in terms of
 $\Delta(y)$ and then re-added to $\Delta$, one of which in turn might uncover a
 contradiction.
@@ -2090,7 +2089,7 @@ supplementing that with a simple termination analysis in the future.
 % inhabitants left.
 %
 % Adding a type constraint $\gamma$ drives this paranoia to a maximum: After
-% calling out to the type-checker (the logic of which we do not and would not
+% calling out to the type checker (the logic of which we do not and would not
 % replicate in this paper or our implementation) to assert that the constraint is
 % consistent with the inert set, we have to test \emph{all} variables in the
 % domain of $\Gamma$ for inhabitants, because the new type constraint could have
@@ -2500,8 +2499,8 @@ go beyond the pure formalism. This section is dedicated to describing these.
 \sg{Delete this paragraph?}
 Warning messages need to reference source syntax in order to be comprehensible
 by the user. At the same time, coverage checks involving GADTs need a
-type-checked program, so the only reasonable design is to run the coverage checker
-between type-checking and desugaring to GHC Core, a typed intermediate
+type checked program, so the only reasonable design is to run the coverage checker
+between type checking and desugaring to GHC Core, a typed intermediate
 representation lacking the connection to source syntax. We perform coverage
 checking in the same tree traversal as desugaring.
 
