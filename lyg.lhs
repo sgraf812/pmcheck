@@ -1516,7 +1516,7 @@ its \emph{solution}, informed by the single positive constraint $x \termeq
 |Nothing|$ can be understood as a function mapping |x| to |Nothing|. This
 reasoning is justified by \inv{3}. Under this view, $\Delta$ looks like a
 substitution. As we'll see in \cref{sec:normalise}, this view is
-supported by a close correspondance with unification algorithms.
+supported by a close correspondence with unification algorithms.
 
 \inv{2} is actually a condition on the represented substitution. Whenever we
 find out that $x \termeq y$, for example when matching a variable pattern |y|
@@ -1529,7 +1529,7 @@ up constraints twice: The first lookup will find |x|'s representative |y|, the
 second lookup on |y| will then find the solution |Nothing|.
 
 We use $\Delta(x)$ to look up the representative of $x$ in $\Delta$ (see \Cref{fig:gen}).
-So we can assert that |x| has |Nothing| as a solution simply by writing $\Delta(x)
+Therefore, we can assert that |x| has |Nothing| as a solution simply by writing $\Delta(x)
 \termeq |Nothing| \in \Delta$.
 
 \subsection{Expanding a normalised refinement type to a pattern} \label{sec:expand}
@@ -1546,7 +1546,7 @@ well-defined.
 
 \begin{figure}
 \centering
-\[ \textbf{Add a formula literal to $\nabla$} \quad 
+\[ \textbf{Add a formula literal to $\nabla$} \quad
  \ruleform{ \nabla \addphi \varphi = \nabla } \]
 \[
 \begin{array}{r@@{\,}c@@{\,}lcll}
@@ -1566,7 +1566,7 @@ well-defined.
 \end{array}
 \]
 
-\[ \textbf{Add a constraint to $\nabla$} \quad 
+\[ \textbf{Add a constraint to $\nabla$} \quad
  \ruleform{ \nabla \adddelta \delta = \nabla } \]
 \[
 \begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}ll}
@@ -1636,10 +1636,10 @@ Normalisation, carried out by $\construct$ in \Cref{fig:gen},
 is largely a matter of repeatedly adding a literal $\varphi$ to a
 normalised type, thus $\nabla \addphi \varphi$.  This function
 is where all the work is done, in \Cref{fig:add}.
-
+%
 It does so by expressing a $\varphi$ in terms of once again simpler constraints
 $\delta$ and calling out to $\!\adddelta\!$. Specifically, in Equation (3)
-a pattern guards extend the context and
+a pattern guard extends the context and
 adds suitable type constraints and a positive constructor constraint
 arising from the binding. Equation (4) of $\!\addphi\!$ performs
 some limited, but important reasoning about let bindings: it flattens
