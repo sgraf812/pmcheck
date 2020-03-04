@@ -2801,13 +2801,16 @@ about the poor performance of \gmtm. Test cases with a
 which presents several test cases that caused GHC to exhibit exponential running times
 during coverage checking.
 
-We compiled each test case with GHC 8.8.3,
-which uses \gmtm as its checking algorithm, and GHC HEAD, which uses \lyg.
-We measured (1) the time spent in the desugarer, the phase of compilation in
-which coverage checking occurs, and (2) how many megabytes were allocated during
-desugaring. \Cref{fig:perf} shows these figures as well as the percent change
-going from 8.8.3 to HEAD. Most cases exhibit a noticeable improvement under
-\lyg, with the exception of \texttt{T11276}.
+We compiled each test case with GHC 8.8.3, which uses \gmtm as its checking
+algorithm, and GHC HEAD, which uses \lyg. We measured (1) the time spent in the
+desugarer, the phase of compilation in which coverage checking occurs, and (2)
+how many megabytes were allocated during desugaring. \Cref{fig:perf} shows
+these figures as well as the percent change going from 8.8.3 to HEAD. Most
+cases exhibit a noticeable improvement under \lyg, with the exception of
+\texttt{T11276}, where investigations suggest that an implementation detail is
+the culprit~\citet{gitlab:17891}: Calling out to the type checker must have
+gotten more expensive. It didn't show up in CI because desugaring contributes
+only about 1\% of total compile-time allocations.
 
 \subsection{GHC issues} \label{sec:ghc-issues}
 
