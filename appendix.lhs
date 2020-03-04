@@ -46,10 +46,10 @@ without a \extension{COMPLETE} set.
 \[
 \begin{array}{c}
   \prooftree
-    \Shortstack{{(\ctxt{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false}
+    \Shortstack{{(\nreft{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false}
                 {\highlight{x:\tau \in \Gamma \quad \text{$\tau$ not a Newtype}}}}
   \justifies
-    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+    \inhabited{\nreft{\Gamma}{\Delta}}{x}
   \using
     \inhabitedbot
   \endprooftree
@@ -57,10 +57,10 @@ without a \extension{COMPLETE} set.
   \qquad
 
   \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad \cons(\ctxt{\Gamma}{\Delta}, \tau)=\overline{C_1,...,C_{n_i}}^i}
-                {\overline{\inst(\ctxt{\Gamma}{\Delta}, x, C_j) \not= \false}^i \quad \highlight{\text{$\tau$ not a Newtype}}}}
+    \Shortstack{{x:\tau \in \Gamma \quad \cons(\nreft{\Gamma}{\Delta}, \tau)=\overline{C_1,...,C_{n_i}}^i}
+                {\overline{\inst(\nreft{\Gamma}{\Delta}, x, C_j) \not= \false}^i \quad \highlight{\text{$\tau$ not a Newtype}}}}
   \justifies
-    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+    \inhabited{\nreft{\Gamma}{\Delta}}{x}
   \using
     \inhabitedinst
   \endprooftree
@@ -70,9 +70,9 @@ without a \extension{COMPLETE} set.
 
   \highlight{\prooftree
     \Shortstack{{\text{$\tau$ Newtype with constructor |N| wrapping $\sigma$}}
-                {x:\tau \in \Gamma \quad y \freein \Gamma \quad \inhabited{\ctxt{\Gamma,y:\sigma}{\Delta} \adddelta x \termeq |N y|}{|y|}}}
+                {x:\tau \in \Gamma \quad y \freein \Gamma \quad \inhabited{\nreft{\Gamma,y:\sigma}{\Delta} \adddelta x \termeq |N y|}{|y|}}}
   \justifies
-    \inhabited{\ctxt{\Gamma}{\Delta}}{x}
+    \inhabited{\nreft{\Gamma}{\Delta}}{x}
   \using
     \inhabitedinst
   \endprooftree}
@@ -81,16 +81,16 @@ without a \extension{COMPLETE} set.
 
 \[
 \begin{array}{r@@{\,}c@@{\,}lcl}
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
+  \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
-    \highlight{\ctxt{\Gamma}{\Delta} \adddelta x \termeq |N y| \adddelta y \termeq \bot} & \text{if $x:\tau \in \Gamma$, $\tau$ Newtype with constructor |N| wrapping $\sigma$} \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
+    \highlight{\nreft{\Gamma}{\Delta} \adddelta x \termeq |N y| \adddelta y \termeq \bot} & \text{if $x:\tau \in \Gamma$, $\tau$ Newtype with constructor |N| wrapping $\sigma$} \\
+    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
   \end{cases} \\
-  \ctxt{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
+  \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \termeq \bot \in \Delta$} \\
-    \false & \text{if not $\inhabited{\ctxt{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
-    \highlight{\ctxt{\Gamma}{\Delta} \adddelta x \termeq |N y| \adddelta y \ntermeq \bot} & \text{if $x:\tau \in \Gamma$, $\tau$ Newtype with constructor |N| wrapping $\sigma$} \\
-    \ctxt{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
+    \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
+    \highlight{\nreft{\Gamma}{\Delta} \adddelta x \termeq |N y| \adddelta y \ntermeq \bot} & \text{if $x:\tau \in \Gamma$, $\tau$ Newtype with constructor |N| wrapping $\sigma$} \\
+    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
   \end{cases} \\
 \end{array}
 \]

@@ -119,6 +119,10 @@
 }
 \email{rgscott@@indiana.edu}
 
+% Comment out to build the Appendix only
+\newcommand*{\MAIN}{}
+\ifdefined\MAIN
+
 \begin{abstract}
 One of a compiler's roles is to warn if a function defined by pattern matching
 does not cover its inputs---that is, if there are missing or redundant
@@ -3099,9 +3103,11 @@ streamline the process of checking new forms of patterns in the future.
 
 \bibliography{references}
 
-%% Appendix
-% \appendix
-% \section{Appendix}\label{sec:appendix}
-% \input{appendix}
+\else % \ifdefined\MAIN
+% Appendix
+\appendix
+\section{Appendix}\label{sec:appendix}
+\input{appendix}
+\fi
 
 \end{document}
