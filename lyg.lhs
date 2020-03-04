@@ -2736,7 +2736,7 @@ when compiled using our \lyg version of GHC.
 
 Of the 361 libraries in \texttt{head.hackage}, seven of them revealed coverage
 issues that only \lyg warned about. Two of the libraries, \texttt{pandoc} and
-\texttt{pandoc-types}, has cases that
+\texttt{pandoc-types}, have cases that
 were flagged as redundant due to \lyg's improved treatment of guards and
 term equalities. One library, \texttt{geniplate-mirror}, has a case that was
 redundant by way of long-distance information. Another library,
@@ -2959,8 +2959,8 @@ negative information to generate decision trees that avoid scrutinizing the
 same terms repeatedly. This insight is equally applicable to coverage checking
 and is one of the primary reasons for \lyg's efficiency.
 
-But also accurate redundancy warnings involving \extension{COMPLETE} sets hinge
-on negative constraints. For why this isn't possible in other checkers that
+Besides efficiency, the accuracy of redundancy warnings involving \extension{COMPLETE} sets hinge
+on negative constraints. To see why this isn't possible in other checkers that
 only track positive information, such as those of
 \citet{gadtpm} (\cref{ssec:gmtm})
 and
@@ -2990,13 +2990,12 @@ f True   = 3
 encountering the match on |False|, without any semantic considerations.
 Choosing $\{|True'|,|False|\}$ here will mark the third GRHS as redundant,
 while choosing $\{|True|,|False|\}$ won't. GHC's implementation used to try
-each \extension{COMPLETE} set in turn and had a complicated metric based on
-the number and kinds of warnings the choice of each one would generate to
-disambiguate
+each \extension{COMPLETE} set in turn and would disambiguate using a
+complicated metric based on the number and kinds of warnings the choice of each oset would generate
 \cite{complete-users-guide},
 which was broken still \cite{gitlab:13363}.
 
-On the front of efficiency, consider:
+Negative constraints make \lyg efficient in other places too, such as in this example:
 
 \begin{minipage}{\textwidth}
 \begin{minipage}{0.4\textwidth}
@@ -3015,11 +3014,11 @@ h _   A1  = 2
 \end{minipage}
 
 \noindent
-\gmtm first splits the value vector (roughly corresponding to one of our
+In |h|, \gmtm would split the value vector (which is like \lyg's
 $\Delta$s without negative constructor constraints) into 1000 alternatives over
 the first match variable, and then \emph{each} of the 999 value vectors reaching
 the second GRHS into another 1000 alternatives over the second match variable.
-Negative constraints allow us to compress the 999 value vectors falling through
+Negative constraints allow \lyg to compress the 999 value vectors falling through
 into a single one indicating that the match variable can no longer be |A1|.
 \citeauthor{maranget:warnings} detects wildcard matches to prevent blowup, but
 only can find a subset of all uncovered patterns in doing so
