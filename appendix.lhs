@@ -1,15 +1,16 @@
 %include custom.fmt
 
+\renewcommand\thefigure{\thesection.\arabic{figure}}
+
 \subsection{Literals}
 
-\sg{Omit this subsection?}
-The source syntax in \cref{fig:srcsyn} deliberately left out literal patterns
-$l$. Literals are very similar to nullary data constructors, with one caveat:
-They don't come with a builtin \texttt{COMPLETE} set. Before
-\cref{ssec:complete}, that would have meant quite a bit of hand waving and
-complication to the $\inhabited{}{}$ judgment. Now, literals can be handled
-like disjunct pattern synonyms (\ie $l_1 \cap l_2 = \emptyset$ for any two
-literals $l_1, l_2$) without a \texttt{COMPLETE} set!
+The source syntax in fig. 1 deliberately left out literal
+patterns $l$. Literals are very similar to nullary data constructors, with one
+caveat: They don't come with a builtin \texttt{COMPLETE} set. Before section
+4.5, that would have meant quite a bit of hand waving and complication to the
+$\inhabited{}{}$ judgment. Now, literals can be handled like disjunct pattern
+synonyms (\ie $l_1 \cap l_2 = \emptyset$ for any two literals $l_1, l_2$)
+without a \texttt{COMPLETE} set!
 
 We can even handle overloaded literals, but will find ourselves in a similar
 situation as with pattern synonyms:
@@ -83,13 +84,13 @@ without a \extension{COMPLETE} set.
 \begin{array}{r@@{\,}c@@{\,}lcl}
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
-    \highlight{\nreft{\Gamma}{\Delta} \adddelta x \termeq |N y| \adddelta y \termeq \bot} & \text{if $x:\tau \in \Gamma$, $\tau$ Newtype with constructor |N| wrapping $\sigma$} \\
+    \highlight{\nreft{\Gamma}{\Delta} \adddelta x \termeq |N y| \adddelta y \termeq \bot} & \parbox{0.6\textwidth}{if $x:\tau \in \Gamma$, $\tau$ Newtype with \\ constructor |N| wrapping $\sigma$} \\
     \nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
   \end{cases} \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \termeq \bot \in \Delta$} \\
     \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
-    \highlight{\nreft{\Gamma}{\Delta} \adddelta x \termeq |N y| \adddelta y \ntermeq \bot} & \text{if $x:\tau \in \Gamma$, $\tau$ Newtype with constructor |N| wrapping $\sigma$} \\
+    \highlight{\nreft{\Gamma}{\Delta} \adddelta x \termeq |N y| \adddelta y \ntermeq \bot} & \parbox{0.6\textwidth}{if $x:\tau \in \Gamma$, $\tau$ Newtype with \\ constructor |N| wrapping $\sigma$} \\
     \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
   \end{cases} \\
 \end{array}
@@ -149,9 +150,6 @@ judgment form, where we introduce a new rule \inhabitednt that is specific to
 Newtypes, which can no longer be proven inhabited by either \inhabitedinst or
 \inhabitedbot.
 
-\sg{I think that just assuming Newtype constructors to have strict fields
-achieves the same, but is a more surgical change, probably saving some space.}
-
 But |g1| crushes this simple hack. We would mark its second GRHS as
 inaccessible when it is clearly redundant, because the $x \ntermeq \bot$
 constraint on the match variable |x| wasn't propagated to the wrapped |()|.
@@ -177,7 +175,6 @@ throughout the presentation.
 
 \subsection{Strictness}
 
-\sg{Omit this subsection? I find it rather entertaining.}
 Instead of extending the source language, let's discuss ripping out a language
 feature, for a change! So far, we have focused on Haskell as the source
 language, which is lazy by default. Although after desugaring  the difference
