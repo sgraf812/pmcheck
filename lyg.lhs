@@ -1507,7 +1507,7 @@ Beyond these syntactic differences, we enforce the following semantic invariants
   \item[\inv{4}] \emph{Incompletely matched}: If $x{:}\tau \in \Gamma$ and $\tau$
   reduces to a data type under type constraints in $\Delta$, there must be at
   least one constructor $K$ (or $\bot$) which $x$ can be instantiated to without
-  contradicting \inv{1}.
+  contradicting \inv{1}; see \Cref{sec:inhabitation}.
 \end{enumerate}
 \noindent
 It is often helpful to think of a $\Delta$ as a partial function from |x| to
@@ -1734,7 +1734,7 @@ contradiction.
 % has no data constructors with which to instantiate |y|. Hence it is important
 % to test guard-bound variables for inhabitants, too.
 
-\subsection{Testing for contradiction} \label{sec:test}
+\subsection{Testing for inhabitation} \label{sec:test} \label{sec:inhabitation}
 
 \begin{figure}
 \centering
@@ -1809,28 +1809,18 @@ contradiction.
 \end{array}
 \]
 
-\caption{Testing for contradiction}
+\caption{Testing for inhabitation}
 \label{fig:inh}
 \end{figure}
 
 The process for adding a constraint to a normalised type above (which turned
 out to be a unification procedure in disguise) makes use of an
-\emph{contradiction test} $\inhabited{\nabla}{x}$, depicted in \cref{fig:inh}.
+\emph{inhabitation test} $\inhabited{\nabla}{x}$, depicted in \cref{fig:inh}.
 This tests whether there are any values of $x$ that satisfy $\nabla$. If not,
-$\nabla$ is contradictory, and does not uphold \inv{1}.
-
-\simon{Is this right?}
-\sg{While the explanation seems fine, I'm not sure if the term
-``contradiction test'' and ``contradictory'' is a good fit. After all, we're
-testing just a single variable, not the whole $\nabla$. I think
-$\inhabited{\nabla}{x}$ is really about \extension{COMPLETE} sets: Only if we
-know a \extension{COMPLETE} set we can possibly enumerate and test all the
-inhabitants of a type, some of which are impossible by negative constructor
-constraints or type info. That's basically what $\inhabited{\nabla}{x}$ is
-doing. If we don't know even a single \extension{COMPLETE} set for a type, we
-can never determine if a type/variable is empty (\inhabitednocpl). I think the
-$\nabla$ itself is consistent according to \inv{1} regardless of
-$\inhabited{\nabla}{x}$, no two constraints are contradictory.}
+$\nabla$ does not uphold \inv{4}.
+For example, the conjunction
+$x \ntermeq Just, x \ntermeq Nothing, x \ntermeq \bot$ does not satisfy \inv{4},
+because no value of $x$ satisfies all those constraints.
 
 The \inhabitedbot judgment of $\inhabited{\nabla}{x}$ tries to instantiate $x$ to
 $\bot$ to conclude that $x$ is inhabited. \inhabitedinst instantiates $x$ to one
