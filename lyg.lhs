@@ -213,7 +213,7 @@ types is a well studied (although still surprisingly tricky) problem---see
 But the coverage-checking problem becomes \emph{much} harder when one includes the
 raft of innovations that have become part of a modern programming language
 like Haskell, including: view patterns, pattern guards, pattern synonyms,
-overloaded literals, bang patterns, lazy patterns, as-patterns, strict data contructors,
+overloaded literals, bang patterns, lazy patterns, as-patterns, strict data constructors,
 empty case expressions, and long-distance effects (\Cref{sec:extensions}).
 Particularly tricky are GADTs \cite{recdatac}, where the \emph{type} of a match can determine
 what \emph{values} can possibly appear; and local type-equality constraints brought into
@@ -452,7 +452,7 @@ We consider two such extensions here: view patterns and pattern synonyms.
 View patterns allow arbitrary computation to be performed while pattern
 matching. When a value |v| is matched against a view pattern |(f -> p)|, the
 match is successful when |f v| successfully matches against the pattern |p|.
-For example, one can use view patterns to succintly define a function that
+For example, one can use view patterns to succinctly define a function that
 computes the length of Haskell's opaque |Text| data type:
 
 \begin{code}
@@ -1195,8 +1195,8 @@ $\antbang{}{\hspace{-0.6em}}$ node is annotated with a refinement type that desc
 the input values on which matching will diverge.  Once again, $\ann$ can
 be defined by a simple recursive descent over the guard tree (\Cref{fig:check}), but note
 that the second equation uses $\unc$ as an auxiliary function\footnote{
-Our implementaiton avoids this duplicated work -- see \Cref{ssec:interleaving}
--- but the fomulation in \Cref{fig:check} emphasises clarity over efficiency.}.
+Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
+-- but the formulation in \Cref{fig:check} emphasises clarity over efficiency.}.
 
 % Coverage checking works by gradually refining the set of reaching values
 % \ryan{Did you mean to write ``reachable values'' here? ``Reaching values''
@@ -1493,7 +1493,7 @@ $\nreft{\Gamma}{\Delta}$. It is similar to a refinement type $\Theta =
 \reft{\Gamma}{\Phi}$, but is in a much more restricted form:
 \begin{itemize}
 \item $\Delta$ is simply a conjunction of literals $\delta$; there are no disjunctions.
-  Instead, disjunction reflects in the fact that $\construct$ returns a \emph{set} of nomalised refinement types.
+  Instead, disjunction reflects in the fact that $\construct$ returns a \emph{set} of normalised refinement types.
 \item Unlike $\Phi$, the literals in $\Delta$ cannot bind variables.  They are all bound in $\Gamma$.
 \end{itemize}
 Beyond these syntactic differences, we enforce the following semantic invariants on a $\nabla = \nreft{\Gamma}{\Delta}$:
@@ -2242,7 +2242,7 @@ supplementing that with a simple termination analysis in the future.
 
 \lyg is well equipped to handle the fragment of Haskell it was designed to
 handle. But GHC (and other languages, for that matter) extends Haskell in
-non-trivial ways. This section exemplifies easy accomodation of new langauge
+non-trivial ways. This section exemplifies easy accommodation of new language
 features and measures to increase precision of the checking process,
 demonstrating the modularity and extensibility of our approach.
 
@@ -2409,7 +2409,7 @@ But equipped with long-distance information from the scrutinee expression, the
 checker would mark the \emph{first case alternative} as redundant, which
 clearly is unsound! Deleting the first alternative would change its semantics
 from returning 1 to returning 2. In general, we cannot assume that arbitrary
-pattern synonym definitions are disjunct, in stark contrast to data
+pattern synonym definitions are disjoint, in stark contrast to data
 constructors.
 
 The solution is to tweak the clause of $\!\adddelta\!$ dealing with positive
@@ -2794,7 +2794,7 @@ similar caliber and would also benefit from |keepAlive|.
 \end{figure}
 }
 
-To compare the effiency of \gmtm and \lyg quantitatively, we
+To compare the efficiency of \gmtm and \lyg quantitatively, we
 collected a series of test cases from GHC's test suite that are designed to test
 the compile-time performance of coverage checking. \Cref{fig:perf} lists each of these 11 test
 cases. Test cases with a \texttt{T} prefix are taken from user-submitted bug reports
@@ -2885,7 +2885,7 @@ safeLast2 xs
   | []       <- reverse xs = Nothing
 \end{code}
 
-While \gmtm's term oracle is customizable, it is not as simple to customize
+While \gmtm's term oracle is customisable, it is not as simple to customize
 as one might hope. The formalism in \citet{gadtpm} represents all guards as
 |p <- e|, where |p| is a pattern and |e| is an expression. This is a
 straightforward, syntactic representation, but it also makes it more difficult to
