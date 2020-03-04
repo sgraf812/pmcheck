@@ -458,7 +458,7 @@ computes the length of Haskell's opaque |Text| data type:
 \begin{code}
 Text.null :: Text -> Bool   -- Checks if a Text is empty
 Text.uncons :: Text -> Maybe (Char, Text)  -- If a Text is non-empty, return Just (x, xs),
-                                           -- where x is the first char and xs is the rest
+                                           -- where x is the first character and xs is the rest
 
 length :: Text -> Int
 length (Text.null -> True)            = 0
@@ -634,7 +634,7 @@ The inhabitants of the type |Maybe Void| are $\bot$, |Nothing|, and $(|Just|~\bo
 The input $\bot$ makes the first equation diverge; |Nothing| matches on the first equation;
 and $(|Just|~\bot)$ makes the second equation diverge because of the bang pattern.
 Therefore, none of the three inhabitants will result in the right-hand side of
-the second equation being reached. Note that the second equation is inaccessible, not redundant
+the second equation being reached. Note that the second equation is inaccessible, but not redundant
 (\cref{sssec:inaccessibility}).
 
 \subsection{Type-equality constraints}
