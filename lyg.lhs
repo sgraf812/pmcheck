@@ -1476,7 +1476,6 @@ inaccessible, leaving all the others as redundant.
 Thus far, all our functions have been very simple, syntax-directed
 transformations, but they all ultimately depend on the single function
 $\generate$, which does the real work.  That is our new focus.
-
 As \Cref{fig:gen} shows, $\generate(\Theta)$ takes a refinement
 type $\Theta = \reft{\Gamma}{\Phi}$
 and returns a (possibly-empty) set of patterns $\overline{p}$ (syntax in \Cref{fig:syn})
@@ -1494,7 +1493,6 @@ $\nreft{\Gamma}{\Delta}$. It is similar to a refinement type $\Theta =
 \begin{itemize}
 \item $\Delta$ is simply a conjunction of literals $\delta$; there are no disjunctions.
   Instead, disjunction reflects in the fact that $\construct$ returns a \emph{set} of normalised refinement types.
-\item Unlike $\Phi$, the literals in $\Delta$ cannot bind variables.  They are all bound in $\Gamma$.
 \end{itemize}
 Beyond these syntactic differences, we enforce the following semantic invariants on a $\nabla = \nreft{\Gamma}{\Delta}$:
 \begin{enumerate}
@@ -1506,31 +1504,32 @@ Beyond these syntactic differences, we enforce the following semantic invariants
     absence of any other constraints mentioning |x| in its left-hand side.
   \item[\inv{3}] \emph{Single solution}: There is at most one positive
     constructor constraint $x \termeq \deltaconapp{K}{a}{y}$ for a given |x|.
-  \item[\inv{4}] \emph{Incompletely matched}: If $x:\tau \in \Gamma$ and $\tau$
+  \item[\inv{4}] \emph{Incompletely matched}: If $x{:}\tau \in \Gamma$ and $\tau$
   reduces to a data type under type constraints in $\Delta$, there must be at
-  least one constructor $K$ (or $\bot$) which $x$ can be instantiated to.
+  least one constructor $K$ (or $\bot$) which $x$ can be instantiated to without
+  contradicting \inv{1}.
 \end{enumerate}
-
+\noindent
 It is often helpful to think of a $\Delta$ as a partial function from |x| to
 its \emph{solution}, informed by the single positive constraint $x \termeq
 \deltaconapp{K}{a}{y} \in \Delta$, if it exists. For example, $x \termeq
 |Nothing|$ can be understood as a function mapping |x| to |Nothing|. This
 reasoning is justified by \inv{3}. Under this view, $\Delta$ looks like a
-substitution. As we'll see later in \cref{sec:normalise}, this view is
-supported by immense overlap with unification algorithms.
+substitution. As we'll see in \cref{sec:normalise}, this view is
+supported by a close correspondance with unification algorithms.
 
 \inv{2} is actually a condition on the represented substitution. Whenever we
 find out that $x \termeq y$, for example when matching a variable pattern |y|
 against a match variable |x|, we have to merge all the other constraints on |x|
-into |y| and say that |y| is the representative of |x|'s equivalence class.
+into |y|, and say that |y| is the representative of |x|'s equivalence class.
 This is so that every new constraint we record on |y| also affects |x| and vice
 versa. The process of finding the solution of |x| in $x \termeq y, y \termeq
 |Nothing|$ then entails \emph{walking} the substitution, because we have to look
 up constraints twice: The first lookup will find |x|'s representative |y|, the
 second lookup on |y| will then find the solution |Nothing|.
 
-In denoting looking up the representative by $\Delta(x)$ (\cf \cref{fig:gen}),
-we can assert that |x| has |Nothing| as a solution simply by writing $\Delta(x)
+We use $\Delta(x)$ to look up the representative of $x$ in $\Delta$ (see \Cref{fig:gen}).
+So we can assert that |x| has |Nothing| as a solution simply by writing $\Delta(x)
 \termeq |Nothing| \in \Delta$.
 
 \subsection{Expanding a normalised refinement type to a pattern} \label{sec:expand}
@@ -1547,66 +1546,69 @@ well-defined.
 
 \begin{figure}
 \centering
-\[ \textbf{Add a formula literal to $\nabla$} \]
-\[ \ruleform{ \nabla \addphi \varphi = \nabla } \]
+\[ \textbf{Add a formula literal to $\nabla$} \quad 
+ \ruleform{ \nabla \addphi \varphi = \nabla } \]
 \[
-\begin{array}{r@@{\,}c@@{\,}lcl}
+\begin{array}{r@@{\,}c@@{\,}lcll}
 
-  \nabla &\addphi& \false &=& \false \\
-  \nabla &\addphi& \true &=& \nabla \\
-  \nreft{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} &=&
-    \nreft{\Gamma,\overline{a},\overline{y:\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta \overline{y' \ntermeq \bot} \adddelta x \termeq \deltaconapp{K}{a}{y} \\
+  \nabla &\addphi& \false &=& \false & (1)\\
+  \nabla &\addphi& \true &=& \nabla & (2) \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y{:}\tau}}{x} &=&
+    \nreft{\Gamma,\overline{a},\overline{y{:}\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta \overline{y' \ntermeq \bot} \adddelta x \termeq \deltaconapp{K}{a}{y} & (3) \\
   &&&& \quad \text{where $\overline{y'}$ bind strict fields} \\
-  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \nreft{\Gamma,x:\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y:\tau'}{e}} \\
-  &&&& \quad \text{where $\overline{a}\,\overline{y} \freein \Gamma$, $\overline{e:\tau'}$} \\
-  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{y} &=& \nreft{\Gamma,x:\tau}{\Delta} \adddelta x \termeq y \\
-  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x:\tau}{e} &=& \nreft{\Gamma,x:\tau}{\Delta} \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \nreft{\Gamma,x{:}\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y{:}\tau'}{e}} & (4) \\
+  &&&& \quad \text{where $\overline{a}\,\overline{y} \freein \Gamma$, $\overline{e{:}\tau'}$} \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{y} &=& \nreft{\Gamma,x{:}\tau}{\Delta} \adddelta x \termeq y & (5) \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{e} &=& \nreft{\Gamma,x{:}\tau}{\Delta} & (6) \\
   % TODO: Somehow make the coercion from delta to phi less ambiguous
-  \nreft{\Gamma}{\Delta} &\addphi& \varphi &=& \nreft{\Gamma}{\Delta} \adddelta \varphi
+  \nreft{\Gamma}{\Delta} &\addphi& \varphi &=& \nreft{\Gamma}{\Delta} \adddelta \varphi & (7)
 
 \end{array}
 \]
 
-\[ \textbf{Add a constraint to $\nabla$} \]
-\[ \ruleform{ \nabla \adddelta \delta = \nabla } \]
+\[ \textbf{Add a constraint to $\nabla$} \quad 
+ \ruleform{ \nabla \adddelta \delta = \nabla } \]
 \[
-\begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}l}
+\begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}ll}
 
-  \false &\adddelta& \delta &=& \false \\
+  \false &\adddelta& \delta &=& \false & (8)\\
   \nreft{\Gamma}{\Delta} &\adddelta& \gamma &=& \begin{cases}
-    \nreft{\Gamma}{(\Delta,\gamma)} & \parbox[t]{0.6\textwidth}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\nreft{\Gamma}{(\Delta,\gamma)}}{\rep{\Delta}{x}}$} \\
+    \nreft{\Gamma}{(\Delta,\gamma)} & \parbox[t]{6cm}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\nreft{\Gamma}{(\Delta,\gamma)}}{\rep{\Delta}{x}}$} \\
     \false & \text{otherwise} \\
-  \end{cases} \\
+  \end{cases} & (9)\\
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
     \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
     \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K'}{b}{z} \in \Delta$ } \\
     \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \text{if $\rep{\Delta}{x} \ntermeq K \not\in \Delta$} \\
     \false & \text{otherwise} \\
-  \end{cases} \\
+  \end{cases} & (10) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
     \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{\rep{\Delta}{x}}$} \\
     \nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{otherwise} \\
-  \end{cases} \\
+  \end{cases} & (11) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
     \nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\termeq \bot)} & \text{otherwise} \\
-  \end{cases} \\
+  \end{cases} & (12) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \termeq \bot \in \Delta$} \\
     \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
     \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
-  \end{cases} \\
-  \nreft{\Gamma}{\Delta} &\adddelta& x \termeq y &=& \begin{cases}
-    \nreft{\Gamma}{\Delta} & \text{if $\rep{\Delta}{x} = \rep{\Delta}{y}$} \\
-    \nreft{\Gamma}{((\Delta\!\setminus\!\rep{\Delta}{x}), \rep{\Delta}{x}\!\termeq\!\rep{\Delta}{y})}\!\!\adddelta\!\!((\Delta\!\cap\!\rep{\Delta}{x})[\rep{\Delta}{y} / \rep{\Delta}{x}]) & \text{otherwise} \\
-  \end{cases} \\
+  \end{cases} & (13) \\
+  \nreft{\Gamma}{\Delta} &\adddelta& x \termeq y &=&
+    \begin{cases}
+      \nreft{\Gamma}{\Delta} & \text{if $x' = y'$} \\
+      \nreft{\Gamma}{((\Delta\!\setminus\!x'), x'\!\termeq\!y')} \adddelta (\restrict{\Delta}{x'}[y' / x']
+        & \text{otherwise} \\
+    \end{cases} & (14)\\
+  &&&&\text{where}~x' = \rep{\Delta}{x} \; \text{and} \; y' = \rep{\Delta}{y}
 \end{array}
 \]
 
 \[
 \begin{array}{cc}
-\ruleform{ \Delta \setminus x = \Delta } & \ruleform{ \Delta \cap x = \Delta } \\
+\ruleform{ \Delta \setminus x = \Delta } & \ruleform{ \restrict{\Delta}{x} = \Delta } \\
 \begin{array}{r@@{\,}c@@{\,}lcl}
   \varnothing &\setminus& x &=& \varnothing \\
   (\Delta,x \termeq \deltaconapp{K}{a}{y}) &\setminus& x &=& \Delta \setminus x \\
@@ -1615,13 +1617,13 @@ well-defined.
   (\Delta,x \ntermeq \bot) &\setminus& x &=& \Delta \setminus x \\
   (\Delta,\delta) &\setminus& x &=& (\Delta \setminus x),\delta \\
 \end{array}&
-\begin{array}{r@@{\,}c@@{\,}lcl}
-  \varnothing &\cap& x &=& \varnothing \\
-  (\Delta,x \termeq \deltaconapp{K}{a}{y}) &\cap& x &=& (\Delta \cap x), x \termeq \deltaconapp{K}{a}{y} \\
-  (\Delta,x \ntermeq K) &\cap& x &=& (\Delta \cap x), x \ntermeq K \\
-  (\Delta,x \termeq \bot) &\cap& x &=& (\Delta \cap x), x \termeq \bot \\
-  (\Delta,x \ntermeq \bot) &\cap& x &=& (\Delta \cap x), x \ntermeq \bot \\
-  (\Delta,\delta) &\cap& x &=& \Delta \cap x \\
+\begin{array}{rcl}
+  \restrict{\varnothing}{x} &=& \varnothing \\
+  \restrict{(\Delta,x \termeq \deltaconapp{K}{a}{y})}{x} &=& \restrict{\Delta}{x},\, x \termeq \deltaconapp{K}{a}{y} \\
+  \restrict{(\Delta,x \ntermeq K)}{x} &=& \restrict{\Delta}{x},\, x \ntermeq K \\
+  \restrict{(\Delta,x \termeq \bot)}{x} &=& \restrict{\Delta}{x},\, x \termeq \bot \\
+  \restrict{(\Delta,x \ntermeq \bot)}{x} &=& \restrict{\Delta}{x},\, x \ntermeq \bot \\
+  \restrict{(\Delta,\delta)}{x} &=& \restrict{\Delta}{x} \\
 \end{array}
 \end{array}
 \]
@@ -1636,20 +1638,21 @@ normalised type, thus $\nabla \addphi \varphi$.  This function
 is where all the work is done, in \Cref{fig:add}.
 
 It does so by expressing a $\varphi$ in terms of once again simpler constraints
-$\delta$ and calling out to $\!\adddelta\!$. Specifically, for a lack of
-binding constructs in $\delta$, pattern guards extend the context and
-disperse into type constraints and a positive constructor constraint
-arising from the binding. The fourth case of $\!\addphi\!$ finally performs
-some limited, but important reasoning about let bindings: It makes sense of
+$\delta$ and calling out to $\!\adddelta\!$. Specifically, in Equation (3)
+a pattern guards extend the context and
+adds suitable type constraints and a positive constructor constraint
+arising from the binding. Equation (4) of $\!\addphi\!$ performs
+some limited, but important reasoning about let bindings: it flattens
 possibly nested constructor applications, such as $\ctlet{|x|}{|Just True|}$.
-Note that the sixth case will simply discard let bindings we can't make sense
-of. We'll see an extension in \cref{ssec:extviewpat} which will expand here.
+Note that equation (6) simply discards let bindings that cannot be expressed
+in $\nabla$; we'll see an extension in \cref{ssec:extviewpat} that avoids
+this information loss.
 % The last case of $\!\addphi\!$
 % turns the syntactically and semantically identical subset of $\varphi$ into
 % $\delta$ and adds that constraint via $\!\adddelta\!$.
 
-Which brings us to the prime unification procedure, $\!\adddelta\!$.
-When adding $x \termeq |Just y|$, the unification procedure will first look for
+That brings us to the prime unification procedure, $\!\adddelta\!$.
+When adding $x \termeq |Just y|$, equation (10), the unification procedure will first look for
 a solution for $x$ with \emph{that same constructor}. Let's say there is
 $\Delta(x) \termeq |Just u| \in \Delta$. Then $\!\adddelta\!$ operates on the
 transitively implied equality $|Just y| \termeq |Just u|$ by equating type and
@@ -1663,13 +1666,13 @@ If there is a solution involving a different constructor like $\Delta(x)
 existing solution. Otherwise, the constraint is compatible and is added to
 $\Delta$.
 
-Adding a negative constructor constraint $x \ntermeq Just$ is quite similar,
+Adding a negative constructor constraint $x \ntermeq Just$ is quite similar (equation (11)),
 except that we have to make sure that $x$ still satisfies \inv{4}, which is
 checked by the $\inhabited{\nabla}{\Delta(x)}$ judgment (\cf \cref{sec:test})
 in \cref{fig:inh}. Handling positive and negative constraints involving $\bot$
 is analogous.
 
-Adding a type constraint $\gamma$ entails calling out to the type checker to
+Adding a type constraint $\gamma$ (equation (9)) entails calling out to the type checker to
 assert that the constraint is consistent with existing type constraints.
 Afterwards, we have to ensure \inv{4} is upheld for \emph{all} variables in the
 domain of $\Gamma$, because the new type constraint could have rendered a type
@@ -1680,7 +1683,7 @@ longer inhabited. There is room for being smart about which variables we have
 to re-check: For example, we can exclude variables whose type is a non-GADT
 data type.
 
-The last case of $\!\adddelta\!$ equates two variables ($x \termeq y$) by
+Equation (14) of $\!\adddelta\!$ equates two variables ($x \termeq y$) by
 merging their equivalence classes. Consider the case where $x$ and $y$ aren't
 in the same equivalence class. Then $\Delta(y)$ is arbitrarily chosen to be the
 new representative of the merged equivalence class. To uphold \inv{2}, all
@@ -1735,8 +1738,8 @@ contradiction.
 
 \begin{figure}
 \centering
-\[ \textbf{Test if $x$ is inhabited considering $\nabla$} \]
-\[ \ruleform{ \inhabited{\nabla}{x} } \]
+\[ \textbf{Test if $x$ is inhabited considering $\nabla$} \quad
+ \ruleform{ \inhabited{\nabla}{x} } \]
 \[
 \begin{array}{c}
 
@@ -1773,8 +1776,8 @@ contradiction.
 \end{array}
 \]
 
-\[ \textbf{Find data constructors of $\tau$} \]
-\[ \ruleform{ \cons(\nreft{\Gamma}{\Delta}, \tau) = \overline{K}} \]
+\[ \textbf{Find data constructors of $\tau$} \quad
+ \ruleform{ \cons(\nreft{\Gamma}{\Delta}, \tau) = \overline{K}} \]
 \[
 \begin{array}{c}
 
@@ -1789,8 +1792,8 @@ contradiction.
 \]
 
 % This is mkOneConFull
-\[ \textbf{Instantiate $x$ to data constructor $K$} \]
-\[ \ruleform{ \inst(\nabla, x, K) = \nabla } \]
+\[ \textbf{Instantiate $x$ to data constructor $K$} \quad
+ \ruleform{ \inst(\nabla, x, K) = \nabla } \]
 \[
 \begin{array}{c}
 
