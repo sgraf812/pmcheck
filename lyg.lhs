@@ -1176,14 +1176,12 @@ by giving a type system for $\Phi$, but we omit that here. \simon{It would be ni
 The literal $\true$ means ``true'', as illustrated above; while
 $\false$ means ``false'', so that $\reft{Gamma}{\false}$ denotes $\emptyset$.
 
-\simon{I'm unhappy with having to subscribe our trees with G all the time, thus $t$.  Can we just us a
-  different letter for guard trees and annotated trees?}  The
-uncovered set function $\unc(\Theta, t)$, defined in
-\Cref{fig:check}, computes a refinement type describing the values in
-$\Theta$ that are not covered by the guard tree $t$.  It is defined
-by a simple recursive descent over the guard tree, using the operation
-$\Theta \andtheta \varphi$ (also defined in \Cref{fig:check}) to
-extend $\Theta$ with an extra literal $\varphi$.
+The uncovered set function $\unc(\Theta, t)$, defined in \Cref{fig:check},
+computes a refinement type describing the values in $\Theta$ that are not
+covered by the guard tree $t$.  It is defined by a simple recursive descent
+over the guard tree, using the operation $\Theta \andtheta \varphi$ (also
+defined in \Cref{fig:check}) to extend $\Theta$ with an extra literal
+$\varphi$.
 
 While $\unc$ finds a refinement type describing values that are \emph{not} matched by a
 guard tree, the function $\ann$ finds refinements describing values that
