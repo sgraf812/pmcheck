@@ -2653,10 +2653,10 @@ test suite.
 \subsection{Maintaining residual \extension{COMPLETE} sets}
 \label{ssec:residual-complete}
 
-Our implementation tries hard to make the inhabitation test \sg{rename} as
-efficient as possible. For example, we represent $\Delta$s by a mapping from
-variables to their positive and negative constraints for easier indexing. But
-there are also asymptotical improvements. Consider the following function:
+Our implementation tries hard to make the inhabitation test as efficient as
+possible. For example, we represent $\Delta$s by a mapping from variables to
+their positive and negative constraints for easier indexing. But there are also
+asymptotical improvements. Consider the following function:
 \begin{minipage}{\textwidth}
 \begin{minipage}[t]{0.33\textwidth}
 \begin{code}
