@@ -2811,10 +2811,10 @@ desugarer, the phase of compilation in which coverage checking occurs, and (2)
 how many megabytes were allocated during desugaring. \Cref{fig:perf} shows
 these figures as well as the percent change going from 8.8.3 to HEAD. Most
 cases exhibit a noticeable improvement under \lyg, with the exception of
-\texttt{T11276}, where investigations suggest that an implementation detail is
-the culprit~\citet{gitlab:17891}: Calling out to the type checker must have
-gotten more expensive. It didn't show up in CI because desugaring contributes
-only about 1\% of total compile-time allocations.
+\texttt{T11276}. Investigating \texttt{T11276} suggests that the performance
+of GHC's equality constraint solver has become more expensive in HEAD
+~\cite{gitlab:17891}, and these extra costs outweigh the performance benefits
+of using \lyg.
 
 \subsection{GHC issues} \label{sec:ghc-issues}
 
