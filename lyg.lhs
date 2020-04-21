@@ -298,7 +298,7 @@ What makes coverage checking so difficult in a language like Haskell? At first
 glance, implementing a coverage checking algorithm might appear simple: just
 check that every function matches on every possible combination of data
 constructors exactly once. A function must match on every possible combination
-of constructors in order to be exhaustive, and it must must on them exactly
+of constructors in order to be exhaustive, and it must match on them exactly
 once to avoid redundant matches.
 
 This algorithm, while concise, leaves out many nuances. What constitutes a
@@ -603,12 +603,12 @@ u' _              = 3
 
 Within |u|, the equations that return |1| and |3| could be deleted without
 changing the semantics of |u|, so they are classified as redundant. Within |u'|,
-one can never reach that right-hand sides of the equations that return |1| and |2|,
+one can never reach the right-hand sides of the equations that return |1| and |2|,
 but they cannot be removed so easily. Using the
 definition above, $|u'|~\bot~|=|~\bot$, but if the first two equations were removed,
 then $|u'|~\bot~|= 3|$. As a result, \lyg warns that the first two equations in |u'| are
 inaccessible, which suggests to the programmer that |u'| might benefit from
-a refactor to avoid this (e.g., |g' () = 3|).
+a refactor to avoid this (e.g., |u' () = 3|).
 
 Observe that |u| and |u'| have completely different warnings, but the
 only difference between the two functions is whether the second equation uses |True| or |False| in its guard.
@@ -983,14 +983,16 @@ the variables bound in the tree), \emph{fail}, or \emph{diverge}.  Matching is
 defined as follows:
 \begin{itemize}
 \item Matching a guard tree $(\gdtrhs{n})$ succeeds.
-\item Matching a guard tree $(\gdtseq{t_1}{t_2})$ means matching against $t$; if that succeeds, the overall match succeeds;
-  if not, match against $t_2$.
-\item Matching a guard tree $(\gdtguard{\grdbang{x}}{t})$ evaluates $x$; if that diverges the match diverges; if not
-  match $t$.
-\item Matching a guard tree $(\gdtguard{(\grdcon{|K|~ y_1 \ldots y_n}{x})}{t})$ matches $x$ against constructor |K|.
-  If the match succeeds, bind $y_1 \ldots y_n$ to the components, and match $t$; if the constructor match
-  fails, then the entire match fails.
-\item Matching a guard tree $(\gdtguard{(\grdlet{x}{e})}{t})$ binds $x$ (lazily) to $e$, and matches $t$.
+\item Matching a guard tree $(\gdtseq{t_1}{t_2})$ means matching against $t_1$;
+  if that succeeds, the overall match succeeds; if not, match against $t_2$.
+\item Matching a guard tree $(\gdtguard{\grdbang{x}}{t})$ evaluates $x$;
+  if that diverges the match diverges; if not match $t$.
+\item Matching a guard tree $(\gdtguard{(\grdcon{|K|~ y_1 \ldots y_n}{x})}{t})$
+  matches $x$ against constructor |K|. If the match succeeds, bind $y_1 \ldots
+  y_n$ to the components, and match $t$; if the constructor match fails, then the
+  entire match fails.
+\item Matching a guard tree $(\gdtguard{(\grdlet{x}{e})}{t})$ binds $x$
+  (lazily) to $e$, and matches $t$.
 \end{itemize}
 The desugaring algorithm, $\ds$, is given in \Cref{fig:desugar}.
 It is a straightforward recursive descent over the source syntax, with a little
@@ -1174,7 +1176,7 @@ Unconventionally, however, a literal may bind one or more variables, and those
 bindings are in scope in conjunctions to the right. This can readily be formalised
 by giving a type system for $\Phi$, but we omit that here. \simon{It would be nice to add it.}
 The literal $\true$ means ``true'', as illustrated above; while
-$\false$ means ``false'', so that $\reft{Gamma}{\false}$ denotes $\emptyset$.
+$\false$ means ``false'', so that $\reft{\Gamma}{\false}$ denotes $\emptyset$.
 
 The uncovered set function $\unc(\Theta, t)$, defined in \Cref{fig:check},
 computes a refinement type describing the values in $\Theta$ that are not
@@ -2746,7 +2748,7 @@ go' _ _ _ xs = err xs
 
 The first clause is clearly unreachable, and \lyg now flags it as such.
 However, the authors of \texttt{HsYAML} likely left in this clause because it is
-useful for debugging purposes. One can uncomment the second clause and remove
+useful for debugging purposes. One can comment out the second clause and remove
 the |False| guard to quickly try out a code path that prints a more detailed
 error message. Moreover, leaving the first clause in the code ensures that it
 is typechecked and less susceptible to bitrotting over time.
@@ -3076,10 +3078,9 @@ giving |error| the refinement type:
 error :: { v:String | false } -> a
 \end{code}
 
-As a result, attempting to
-use |fibPartial| in a proof will yield an inconsistent environment (and therefore
-fail to verify) unless the user can
-prove that |fibPartial| is only ever invoked with the arguments |0| or |1|.
+As a result, attempting to use |fibPartial| in a proof will fail to verify
+unless the user can prove that |fibPartial| is only ever invoked with the
+arguments |0| or |1|.
 
 \section{Conclusion}
 
