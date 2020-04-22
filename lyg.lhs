@@ -296,10 +296,9 @@ We discuss the wealth of related work in \Cref{sec:related}.
 
 What makes coverage checking so difficult in a language like Haskell? At first
 glance, implementing a coverage checking algorithm might appear simple: just
-check that every function matches on every possible combination of data
-constructors exactly once. A function must match on every possible combination
-of constructors in order to be exhaustive, and it must match on them exactly
-once to avoid redundant matches.
+check that every function is exhaustive, \ie matches on every possible
+combination of data constructors. Additionally, every equation must match
+\emph{some} combination of data constructors, otherwise it is redundant.
 
 This algorithm, while concise, leaves out many nuances. What constitutes a
 ``match''? Haskell has multiple matching constructs, including function definitions,
@@ -524,6 +523,7 @@ length (Cons x xs) = 1 + length xs
 \end{minipage}
 \end{minipage}
 
+|Nil| matches everywhere the view pattern |Text.null -> True| would match.
 How should a coverage checker handle pattern synonyms? One idea is to simply ``look
 through'' the definitions of each pattern synonym and verify whether the underlying
 patterns are exhaustive. This would be undesirable, however, because (1) we would
@@ -550,8 +550,8 @@ the programmer to ensure that this invariant is upheld.
 
 The evaluation order of pattern matching can impact whether a pattern is
 reachable or not. While Haskell is a lazy language, programmers can opt
-into extra strict evaluation by giving the fields of a data type strict fields,
-such as in this example:
+into extra strict evaluation by giving a data type strict fields, such as in
+this example:
 
 \begin{code}
 data Void -- No data constructors; only inhabitant is bottom
@@ -731,7 +731,7 @@ Stardust \cite{dunfieldthesis}.
 \end{array}
 \]
 
-\caption{Source syntax}
+\caption{Source syntax: A desugared Haskell}
 \label{fig:srcsyn}
 \end{figure}
 
@@ -836,7 +836,8 @@ Stardust \cite{dunfieldthesis}.
 In this section, we describe our new coverage checking algorithm, \lyg.
 \Cref{fig:pipeline} depicts a high-level overview, which divides into three steps:
 \begin{itemize}
-\item First, we desugar the complex source Haskell syntax into a \emph{guard tree} $t:\Gdt$ (\Cref{sec:desugar}).
+\item First, we desugar the complex source Haskell syntax (\cf \cref{fig:srcsyn})
+  into a \emph{guard tree} $t:\Gdt$ (\Cref{sec:desugar}).
   The language of guard trees is tiny but expressive, and allows the subsequent passes to be entirely
   independent of the source syntax.
   \lyg{} can readily be adapted to other languages simply by changing the desugaring
@@ -857,10 +858,10 @@ In this section, we describe our new coverage checking algorithm, \lyg.
   uncovered values.
 \end{itemize}
 
-\lyg's main contribution when compared to other coverage checkers, such
-as \gmtm, is its
-incorporation of many small improvements and insights, rather than a single
-defining breakthrough. In particular, \lyg's advantages are:
+\lyg's main contribution when compared to other coverage checkers, such as
+GHC's implementation of \gmtm, is its incorporation of many small improvements
+and insights, rather than a single defining breakthrough. In particular, \lyg's
+advantages are:
 
 \begin{itemize}
   \item
@@ -930,7 +931,7 @@ defining breakthrough. In particular, \lyg's advantages are:
   \end{forest}} \\
 \\
 \ds(pat \leftarrow expr) &=& \grdlet{x}{expr}, \ds(x, pat) \\
-\ds(expr) &=& \grdlet{b}{expr}, \ds(b, |True|) \\
+\ds(expr) &=& \grdlet{y}{expr}, \ds(y, |True|) \\
 \ds(\mathtt{let} \; x \; \mathtt{=} \; expr) &=& \grdlet{x}{expr} \\
 \\
 \ds(x, y) &=& \grdlet{y}{x} \\
@@ -975,8 +976,8 @@ This desugars to the following guard tree:
 \\
 Here we use a graphical syntax for guard trees, also defined in \Cref{fig:syn}.
 The first line says ``evaluate $x_1$; then match $x_1$ against $Just~ t_1$;
-then match $t_1$ against $(t_2,t_3)$; and so on''. If any of those matches
-fail, we fall through into the second line.
+then evaluate $t_1$; then match $t_1$ against $(t_2,t_3)$; and so on''. If any
+of those matches fail, we fall through into the second line.
 
 More formally, matching a guard tree may \emph{succeed} (with some bindings for
 the variables bound in the tree), \emph{fail}, or \emph{diverge}.  Matching is
