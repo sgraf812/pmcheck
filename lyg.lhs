@@ -2566,7 +2566,7 @@ that would become empty.
 \subsection{Throttling for graceful degradation} \label{ssec:throttling}
 
 Even with the tweaks from \cref{ssec:interleaving}, checking certain pattern
-matches remains NP-hard \citet{adaptivepm}. Naturally, there will be cases
+matches remains NP-hard \citep{adaptivepm}. Naturally, there will be cases
 where we have to conservatively approximate in order not to slow down
 compilation too much. Consider the following example and its corresponding
 guard tree:
