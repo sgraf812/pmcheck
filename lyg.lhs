@@ -523,7 +523,9 @@ length (Cons x xs) = 1 + length xs
 \end{minipage}
 \end{minipage}
 
-|Nil| matches everywhere the view pattern |Text.null -> True| would match.
+The pattern synonym |Nil| matches everywhere the view pattern
+|Text.null -> True| would match, and similarly for |Cons|.
+
 How should a coverage checker handle pattern synonyms? One idea is to simply ``look
 through'' the definitions of each pattern synonym and verify whether the underlying
 patterns are exhaustive. This would be undesirable, however, because (1) we would
