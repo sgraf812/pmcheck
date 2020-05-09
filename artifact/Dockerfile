@@ -38,7 +38,21 @@ RUN mkdir /opt/ghc/lyg && \
     ./configure --prefix=/opt/ghc/lyg && \
     make install
 ENV PATH /opt/ghc/lyg/bin:$PATH
+RUN rm -rf /root/ghc/ghc-${LYG_VER}-x86_64-unknown-linux
 
-WORKDIR /root/
+# Populate /root/perf-tests directory
+ENV GHC_PMCHECK_TESTDIR /root/ghc/testsuite/tests/pmcheck/should_compile
+RUN mkdir /root/perf-tests
+WORKDIR /root/perf-tests
+RUN ln -s ${GHC_PMCHECK_TESTDIR}/T11276.hs  T11276.hs  && \
+    ln -s ${GHC_PMCHECK_TESTDIR}/T11303.hs  T11303.hs  && \
+    ln -s ${GHC_PMCHECK_TESTDIR}/T11303b.hs T11303b.hs && \
+    ln -s ${GHC_PMCHECK_TESTDIR}/T11374.hs  T11374.hs  && \
+    ln -s ${GHC_PMCHECK_TESTDIR}/T11822.hs  T11822.hs  && \
+    ln -s ${GHC_PMCHECK_TESTDIR}/T11195.hs  T11195.hs  && \
+    ln -s ${GHC_PMCHECK_TESTDIR}/T17096.hs  T17096.hs  && \
+    python3 ${GHC_PMCHECK_TESTDIR}/genS.py 10 && mv S.hs PmSeriesS.hs && \
+    python3 ${GHC_PMCHECK_TESTDIR}/genT.py 10 && mv T.hs PmSeriesT.hs && \
+    python3 ${GHC_PMCHECK_TESTDIR}/genV.py 6  && mv V.hs PmSeriesV.hs
 
-RUN rm -rf ghc/ghc-${LYG_VER}-x86_64-unknown-linux
+WORKDIR /root

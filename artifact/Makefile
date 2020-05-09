@@ -5,7 +5,8 @@ DOCKER_TAG=0.1
 
 DOCKER_MOUNTS= \
   --volume ${PWD}/Readme.md:/root/Readme.md \
-  --volume ${PWD}/examples/:/root/examples/
+  --volume ${PWD}/examples/:/root/examples/ \
+  --volume ${PWD}/ocaml/:/root/ocaml/
 
 DOCKER_RUN_ARGS=--rm ${DOCKER_MOUNTS} ${DOCKER_NAME}:${DOCKER_TAG}
 
