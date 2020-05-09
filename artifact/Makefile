@@ -6,6 +6,7 @@ DOCKER_TAG=0.1
 DOCKER_MOUNTS= \
   --volume ${PWD}/Readme.md:/root/Readme.md                     \
   --volume ${PWD}/examples/:/root/examples/                     \
+  --volume ${PWD}/idris/:/root/idris/                           \
   --volume ${PWD}/ocaml/:/root/ocaml/                           \
   --volume ${PWD}/perf-tests/bench.sh:/root/perf-tests/bench.sh \
   --volume ${PWD}/perf-tests/bench-all.sh:/root/perf-tests/bench-all.sh
