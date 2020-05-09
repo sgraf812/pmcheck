@@ -28,6 +28,17 @@ RUN git reset --hard 59c023ba5ccb10fff62810591f20608bd73c97af && \
 
 RUN ./boot && \
     ./configure && \
-    ./hadrian/build.sh -j binary-dist
+    ./hadrian/build.sh binary-dist -j --docs=no-sphinx
+
+ENV LYG_VER 8.11.0.20200227
+
+RUN tar -xvf _build/bindist/ghc-${LYG_VER}-x86_64-unknown-linux.tar.xz
+WORKDIR ghc-${LYG_VER}-x86_64-unknown-linux
+RUN mkdir /opt/ghc/lyg && \
+    ./configure --prefix=/opt/ghc/lyg && \
+    make install
+ENV PATH /opt/ghc/lyg/bin:$PATH
 
 WORKDIR /root/
+
+RUN rm -rf ghc/ghc-${LYG_VER}-x86_64-unknown-linux
