@@ -10,7 +10,7 @@ RUN apt-get update -y && \
 RUN add-apt-repository -y ppa:hvr/ghc && \
     apt-get update -y && \
     apt-get install -y cabal-install-3.2 ghc-8.8.3 \
-      build-essential git autoconf python3 python3-sphinx libgmp-dev libncurses-dev xutils-dev
+      build-essential git autoconf python3 libgmp-dev libncurses-dev xutils-dev
 
 ENV PATH /root/.cabal/bin:/opt/ghc/8.8.3/bin:/opt/cabal/3.2/bin:$PATH
 
