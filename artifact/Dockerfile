@@ -56,3 +56,9 @@ RUN ln -s ${GHC_PMCHECK_TESTDIR}/T11276.hs  T11276.hs  && \
     python3 ${GHC_PMCHECK_TESTDIR}/genV.py 6  && mv V.hs PmSeriesV.hs
 
 WORKDIR /root
+
+COPY Readme.md  /root/Readme.md
+COPY examples   /root/examples/
+COPY idris      /root/idris/
+COPY ocaml      /root/ocaml/
+COPY perf-tests /root/perf-tests/

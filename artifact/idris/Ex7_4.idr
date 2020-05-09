@@ -1,4 +1,4 @@
-module MaybeVoid
+module Ex7_4
 
 %default total
 
