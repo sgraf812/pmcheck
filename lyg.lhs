@@ -385,7 +385,7 @@ not2 True   = False
 \centering
 \begin{code}
 not3 :: Bool -> Bool
-not3 x | x <- False  = True
+not3 x | False <- x  = True
 not3 True            = False
 \end{code}
 \end{minipage}
