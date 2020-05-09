@@ -385,7 +385,7 @@ not2 True   = False
 \centering
 \begin{code}
 not3 :: Bool -> Bool
-not3 x | x <- False  = True
+not3 x | False <- x  = True
 not3 True            = False
 \end{code}
 \end{minipage}
@@ -519,7 +519,7 @@ pattern Cons x xs <- (Text.uncons -> Just (x, xs))
 \begin{code}
 length :: Text -> Int
 length Nil = 0
-length (Cons x xs) = 1 + length xs
+length (Cons _ xs) = 1 + length xs
 \end{code}
 \end{minipage}
 \end{minipage}
