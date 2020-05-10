@@ -174,7 +174,151 @@ Here are some assorted notes on each of the programs in this directory:
   a `COMPLETE` set, so that combination of patterns is deemed to be exhaustive
   by the coverage checker. Accordingly, since `length` matches on both `Nil`
   and `Cons`, no warnings are emitted for `length`.
-* `Ex2_3.hs`: TODO RGS
+* `Ex2_3.hs`: This contains code examples from Sections 2.3 and its
+  subsections:
+  * The `v` function provides an example of matching on `SMaybe`, a data type
+    whose constructor `SJust` is strict in its field. Since the right-hand side
+    of the `v (SJust _) = 1` equation can never be reached, it will emit a
+    warning:
+
+    ```
+    # ghc Ex2_3.hs
+    [1 of 1] Compiling Ex2_3            ( Ex2_3.hs, Ex2_3.o )
+
+    Ex2_3.hs:13:1: warning: [-Woverlapping-patterns]
+        Pattern match is redundant
+        In an equation for `v': v (SJust _) = ...
+       |
+    13 | v (SJust _) = 1
+       | ^^^^^^^^^^^^^^^
+
+    <elided>
+    ```
+  * The `u` and `u'` functions demonstrate the difference between redundant
+    and inaccessible cases. `u` contains two redundant matches:
+
+    ```
+    # ghc Ex2_3.hs
+    [1 of 1] Compiling Ex2_3            ( Ex2_3.hs, Ex2_3.o )
+
+    <elided>
+
+    Ex2_3.hs:18:8: warning: [-Woverlapping-patterns]
+        Pattern match is redundant
+        In an equation for `u': u () | False = ...
+       |
+    18 | u () | False = 1
+       |        ^^^^^
+
+    Ex2_3.hs:20:1: warning: [-Woverlapping-patterns]
+        Pattern match is redundant
+        In an equation for `u': u _ = ...
+       |
+    20 | u _          = 3
+       | ^^^^^^^^^^^^^^^^
+    ```
+
+    While `u'` contains two inaccessible matches:
+
+    ```
+    # ghc Ex2_3.hs
+    [1 of 1] Compiling Ex2_3            ( Ex2_3.hs, Ex2_3.o )
+
+    <elided>
+
+    Ex2_3.hs:23:9: warning: [-Woverlapping-patterns]
+        Pattern match has inaccessible right hand side
+        In an equation for u': u' () | False = ...
+       |
+    23 | u' () | False = 1
+       |         ^^^^^
+
+    Ex2_3.hs:24:9: warning: [-Woverlapping-patterns]
+        Pattern match has inaccessible right hand side
+        In an equation for u': u' () | False = ...
+       |
+    24 |       | False = 2
+       |         ^^^^^
+    ```
+
+    To see why the matches in `u'` are labeled inaccessible, not redundant, you
+    evaluate `u'` on a bottoming (`⊥`) value. To do so, load this file into
+    GHCi and run the following:
+
+    ```
+    # ghci Ex2_3.hs
+
+    <elided>
+
+    *Ex2_3> u' undefined
+    *** Exception: Prelude.undefined
+    CallStack (from HasCallStack):
+      error, called at libraries/base/GHC/Err.hs:79:14 in base:GHC.Err
+      undefined, called at <interactive>:1:4 in interactive:Ghci1
+    *Ex2_3> :quit
+    Leaving GHCi.
+    ```
+
+    We can see that `u' undefined` throws an `undefined` exception—that is
+    to say, it returns `⊥`. Now, we can see what happens when we run a
+    modified version of `u'` that has the inaccessible first and second cases
+    removed:
+
+    ```
+    # ghci Ex2_3.hs
+
+    <elided>
+
+    *Ex2_3> u'_modified undefined
+    3
+    *Ex2_3> :quit
+    Leaving GHCi.
+    ```
+
+    Rather than throwing an exception, it returns `3`. In contrast to `u'`,
+    running `u undefined` will always throw an exception, regardless of whether
+    or not its redundant matches are removed:
+
+    ```
+    # ghci Ex2_3.hs
+
+    <elided>
+
+    *Ex2_3> u undefined
+    *** Exception: Prelude.undefined
+    CallStack (from HasCallStack):
+      error, called at libraries/base/GHC/Err.hs:79:14 in base:GHC.Err
+      undefined, called at <interactive>:1:3 in interactive:Ghci1
+    *Ex2_3> u_modified undefined
+    *** Exception: Prelude.undefined
+    CallStack (from HasCallStack):
+      error, called at libraries/base/GHC/Err.hs:79:14 in base:GHC.Err
+      undefined, called at <interactive>:2:12 in interactive:Ghci1
+    *Ex2_3> :quit
+    Leaving GHCi.
+    ```
+  * The `v'` function is a modified version of `v` that matches on `Maybe`,
+    which is the lazy version of `SMaybe`. The bang pattern on the argument
+    of `Just` makes the right-hand side of the `v' (Just !_) = 1` equation
+    inaccessible:
+
+    ```
+    # ghc Ex2_3.hs
+    [1 of 1] Compiling Ex2_3            ( Ex2_3.hs, Ex2_3.o )
+
+    <elided>
+
+    Ex2_3.hs:39:1: warning: [-Woverlapping-patterns]
+        Pattern match has inaccessible right hand side
+        In an equation for v': v' (Just !_) = ...
+       |
+    39 | v' (Just !_) = 1
+       | ^^^^^^^^^^^^^^^^
+    ```
+  * The `g1` and `g2` functions provide examples of how matching on `T`, a
+    GADT, might work. Due to the way `T` is defined, both `g1` and `g2` are
+    exhaustive (and thus will emit no warnings), even though there are various
+    combinations of `T1` and `T2` that they do not match on.
 * `Ex3_1.hs`: TODO RGS
 * `Ex3_3.hs`: TODO RGS
 * `Ex3_7.hs`: TODO RGS
