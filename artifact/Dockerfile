@@ -72,8 +72,8 @@ RUN mkdir patched-deps && \
 
 # Copy over miscellaneous files
 WORKDIR /root
-COPY Readme.md  /root/Readme.md
 COPY examples   /root/examples/
 COPY idris      /root/idris/
 COPY ocaml      /root/ocaml/
 COPY perf-tests /root/perf-tests/
+COPY Readme.md  /root/Readme.md

@@ -24,6 +24,14 @@ u' () | False = 1
       | False = 2
 u' _          = 3
 
+-- Like u, but without the first and third cases
+u_modified :: () -> Int
+u_modified () | True = 2
+
+-- Like u', but without the first and second cases
+u'_modified :: () -> Int
+u'_modified _ = 3
+
 -- 2.3.2
 
 v' :: Maybe Void -> Int
