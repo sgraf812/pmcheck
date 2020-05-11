@@ -627,7 +627,72 @@ which covers examples of OCaml and Idris code, are handled separately in the
 
 # `head-hackage-eval`
 
-TODO RGS
+```
+# cd /root/head-hackage-eval/
+# ls
+Cabal-2.4.1.0   gen-contents.sh       geniplate-mirror-0.7.6  pandoc-2.9.2       patched-deps
+HsYAML-0.2.1.0  generic-data-0.8.1.0  network-3.1.1.1         pandoc-types-1.20
+```
+
+The `head-hackage-eval` directory contains the evaluation from the first part
+of Section 6. It includes checkouts of the seven libraries from `head.hackage`
+(`Cabal`, `HsYAML`, `generic-data`, `geniplate-mirror`, `network`, `pandoc`,
+and `pandoc-types`) that we found to emit new warnings under the LYG version of
+GHC that were not warned about in GHC 8.8.3. This directory also contains:
+
+* `gen-contents.sh` (a script used to download everything from Hackage and
+  apply the relevant `head.hackage` patches)
+* `patched-deps` (a directory containing library dependencies for the seven
+  libraries above that also need `head.hackage` patches)
+
+Neither `gen-content.sh` nor `patched-deps` are of particular interest for the
+evaluation itself, but they are included in case you wish to look at them.
+
+To reproduce the results from Section 6, enter one of the seven libraries'
+checkout directories and run `cabal build`. This command is set up so that it
+will build the library using the LYG version of GHC, and moreover, it will
+throw an error when it encounters a new coverage checking related warning.
+For example, you can reproduce the `HsYAML` warnings under LYG by doing the
+following:
+
+```
+# cd /root/head-hackage-eval/HsYAML-0.2.1.0/
+# cabal build
+Build profile: -w ghc-8.11.0.20200227 -O1
+In order, the following will be built (use -v for more details):
+ - HsYAML-0.2.1.0 (lib) (first run)
+Preprocessing library for HsYAML-0.2.1.0..
+Building library for HsYAML-0.2.1.0..
+<build output elided>
+[ 8 of 14] Compiling Data.YAML.Event  ( src/Data/YAML/Event.hs, /root/head-hackage-eval/HsYAML-0.2.1.0/dist-newstyle/build/x86_64-linux/ghc-8.11.0.20200227/HsYAML-0.2.1.0/build/Data/YAML/Event.o, /root/head-hackage-eval/HsYAML-0.2.1.0/dist-newstyle/build/x86_64-linux/ghc-8.11.0.20200227/HsYAML-0.2.1.0/build/Data/YAML/Event.dyn_o )
+
+src/Data/YAML/Event.hs:412:24: error: [-Woverlapping-patterns, -Werror=overlapping-patterns]
+    Pattern match is redundant
+    In an equation for go': go' _ _ _ xs | False = ...
+    |
+412 |         go' _ _ _ xs | False = error (show xs)
+    |                        ^^^^^
+```
+
+You can also verify that this library does not emit this warning under GHC 8.8.3
+by doing the following:
+
+```
+# cabal build --with-compiler /opt/ghc/8.8.3/bin/ghc
+Resolving dependencies...
+Build profile: -w ghc-8.8.3 -O1
+In order, the following will be built (use -v for more details):
+ - HsYAML-0.2.1.0 (lib) (first run)
+Configuring library for HsYAML-0.2.1.0..
+Preprocessing library for HsYAML-0.2.1.0..
+Building library for HsYAML-0.2.1.0..
+<build output elided, but this will ultimately succeed>
+```
+
+The same process can be repeated for the other six libraries in the
+`head-hackage-eval` directory. Beware that `pandoc-2.9.2` in particular can
+take a very long time to build. It can take about 20 minutes to build
+everything including dependencies.
 
 # `idris`
 
@@ -696,4 +761,91 @@ Some _
 
 # `perf-tets`
 
-TODO RGS
+```
+# cd /root/perf-tests/
+# ls -alh
+total 28K
+drwxr-xr-x 1 root root 4.0K May 11 12:14 .
+drwx------ 1 root root 4.0K May 11 15:20 ..
+-rw-r--r-- 1 root root  646 May 10 02:54 PmSeriesS.hs
+-rw-r--r-- 1 root root  610 May 10 02:54 PmSeriesT.hs
+-rw-r--r-- 1 root root  481 May 10 02:54 PmSeriesV.hs
+lrwxrwxrwx 1 root root   58 May 10 02:54 T11195.hs -> /root/ghc/testsuite/tests/pmcheck/should_compile/T11195.hs
+lrwxrwxrwx 1 root root   58 May 10 02:54 T11276.hs -> /root/ghc/testsuite/tests/pmcheck/should_compile/T11276.hs
+lrwxrwxrwx 1 root root   58 May 10 02:54 T11303.hs -> /root/ghc/testsuite/tests/pmcheck/should_compile/T11303.hs
+lrwxrwxrwx 1 root root   59 May 10 02:54 T11303b.hs -> /root/ghc/testsuite/tests/pmcheck/should_compile/T11303b.hs
+lrwxrwxrwx 1 root root   58 May 10 02:54 T11374.hs -> /root/ghc/testsuite/tests/pmcheck/should_compile/T11374.hs
+lrwxrwxrwx 1 root root   58 May 10 02:54 T11822.hs -> /root/ghc/testsuite/tests/pmcheck/should_compile/T11822.hs
+lrwxrwxrwx 1 root root   58 May 10 02:54 T17096.hs -> /root/ghc/testsuite/tests/pmcheck/should_compile/T17096.hs
+-rwxrwxr-x 1 root root  190 May  9 21:01 bench-all.sh
+-rwxrwxr-x 1 root root  377 May  9 20:58 bench.sh
+```
+
+The `perf-tests` directory contains each of the performance tests mentioned in
+Figure 10 of Section 6.1. Each of the test cases beginning with `T-` are taken
+directly from GHC's regression test suite, so we simply use symlinks to the
+relevant parts of the GHC source code (in `/root/ghc`). The other three tests
+(that begin with `PmSeries-`) are also taken from GHC's test suite by running
+scripts that generate the files themselves. You can see how this was done by
+inspecting the Dockerfile:
+
+```
+# Prepare /root/perf-tests directory
+ENV GHC_PMCHECK_TESTDIR /root/ghc/testsuite/tests/pmcheck/should_compile
+RUN mkdir /root/perf-tests
+WORKDIR /root/perf-tests
+RUN <elided> && \
+    python3 ${GHC_PMCHECK_TESTDIR}/genS.py 10 && mv S.hs PmSeriesS.hs && \
+    python3 ${GHC_PMCHECK_TESTDIR}/genT.py 10 && mv T.hs PmSeriesT.hs && \
+    python3 ${GHC_PMCHECK_TESTDIR}/genV.py 6  && mv V.hs PmSeriesV.hs
+```
+
+Each of these performance tests were compiled with GHC 8.8.3 (which implements
+GMTM) and the developmental version of GHC that implements LYG, comparing the
+times it took to compile each file and the megabytes of allocation used during
+compilation. To run an individual test, use the `bench.sh` script:
+
+```
+# ./bench.sh T11303
+~~~~~ GHC 8.8.3 results ~~~~~
+*** Chasing dependencies:
+*** Parser [Main]:
+*** Renamer/typechecker [Main]:
+*** Desugar [Main]:
+Desugar [Main]: alloc=60188712 time=31.412
+*** Simplifier [Main]:
+*** CoreTidy [Main]:
+*** CorePrep [Main]:
+*** CodeGen [Main]:
+~~~~~ GHC-LYG results ~~~~~
+*** initializing package database:
+*** initializing package database:
+*** Chasing dependencies:
+*** Parser [Main]:
+*** Renamer/typechecker [Main]:
+*** Desugar [Main]:
+Desugar [Main]: alloc=39875832 time=16.922
+*** Simplifier [Main]:
+*** CoreTidy [Main]:
+*** CorePrep [Main]:
+*** CodeGen [Main]:
+*** systool:as:
+*** systool:cc:
+*** systool:cc:
+*** systool:linker:
+```
+
+The relevant parts of this output are the two
+`Desugar [Main]: alloc=<bytes> time=<milliseconds>` lines. (Note that the
+Desugar pass is where pattern-match coverage checking occurs in GHC.)
+The first occurrence of this line corresponds to GHC 8.8.3's results, and the
+second occurrence corresponds to the LYG version of GHC's results. The numbers
+in Figure 10 were taken from this script, albeit with some minor changes for
+presentation purposes:
+
+* GHC reports the number of bytes allocated, but Figure 10 presents megabytes
+  instead.
+* We round each of the numbers to three significant figures.
+
+You can run all of the performance tests back to back by running
+`./bench-all.sh`.
