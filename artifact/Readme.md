@@ -18,21 +18,31 @@ The artifact is packaged as a Docker image. There are two ways to obtain it:
 
 Regardless of which step above you pick, the end result will be that you will
 enter a `bash` session in a Docker image in which a developmental version of
-GHC is on your `PATH`. This version of GHC implements the Lower Your Guards
-(LYG) coverage checking algorithm as described in the accompanying paper.
-You can verify this by running:
+GHC (`/opt/ghc/lyg/bin/ghc`) is on your `PATH`. This version of GHC implements
+the Lower Your Guards (LYG) coverage checking algorithm as described in the
+accompanying paper. You can verify this by running:
 
 ```
+# type ghc
+ghc is /opt/ghc/lyg/bin/ghc
 # ghc --version
 The Glorious Glasgow Haskell Compilation System, version 8.11.0.20200227
 ```
 
-You will also an older version of GHC (8.8.3) (at `/opt/ghc/8.8.3/bin/ghc`)
-that predates LYG. This version of GHC was used in Section 6 (Evaluation) of
-the paper to compare the performance of GHC before and after the implementation
-of LYG. Since the two `ghc` binaries have the same name, simply typing `ghc`
+You will also have access to two older versions of GHC:
+version 8.6.5 (at `/opt/ghc/8.6.5/bin/ghc`) and
+version 8.8.3 (at `/opt/ghc/8.8.3/bin/ghc`).
+Both of these versions predate LYG, although 8.8.3 implements an _ad hoc_ form
+of inhabitation testing for data types with strict fields (Section 2.3).
+Version 8.8.3 is used in Section 6 (Evaluation) of the paper to compare the
+performance of GHC before and after the implementation
+of LYG, and 8.6.5 is used as a point of comparison later in the artifact
+(see `Ex7_1_1.hs` in the `examples` section).
+
+Since these `ghc` binaries all have the same name, simply typing `ghc`
 will default to the LYG version of GHC. As a result, you will have to type out
-`/opt/ghc/8.8.3/bin/ghc` if you want to use 8.8.3 in particular.
+`/opt/ghc/8.8.3/bin/ghc` if you want to use version 8.8.3 in particular
+(and similarly for version 8.6.5).
 
 # Directory structure
 
@@ -86,8 +96,8 @@ The following sections will describe these directories in more detail.
 ```
 # cd /root/examples/
 # ls
-Ex1.hs    Ex2_2_1.hs  Ex2_3.hs  Ex3_3.hs  Ex4_1.hs  Ex4_4.hs  Ex5_3.hs
-Ex2_1.hs  Ex2_2_2.hs  Ex3_1.hs  Ex3_7.hs  Ex4_2.hs  Ex5_2.hs  Ex5_4.hs
+Ex1.hs    Ex2_2_1.hs  Ex2_3.hs  Ex3_3.hs  Ex4_1.hs  Ex4_4.hs  Ex5_3.hs  Ex7_1_1.hs  Ex7_3.hs
+Ex2_1.hs  Ex2_2_2.hs  Ex3_1.hs  Ex3_7.hs  Ex4_2.hs  Ex5_2.hs  Ex5_4.hs  Ex7_1_2.hs
 ```
 
 The `examples` directory contains code fragments from the paper, condensed into
@@ -491,6 +501,125 @@ Here are some assorted notes on each of the programs in this directory:
   5 | f True = ()
     | ^^^^^^^^^^^
   ```
+* `Ex7_1_1.hs`: This contains a variant of `v` (from `Ex2_3.hs`) that has its
+  redundant `v (SJust _) = 1` equation removed. Compiling this file with the
+  LYG version of GHC will produce no warnings, as expected, but compiling it
+  with GHC 8.6.5 (which implements GMTM) will erroneously produce a warning:
+
+  ```
+  # /opt/ghc/8.6.5/bin/ghc Ex7_1_1.hs
+  [1 of 1] Compiling Ex7_1_1          ( Ex7_1_1.hs, Ex7_1_1.o )
+
+  Ex7_1_1.hs:8:1: warning: [-Wincomplete-patterns]
+      Pattern match(es) are non-exhaustive
+      In an equation for `v': Patterns not matched: (SJust _)
+    |
+  8 | v SNothing  = 0
+    | ^^^^^^^^^^^^^^^
+  ```
+
+  Note that you need to use GHC 8.6.5 (not 8.8.3) here, since 8.8.3 implements
+  an ad hoc form of inhabitation testing for data types with strict fields, so
+  8.8.3 will not produce any warnings either.
+* `Ex7_1_2.hs`: This contains `safeLast2`, a variant of `safeLast` (from
+  `Ex2_2_1.hs`). Because both pattern guards in `safeLast2` scrutinise the same
+  expression (`reverse xs`), the LYG version of GHC is able to conclude that
+  `safeLast2` is exhaustive, so it will produce no warnings. On the other hand,
+  compiling this file with 8.6.5 or 8.8.3 (which implement GMTM) will
+  erroneously produce a warning:
+
+  ```
+  # /opt/ghc/8.8.3/bin/ghc Ex7_1_2.hs
+  [1 of 1] Compiling Ex7_1_2          ( Ex7_1_2.hs, Ex7_1_2.o )
+
+  Ex7_1_2.hs:5:1: warning: [-Wincomplete-patterns]
+      Pattern match(es) are non-exhaustive
+      In an equation for `safeLast2': Patterns not matched: _
+    |
+  5 | safeLast2 xs
+    | ^^^^^^^^^^^^...
+  ```
+* `Ex7_3.hs`: This contains two examples from Section 7.3:
+  * The `f` function matches on a `False`, `True'`, and `True`. Here, `False`
+    and `True` are ordindary data constructors, while `True'` is a pattern
+    synonym. Moreover, `True'` and `False` are in the same `COMPLETE` set. The
+    `f` function matches on both `True'` and `False`, so LYG is able to recognise
+    that the third equation (`f True = 3`) is redundant:
+
+    ```
+    # ghc Ex7_3.hs
+    [1 of 1] Compiling Ex7_3            ( Ex7_3.hs, Ex7_3.o )
+
+    Ex7_3.hs:12:1: warning: [-Woverlapping-patterns]
+        Pattern match is redundant
+        In an equation for `f': f True = ...
+       |
+    12 | f True  = 3
+       | ^^^^^^^^^^^
+
+    <elided>
+    ```
+
+    GHC 8.6.5 and 8.8.3, on the other hand, implement GMTM, commits to the set
+    `{True, False}` as soon as it matches on `False`, which causes them to
+    incorrectly report that the second equation (`f True' = 2`) is redundant:
+
+    ```
+    # /opt/ghc/8.8.3/bin/ghc Ex7_3.hs
+    [1 of 1] Compiling Ex7_3            ( Ex7_3.hs, Ex7_3.o )
+
+    Ex7_3.hs:11:1: warning: [-Woverlapping-patterns]
+        Pattern match is redundant
+        In an equation for `f': f True' = ...
+       |
+    11 | f True' = 2
+       | ^^^^^^^^^^^
+
+    <elided>
+    ```
+  * The `h` function demonstrates a crucial application of negative constraints
+    in efficient coverage checking. Because of LYG's use of negative
+    constraints, it is able to quickly recognize that `h` is non-exhaustive:
+
+    ```
+    # ghc Ex7_3.hs
+    [1 of 1] Compiling Ex7_3            ( Ex7_3.hs, Ex7_3.o )
+
+    <elided>
+
+    Ex7_3.hs:15:1: warning: [-Wincomplete-patterns]
+        Pattern match(es) are non-exhaustive
+        In an equation for `h':
+            Patterns not matched:
+                A2 A2
+                A2 A3
+                A2 A4
+                A2 A5
+                ...
+       |
+    15 | h A1 _ = 1
+       | ^^^^^^^^^^...
+    ```
+
+    GHC 8.6.5 and 8.8.3, on the other hand, implement GMTM, which only tracks
+    positive information. As a result, using 8.6.5 or 8.8.3 to compile this
+    file will do a lot of computation before eventually giving up trying to
+    determine if `h` is exhaustive:
+
+    ```
+    # /opt/ghc/8.8.3/bin/ghc Ex7_3.hs
+    [1 of 1] Compiling Ex7_3            ( Ex7_3.hs, Ex7_3.o )
+
+    <elided>
+
+    Ex7_3.hs:15:1: warning:
+        Pattern match checker exceeded (2000000) iterations in
+        an equation for `h'. (Use -fmax-pmcheck-iterations=n
+        to set the maximum number of iterations to n)
+       |
+    15 | h A1 _ = 1
+       | ^^^^^^^^^^...
+    ```
 
 Note that this directory only contains examples of Haskell code. Section 7.4,
 which covers examples of OCaml and Idris code, are handled separately in the
@@ -502,11 +631,68 @@ TODO RGS
 
 # `idris`
 
-TODO RGS
+```
+# cd /root/idris/
+# ls
+Ex7_4.idr
+```
+
+The `idris` directory contains `Ex7_4.idr`, which contains the Idris code from
+Section 7.4. The `v` function in `Ex7_4.idr` is equivalent to its Haskell
+counterpart from Section 2.3. Note that because Idris has call-by-value runtime
+semantics, there is no need to define a separate strict `SMaybe` data type,
+since the standard `Maybe` type is already strict.
+
+The `v` function is exhaustive, since it does not include a redundant match on
+`Just`. The `v_modified` variant does include a redundant match on `Just`.
+Idris 1.3.2 will not produce a warning for either function, including
+`v_modified`, which has a redundant match:
+
+```
+# idris --version
+1.3.2
+# idris Ex7_4.idr
+     ____    __     _
+    /  _/___/ /____(_)____
+    / // __  / ___/ / ___/     Version 1.3.2
+  _/ // /_/ / /  / (__  )      http://www.idris-lang.org/
+ /___/\__,_/_/  /_/____/       Type :? for help
+
+Idris is free software with ABSOLUTELY NO WARRANTY.
+For details type :warranty.
+*Ex7_4> :quit
+```
 
 # `ocaml`
 
-TODO RGS
+```
+# cd /root/ocaml/
+# ls
+Ex7_4.ml
+```
+
+The `ocaml` directory contains `Ex7_4.ml`, which contains the OCaml code from
+Section 7.4. The `v` function in `Ex7_4.ml` is equivalent to its Haskell
+counterpart from Section 2.3, where OCaml's `option` type is isomorphic to
+Haskell's `Maybe` type. Note that because OCaml has call-by-value semantics,
+there is no need to define a separate strict `soption` data type,
+since the standard `option` type is already strict.
+
+The `v` function is exhaustive, since it does not include a redundant match on
+`Some`. OCaml 4.10.0 will erroneously warn that `v` is missing a case on
+`Some`, however:
+
+```
+# ocaml -version
+The OCaml toplevel, version 4.10.0
+# ocaml Ex7_4.ml
+File "./Ex7_4.ml", line 2, characters 6-36:
+2 | let v (None : void option) : int = 0;;
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+Some _
+```
 
 # `perf-tets`
 
