@@ -319,15 +319,178 @@ Here are some assorted notes on each of the programs in this directory:
     GADT, might work. Due to the way `T` is defined, both `g1` and `g2` are
     exhaustive (and thus will emit no warnings), even though there are various
     combinations of `T1` and `T2` that they do not match on.
-* `Ex3_1.hs`: TODO RGS
-* `Ex3_3.hs`: TODO RGS
-* `Ex3_7.hs`: TODO RGS
-* `Ex4_1.hs`: TODO RGS
-* `Ex4_2.hs`: TODO RGS
-* `Ex4_4.hs`: TODO RGS
-* `Ex5_2.hs`: TODO RGS
-* `Ex5_3.hs`: TODO RGS
-* `Ex5_4.hs`: TODO RGS
+* `Ex3_1.hs`: This contains the `f` and `liftEq` functions, which are primarily
+  intended to illustrate how patterns desugar to guard trees. We can see that
+  neither `f` nor `liftEq` is exhaustive:
+
+  ```
+  # ghc Ex3_1.hs
+  [1 of 1] Compiling Ex3_1            ( Ex3_1.hs, Ex3_1.o )
+
+  Ex3_1.hs:7:1: warning: [-Wincomplete-patterns]
+      Pattern match(es) are non-exhaustive
+      In an equation for `f':
+          Patterns not matched:
+              (Just (_, _)) (Just _)
+              Nothing Nothing
+              Nothing (Just _)
+    |
+  7 | f (Just (!xs, _)) ys@Nothing  = 1
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+
+  <non-coverage-related warnings elided>
+
+  Ex3_1.hs:11:1: warning: [-Wincomplete-patterns]
+      Pattern match(es) are non-exhaustive
+      In an equation for `liftEq': Patterns not matched: (Just _) Nothing
+     |
+  11 | liftEq Nothing Nothing  = True
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+  ```
+* `Ex3_3.hs`: This contains `f`, an example of a non-nexhaustive function for
+  which we would prefer a coverage warning that produces one or more concrete
+  inhabitants that aren't matched on. We can verify that LYG produces
+  essentially the same warning from Section 3.3, albeit with slightly more
+  words:
+
+  ```
+  # ghc Ex3_3.hs
+  [1 of 1] Compiling Ex3_3            ( Ex3_3.hs, Ex3_3.o )
+
+  Ex3_3.hs:7:1: warning: [-Wincomplete-patterns]
+      Pattern match(es) are non-exhaustive
+      In an equation for `f':
+          Patterns not matched:
+              Nothing
+              Just B
+              Just C
+    |
+  7 | f (Just A) = True
+    | ^^^^^^^^^^^^^^^^^
+  ```
+* `Ex3_7.hs`: This contains a function `f` which is actually exhaustive, but
+  LYG is unable to deem it exhaustive due to its conservative, fuel-based
+  inhabitation testing:
+
+  ```
+  # ghc Ex3_7.hs
+  [1 of 1] Compiling Ex3_7            ( Ex3_7.hs, Ex3_7.o )
+
+  Ex3_7.hs:9:1: warning: [-Wincomplete-patterns]
+      Pattern match(es) are non-exhaustive
+      In an equation for `f': Patterns not matched: SJust _
+    |
+  9 | f SNothing = ()
+    | ^^^^^^^^^^^^^^^
+  ```
+* `Ex4_1.hs`: This contains a function `f` that matches on `True` twice: once
+  in the first equation, and once again (redundantly) in the `case` expression.
+  LYG is able to use long-distance information to conclude that the second
+  match is, in fact, redundant:
+
+  ```
+  # ghc Ex4_1.hs
+  [1 of 1] Compiling Ex4_1            ( Ex4_1.hs, Ex4_1.o )
+
+  Ex4_1.hs:6:37: warning: [-Woverlapping-patterns]
+      Pattern match is redundant
+      In a case alternative: True -> ...
+    |
+  6 | f x    = g (case x of { False -> 2; True -> 3 }) ()
+    |                                     ^^^^^^^^^
+  ```
+* `Ex4_2.hs`: This contains three ways of defining a function of type
+  `Void -> a`, where `Void` is a data type with no constructors. As the paper
+  claims, LYG will report that the right-hand side of `absurd2` is
+  inaccessible, but will produce no warnings for `absurd1` (which ignores its
+  argument) or `absurd3` (which uses `EmptyCase`):
+
+  ```
+  # ghc Ex4_2.hs
+  [1 of 1] Compiling Ex4_2            ( Ex4_2.hs, Ex4_2.o )
+
+  Ex4_2.hs:10:1: warning: [-Woverlapping-patterns]
+      Pattern match has inaccessible right hand side
+      In an equation for `absurd2': absurd2 !_ = ...
+     |
+  10 | absurd2 !_ = undefined
+     | ^^^^^^^^^^^^^^^^^^^^^^
+  ```
+* `Ex4_4.hs`: This contains examples of pattern synonyms `P` and `Q` that are
+  _not_ associated with `COMPLETE` sets. Per Section 2.2.2, we do not wish to
+  equip LYG with any special reasoning about non-`COMPLETE` pattern synonyms.
+  In GHC's implementation of LYG, it will be conservative and produce a warning
+  for `n`, which matches on `P` and `Q`:
+
+  ```
+  # ghc Ex4_4.hs
+  [1 of 1] Compiling Ex4_4            ( Ex4_4.hs, Ex4_4.o )
+
+  Ex4_4.hs:12:5: warning: [-Wincomplete-patterns]
+      Pattern match(es) are non-exhaustive
+      In a case alternative: Patterns not matched: ()
+     |
+  12 | n = case P of Q -> 1; P -> 2
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^
+  ```
+* `Ex5_2.hs`: This contains `g`, a function with an enormous number of pattern
+  guards. A naïve approach to coverage checking pattern guards would result in
+  exponential compile times, but LYG is careful to implement throttling so that
+  it bails out early and produces a conservative warning instead. As a result,
+  you can can safely compile this file wihout blowing up your computer:
+
+  ```
+  # ghc Ex5_2.hs
+  [1 of 1] Compiling Ex5_2            ( Ex5_2.hs, Ex5_2.o )
+
+  Ex5_2.hs:7:1: warning:
+      Pattern match checker ran into -fmax-pmcheck-models=30 limit, so
+        * Redundant clauses might not be reported at all
+        * Redundant clauses might be reported as inaccessible
+        * Patterns reported as unmatched might actually be matched
+      Increase the limit or resolve the warnings to suppress this message.
+    |
+  7 | g _
+    | ^^^...
+
+  Ex5_2.hs:7:1: warning: [-Wincomplete-patterns]
+      Pattern match(es) are non-exhaustive
+      In an equation for `g':
+          Patterns not matched:
+              _ :: a
+              _ :: a
+              _ :: a
+              _ :: a
+              ...
+    |
+  7 | g _
+    | ^^^...
+  ```
+* `Ex5_3.hs`: This contains `f`, an exhaustive function that matches on all
+  1000 constructors (`A1` through `A1000`) of a data type `T`. Moreover, `A1`
+  and a pattern synonym `P` are put into a `COMPLETE` set. A naïve attempt at
+  coverage checking `f` would result in quadratic compile times, but LYG
+  instead caches residual `COMPLETE` sets, resulting in amortised linear times.
+  As a result, you can safely compile this file without blowing up your
+  computer.
+* `Ex5_4.hs`: This contains `f`, a non-exhaustive function. A naïve encoding
+  of an uncovered set for `f` would not contain any positive information, which
+  could easily lead to a poor error message that does not indicate the specific
+  patterns that weren't covered. As a result, LYG tracks positive information
+  alongside negative information in its uncovered sets, which allows it to
+  specifically report that `False` is not covered in `f`:
+
+  ```
+  # ghc Ex5_4.hs
+  [1 of 1] Compiling Ex5_4            ( Ex5_4.hs, Ex5_4.o )
+
+  Ex5_4.hs:5:1: warning: [-Wincomplete-patterns]
+      Pattern match(es) are non-exhaustive
+      In an equation for `f': Patterns not matched: False
+    |
+  5 | f True = ()
+    | ^^^^^^^^^^^
+  ```
 
 Note that this directory only contains examples of Haskell code. Section 7.4,
 which covers examples of OCaml and Idris code, are handled separately in the
