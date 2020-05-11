@@ -3052,7 +3052,7 @@ v Nothing = 0
 \end{minipage}
 \end{minipage}
 
-OCaml 4.07.1 incorrectly warns that |v| is missing a case on |Some _|.
+OCaml 4.10.0 incorrectly warns that |v| is missing a case on |Some _|.
 Idris 1.3.2 does not warn,
 but if one adds an extra |v (Just _) = 1| clause, it will not warn that the extra
 clause is redundant.
