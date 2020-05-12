@@ -1,7 +1,7 @@
 all: run-docker
 
 DOCKER_NAME=ryanglscott/icfp2020-lyg-artifact
-DOCKER_TAG=0.2
+DOCKER_TAG=0.3
 
 DOCKER_RUN_ARGS=--rm ${DOCKER_NAME}:${DOCKER_TAG}
 

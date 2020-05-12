@@ -9,18 +9,17 @@ by Sebastian Graf, Simon Peyton Jones, and Ryan G. Scott
 
 The artifact is packaged as a Docker image. There are two ways to obtain it:
 
-1. Build the `Dockerfile` from source. This can be done by running `make`
+1. (Recommended) Download a pre-built image from DockerHub.
+   This can be obtained by running:
+
+   ```
+   $ docker run -it --rm ryanglscott/icfp2020-lyg-artifact:0.3
+   ```
+2. Build the `Dockerfile` from source. This can be done by running `make`
    in the same directory as the source tarball's `Dockerfile`.
    Be warned: this will require building GHC, OCaml, and Idris from source,
    so this can take a very long time (approximately 30 minutes to an hour,
    depending on how powerful your computer is).
-2. From DockerHub, which hosts a pre-built version of the artifact. This can
-   be obtained by running
-   `docker run -it --rm ryanglscott/icfp2020-lyg-artifact:0.2`.
-
-(Note: if you are an ICFP artifact reviewer, the VM you are running this in
-will already have performed step (2), so you should already be in Docker
-image without needing further action.)
 
 Regardless of which step above you pick, the end result will be that you will
 enter a `bash` session in a Docker image in which a developmental version of
