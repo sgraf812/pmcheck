@@ -639,21 +639,22 @@ The `head-hackage-eval` directory contains the evaluation from the first part
 of Section 6. It includes checkouts of the seven libraries from `head.hackage`
 (`Cabal`, `HsYAML`, `generic-data`, `geniplate-mirror`, `network`, `pandoc`,
 and `pandoc-types`) that we found to emit new warnings under the LYG version of
-GHC that were not warned about in GHC 8.8.3. This directory also contains:
+GHC that were not warned about in GHC 8.8.3.
+
+This directory also contains the following build scripts and artifacts, neither
+of which are of particular interest for the evaluation itself, but they are
+included in case you wish to look at them:
 
 * `gen-contents.sh` (a script used to download everything from Hackage and
   apply the relevant `head.hackage` patches)
 * `patched-deps` (a directory containing library dependencies for the seven
   libraries above that also need `head.hackage` patches)
 
-Neither `gen-content.sh` nor `patched-deps` are of particular interest for the
-evaluation itself, but they are included in case you wish to look at them.
-
 To reproduce the results from Section 6, enter one of the seven libraries'
 checkout directories and run `cabal build`. This command is set up so that it
 will build the library using the LYG version of GHC, and moreover, it will
-throw an error when it encounters a new coverage checking related warning.
-For example, you can reproduce the `HsYAML` warnings under LYG by doing the
+throw an error when it encounters a new coverage checking related warning. For
+example, you can reproduce the `HsYAML` warnings under LYG by doing the
 following:
 
 ```
