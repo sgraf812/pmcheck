@@ -34,6 +34,6 @@ distclean: clean
 
 .PHONY: artifact-tarball
 artifact-tarball:
-	GZIP=-n tar -czvf artifact5-source.tgz artifact
+	GZIP=-n tar --clamp-mtime --mtime=2020-05-11 -czvf artifact5-source.tgz artifact
 	@MD5=$$(md5sum artifact5-source.tgz | cut -d' ' -f 1); \
 	mv artifact5-source.tgz artifact5-source-$$MD5.tgz
