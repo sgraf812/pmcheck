@@ -540,7 +540,7 @@ Here are some assorted notes on each of the programs in this directory:
     | ^^^^^^^^^^^^...
   ```
 * `Ex7_3.hs`: This contains two examples from Section 7.3:
-  * The `f` function matches on a `False`, `True'`, and `True`. Here, `False`
+  * The `f` function matches on `False`, `True'`, and `True`. Here, `False`
     and `True` are ordindary data constructors, while `True'` is a pattern
     synonym. Moreover, `True'` and `False` are in the same `COMPLETE` set. The
     `f` function matches on both `True'` and `False`, so LYG is able to recognise
@@ -560,8 +560,8 @@ Here are some assorted notes on each of the programs in this directory:
     <elided>
     ```
 
-    GHC 8.6.5 and 8.8.3, on the other hand, implement GMTM, commits to the set
-    `{True, False}` as soon as it matches on `False`, which causes them to
+    GHC 8.6.5 and 8.8.3, on the other hand, implement GMTM, commit to the set
+    `{True, False}` as soon as they match on `False`, which causes them to
     incorrectly report that the second equation (`f True' = 2`) is redundant:
 
     ```
