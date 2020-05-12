@@ -483,12 +483,13 @@ Here are some assorted notes on each of the programs in this directory:
   instead caches residual `COMPLETE` sets, resulting in amortised linear times.
   As a result, you can safely compile this file without blowing up your
   computer.
-* `Ex5_4.hs`: This contains `f`, a non-exhaustive function. A naïve encoding
-  of an uncovered set for `f` would not contain any positive information, which
-  could easily lead to a poor error message that does not indicate the specific
-  patterns that weren't covered. As a result, LYG tracks positive information
-  alongside negative information in its uncovered sets, which allows it to
-  specifically report that `False` is not covered in `f`:
+* `Ex5_4.hs`: This contains `f`, a non-exhaustive function. A naïve expansion
+  function (see Section 3.5 and 5.4) that only acts on positive information
+  would only report `_` as the missing pattern for `f`. Hence our
+  implementation splits the uncovered set into (possibly multiple) subsets
+  which have positive information (e.g. `x = True` rather than `x /= False`),
+  approximating the representation of GMTM for error reporting. As a result,
+  LYG (as GMTM) reports that `False` is not covered in `f`:
 
   ```
   # ghc Ex5_4.hs
