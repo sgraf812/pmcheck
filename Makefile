@@ -32,4 +32,8 @@ distclean: clean
 	$(RM) lyg_ext.tex
 	$(RM) lyg_ext.pdf
 
-
+.PHONY: artifact-tarball
+artifact-tarball:
+	GZIP=-n tar -czvf artifact5-source.tgz artifact
+	@MD5=$$(md5sum artifact5-source.tgz | cut -d' ' -f 1); \
+	mv artifact5-source.tgz artifact5-source-$$MD5.tgz

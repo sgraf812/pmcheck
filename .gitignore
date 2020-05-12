@@ -241,3 +241,6 @@ TSWLatexianTemp*
 # TeX files, because we generate them
 appendix.tex
 lyg.tex
+
+# Source tarball for artifact
+artifact5-source*.tgz
