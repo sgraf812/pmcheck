@@ -850,4 +850,6 @@ presentation purposes:
 * We round each of the numbers to three significant figures.
 
 You can run all of the performance tests back to back by running
-`./bench-all.sh`.
+`./bench-all.sh`. Note that compared to Figure 10, minor variations in
+allocation numbers (in the range of a few megabytes) are expected due to
+differences in installed package databases.
