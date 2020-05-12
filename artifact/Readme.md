@@ -15,7 +15,8 @@ The artifact is packaged as a Docker image. There are two ways to obtain it:
    so this can take a very long time (approximately 30 minutes to an hour,
    depending on how powerful your computer is).
 2. From DockerHub, which hosts a pre-built version of the artifact. This can
-   be obtained by running `docker run ryanglscott/icfp2020-lyg-artifact:0.1`.
+   be obtained by running
+   `docker run -it --rm ryanglscott/icfp2020-lyg-artifact:0.2`.
 
 (Note: if you are an ICFP artifact reviewer, the VM you are running this in
 will already have performed step (2), so you should already be in Docker
