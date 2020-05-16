@@ -70,6 +70,10 @@ WORKDIR /root/head-hackage-eval
 RUN mkdir patched-deps && \
     ./gen-contents.sh
 
+# Make sure Unicode works as expected
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+
 # Copy over miscellaneous files
 WORKDIR /root
 COPY examples   /root/examples/
