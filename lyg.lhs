@@ -297,16 +297,18 @@ We discuss the wealth of related work in \Cref{sec:related}.
 
 What makes coverage checking so difficult in a language like Haskell? At first
 glance, implementing a coverage checking algorithm might appear simple: just
-check that every function is exhaustive, \ie matches on every possible
-combination of data constructors. Additionally, every equation must match
-\emph{some} combination of data constructors, otherwise it is redundant.
+check that every function matches on every possible combination of data
+constructors exactly once. A function must match on every possible combination
+of constructors in order to be exhaustive, and it must match on them exactly
+once to avoid redundant matches.
 
 This algorithm, while concise, leaves out many nuances. What constitutes a
 ``match''? Haskell has multiple matching constructs, including function definitions,
 |case| expressions, and guards. How does one count the
 number of possible combinations of data constructors? This is not a simple exercise
 since term and type constraints can make some combinations of constructors
-unreachable if matched on. Moreover, what constitutes a ``data constructor''?
+unreachable if matched on, and some combinations of data constructors can
+overlap others. Moreover, what constitutes a ``data constructor''?
 In addition to traditional data constructors, GHC features \emph{pattern synonyms}
 ~\cite{patsyns},
 which provide an abstract way to embed arbitrary computation into patterns.
