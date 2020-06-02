@@ -710,15 +710,20 @@ Ex7_4.idr
 ```
 
 The `idris` directory contains `Ex7_4.idr`, which contains the Idris code from
-Section 7.4. The `v` function in `Ex7_4.idr` is equivalent to its Haskell
-counterpart from Section 2.3. Note that because Idris has call-by-value runtime
-semantics, there is no need to define a separate strict `SMaybe` data type,
-since the standard `Maybe` type is already strict.
+Section 7.4:
 
-The `v` function is exhaustive, since it does not include a redundant match on
-`Just`. The `v_modified` variant does include a redundant match on `Just`.
-Idris 1.3.2 will not produce a warning for either function, including
-`v_modified`, which has a redundant match:
+* The `v` function is equivalent to its Haskell counterpart from Section 2.3.
+* The `v'` function is a modified form of `v` that defines an equation for
+  `Just`.
+* The `f` function is equivalent to its Haskell counterpart from Section 3.7.
+
+Note that because Idris has call-by-value runtime semantics, there is no need
+to define a separate strict `SMaybe` data type, since the standard `Maybe` type
+is already strict. Similarly, the `MkT` constructor in `Ex7_4.idr` will be
+strict in its argument without the need to add a bang.
+
+You can load `Ex7_4.idr` into the Idris REPL and check each function for
+pattern-matching coverage by doing the following:
 
 ```
 # idris --version
@@ -732,8 +737,25 @@ Idris 1.3.2 will not produce a warning for either function, including
 
 Idris is free software with ABSOLUTELY NO WARRANTY.
 For details type :warranty.
+Type checking ./Ex7_4.idr
+Ex7_4.idr:22:1-13:
+   |
+22 | f Nothing = 0
+   | ~~~~~~~~~~~~~
+Ex7_4.f is not total as there are missing cases
+
 *Ex7_4> :quit
 ```
+
+Notes:
+
+* The `v` function is exhaustive, since it does not include a redundant match
+  on `Just`. Idris 1.3.2 behaves correctly by not producing a warning for `v`.
+* The `v'` function includes a redundant match on `Just`, but Idris will not
+  produce a warning for `v'`.
+* The `f` function is exhaustive, since it does not include a redundant match
+  on `Just`. Idris will nevertheless warn that `f` is not total
+  (implying non-exhaustivity).
 
 # `ocaml`
 
@@ -744,27 +766,47 @@ Ex7_4.ml
 ```
 
 The `ocaml` directory contains `Ex7_4.ml`, which contains the OCaml code from
-Section 7.4. The `v` function in `Ex7_4.ml` is equivalent to its Haskell
-counterpart from Section 2.3, where OCaml's `option` type is isomorphic to
-Haskell's `Maybe` type. Note that because OCaml has call-by-value semantics,
-there is no need to define a separate strict `soption` data type,
-since the standard `option` type is already strict.
+Section 7.4:
 
-The `v` function is exhaustive, since it does not include a redundant match on
-`Some`. OCaml 4.10.0 will erroneously warn that `v` is missing a case on
-`Some`, however:
+* The `v` function is equivalent to its Haskell counterpart from Section 2.3.
+* The `v'` function is a modified form of `v` that defines an equation for
+  `Some`.
+* The `f` function is equivalent to its Haskell counterpart from Section 3.7.
+
+Note that OCaml's `option` type is isomorphic to Haskell's `Maybe` type. Note
+that because OCaml has call-by-value semantics, there is no need to define a
+separate strict `soption` data type, since the standard `option` type is
+already strict. Similarly, the `MkT` constructor in `Ex7_4.ml` will be
+strict in its argument without the need to add a bang.
+
+You can compile `Ex7_4.ml` and check each function for pattern-matching
+coverage by doing the following:
 
 ```
 # ocaml -version
 The OCaml toplevel, version 4.10.0
 # ocaml Ex7_4.ml
-File "./Ex7_4.ml", line 2, characters 6-36:
-2 | let v (None : void option) : int = 0;;
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+File "./Ex7_4.ml", line 8, characters 8-14:
+8 |       | Some _  -> 1;;
+            ^^^^^^
+Warning 56: this match case is unreachable.
+Consider replacing it with a refutation case '<pat> -> .'
+File "./Ex7_4.ml", line 12, characters 6-33:
+12 | let f (None : t option) : int = 0;;
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a case that is not matched:
-Some _
+Some (MkT (MkT (MkT (MkT (MkT _)))))
 ```
+
+Notes:
+
+* The `v` function is exhaustive, since it does not include a redundant match
+  on `Some`. OCaml 4.10.0 behaves correctly by not producing a warning for `v`.
+* The `v'` function includes a redundant match on `Some`. OCaml will observe
+  this and emit a warning stating that this case is unreachable.
+* The `f` function is exhaustive, since it does not include a redundant match
+  on `Just`. OCaml will nevertheless warn that `f` is not exhaustive.
 
 # `perf-tets`
 
