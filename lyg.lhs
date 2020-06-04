@@ -3028,36 +3028,86 @@ only can find a subset of all uncovered patterns in doing so
 \subsection{Strict fields in inhabitation testing}
 \label{ssec:strict-fields}
 
-To our knowledge, the $\mathsf{Inst}$ function in \cref{fig:inh} is the first
-inhabitation test in a coverage checking algorithm to take strict fields into
-account. This is essential in order to conclude that the |v| function from
-\cref{ssec:strictness} is exhaustive, which is something that even coverage
-checkers for call-by-value languages get wrong. For example, we ported |v|
-to OCaml and Idris
+The $\mathsf{Inst}$ function in \cref{fig:inh} takes inhabitation testing into
+account, which is essential to conclude that the |v| function from
+\cref{ssec:strictness} is exhaustive. To our knowledge, \lyg is the first
+published coverage checking algorithm to incorporate inhabitation testing.
+This is somewhat surprising, as we are certainly not the first to consider
+coverage checking in a language with strictness. As a point of comparison,
+we decided to see how OCaml and Idris, two call-by-value languages that
+check for pattern-match coverage
 \footnote{Idris has separate compile-time and runtime semantics, the latter
-of which is call by value.}:
+of which is call by value.},
+would fare when checking functions like |v|:
 
 \begin{minipage}{\textwidth}
 \begin{minipage}{0.4\textwidth}
 \centering
 \begin{code}
-type void;;
+(* OCaml *)
+type void = |;;
+
 let v (None : void option) : int = 0;;
+let v' (o : void option) : int =
+      match o with
+        None    -> 0
+      | Some _  -> 1;;
 \end{code}
 \end{minipage} %
 \begin{minipage}{0.4\textwidth}
 \centering
 \begin{code}
+-- Idris
 v : Maybe Void -> Int
-v Nothing = 0
+v Nothing  = 0
+
+v' : Maybe Void -> Int
+v' Nothing   = 0
+v' (Just _)  = 1
 \end{code}
 \end{minipage}
 \end{minipage}
 
-OCaml 4.10.0 incorrectly warns that |v| is missing a case on |Some _|.
-Idris 1.3.2 does not warn,
-but if one adds an extra |v (Just _) = 1| clause, it will not warn that the extra
-clause is redundant.
+Both OCaml 4.10.0 and Idris 1.3.2 correctly mark their respective versions of
+|v| as exhaustive. OCaml also correctly warns that the |Some| case in |v'| is
+unreachable, while Idris emits no warnings for |v'| at all.
+
+\Cref{sec:inhabitation} also contains an example of a function |f| that \lyg
+will fail to recognize as exhaustive due to \lyg's conservative, fuel-based
+approach to inhabitation testing. Porting |f| to OCaml and Idris reveals that
+both languages will also conservatively claim that |f| is non-exhaustive:
+
+\begin{minipage}{\textwidth}
+\begin{minipage}{0.4\textwidth}
+\centering
+\begin{code}
+(* OCaml *)
+type t = MkT of t;;
+
+let f (None : t option) : int = 0;;
+\end{code}
+\end{minipage} %
+\begin{minipage}{0.4\textwidth}
+\centering
+\begin{code}
+-- Idris
+data T : Type where
+  MkT : T -> T
+
+f : Maybe T -> Int
+f Nothing = 0
+\end{code}
+\end{minipage}
+\end{minipage}
+
+Indeed, the warning that OCaml produces will cite
+|Some (MkT (MkT (MkT (MkT (MkT _)))))|
+as a case that is not matched, which suggests that OCaml may also be using
+a fuel-based approach. We believe these examples show that inhabitation testing
+is something that programming language implementors have discovered
+independently, but with varying degrees
+of success in putting into practice. We hope that \lyg can bring this heretofore
+folklore knowledge into wider use.
 
 \subsection{Refinement types in coverage checking}
 

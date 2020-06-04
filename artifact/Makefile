@@ -1,7 +1,7 @@
 all: run-docker
 
 DOCKER_NAME=ryanglscott/icfp2020-lyg-artifact
-DOCKER_TAG=0.4
+DOCKER_TAG=0.5 # Contains post–AE deadline changes, not yet on DockerHub
 
 DOCKER_RUN_ARGS=--rm ${DOCKER_NAME}:${DOCKER_TAG}
 
