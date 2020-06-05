@@ -240,7 +240,7 @@ hard to maintain.
 
 In this paper we propose a new, compositional coverage-checking algorithm,
 called Lower Your Guards (\lyg), that is simpler, more modular, \emph{and}
-more powerful than \gmtm (see \cref{ssec:gmtm}). Moreover, it avoids \gmtm's
+more powerful than \gmtm (see \Cref{ssec:gmtm}). Moreover, it avoids \gmtm's
 performance pitfalls. We make the following contributions:
 
 \begin{itemize}
@@ -437,7 +437,7 @@ We consider two such extensions here: view patterns and pattern synonyms.
 % Desugaring overloaded literal patterns to guards directly like this is perhaps
 % not always desirable, however, since that can make the coverage checker's job
 % more difficult.
-% \sg{Fun fact: I think this desugaring + GVN from \cref{ssec:extviewpat} would
+% \sg{Fun fact: I think this desugaring + GVN from \Cref{ssec:extviewpat} would
 % be enough to handle this desugaring of overloaded literals. I think it's still
 % worthwhile to handle them similarly to PatSyns for efficiency and similarity
 % reasons. But it renders the point we are trying to make here somewhat moot.}
@@ -640,7 +640,7 @@ The input $\bot$ makes the first equation diverge; |Nothing| matches on the firs
 and $(|Just|~\bot)$ makes the second equation diverge because of the bang pattern.
 Therefore, none of the three inhabitants will result in the right-hand side of
 the second equation being reached. Note that the second equation is inaccessible, but not redundant
-(\cref{sssec:inaccessibility}).
+(\Cref{sssec:inaccessibility}).
 
 \subsection{Type-equality constraints}
 
@@ -841,7 +841,7 @@ Stardust \cite{dunfieldthesis}.
 In this section, we describe our new coverage checking algorithm, \lyg.
 \Cref{fig:pipeline} depicts a high-level overview, which divides into three steps:
 \begin{itemize}
-\item First, we desugar the complex source Haskell syntax (\cf \cref{fig:srcsyn})
+\item First, we desugar the complex source Haskell syntax (\cf \Cref{fig:srcsyn})
   into a \emph{guard tree} $t:\Gdt$ (\Cref{sec:desugar}).
   The language of guard trees is tiny but expressive, and allows the subsequent passes to be entirely
   independent of the source syntax.
@@ -871,28 +871,28 @@ advantages are:
 \begin{itemize}
   \item
     Correctly accounting for strictness in identifying redundant and inaccessible
-    code (\cref{ssec:strict-fields}).
+    code (\Cref{ssec:strict-fields}).
 
   \item
     Using detailed term-level reasoning
-    (\cref{fig:gen,fig:add,fig:inh}),
+    (\Cref{fig:gen,fig:add,fig:inh}),
     which \gmtm does not.
 
   \item
     Using \emph{negative information} to sidestep serious performance issues in
-    \gmtm without changing the worst-case complexity (\cref{ssec:negative-information}).
+    \gmtm without changing the worst-case complexity (\Cref{ssec:negative-information}).
     This also enables
-    graceful degradation (\cref{ssec:throttling})
+    graceful degradation (\Cref{ssec:throttling})
     and the ability to handle \extension{COMPLETE}
-    sets properly (\cref{ssec:residual-complete}).
+    sets properly (\Cref{ssec:residual-complete}).
 
   \item
-    Achieving modularity by clearly separating the source syntax (\cref{fig:srcsyn})
-    from the intermediate language (\cref{fig:syn}).
+    Achieving modularity by clearly separating the source syntax (\Cref{fig:srcsyn})
+    from the intermediate language (\Cref{fig:syn}).
 
   \item
     Fixing various bugs present in \gmtm, both in the paper \cite{gadtpm} and
-    in GHC's implementation thereof (\cref{sec:ghc-issues}).
+    in GHC's implementation thereof (\Cref{sec:ghc-issues}).
 
 \end{itemize}
 
@@ -975,8 +975,8 @@ This desugars to the following guard tree:
 \begin{forest}
   grdtree,
   [
-    [{$\grdbang{x_1}, \grdcon{|Just t_1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{xs}{t_2}, \grdlet{ys}{x_2}, \grdbang{ys}, \grdcon{|Nothing|}{ys}$} [1]]
-    [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_3}{|g x_2|}, \grdbang{y}, \grdcon{|True|}{t_3}$} [2]]]
+    [{$\grdbang{x_1}, \grdcon{|Just t_1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{xs}{t_2}, \grdlet{ys}{x_2}, \grdbang{ys}, \grdcon{|Nothing|}{ys}$} [|True|]]
+    [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_3}{|g x_2|}, \grdbang{t_3}, \grdcon{|True|}{t_3}$} [|False|]]]
 \end{forest}
 \\
 Here we use a graphical syntax for guard trees, also defined in \Cref{fig:syn}.
@@ -1090,7 +1090,7 @@ time to come up with the language of guard trees.  We recommend it!
 % top-to-bottom (and their individual guards left-to-right).
 %
 % Hence \lyg desugars the source syntax to the following \emph{guard
-% tree} (see \cref{fig:syn} for the syntax):
+% tree} (see \Cref{fig:syn} for the syntax):
 %
 % \begin{forest}
 %   grdtree
@@ -1219,7 +1219,7 @@ Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
 %
 % For the example of |liftEq|'s guard tree $t_|liftEq|$, we represent the set of
 % values reaching the first clause by the \emph{refinement type} $\Theta_0 = \reft{(mx :
-% |Maybe a|, my : |Maybe a|)}{\true}$.   Refinement types are described in \cref{fig:syn}.
+% |Maybe a|, my : |Maybe a|)}{\true}$.   Refinement types are described in \Cref{fig:syn}.
 % This type  is gradually refined until finally we have $\Theta_{|liftEq|} :=
 % \reft{(mx : |Maybe a|, my : |Maybe a|)}{\Phi}$ as the uncovered set, where the
 % predicate $\Phi$ is semantically equivalent to:
@@ -1267,7 +1267,7 @@ Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
 % Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
 % guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
 % expressive enough to express all pattern matching in Haskell (cf. the
-% desugaring function $\ds$ in \cref{fig:desugar})! We have yet to find a
+% desugaring function $\ds$ in \Cref{fig:desugar})! We have yet to find a
 % language extension that does not fit into this framework.
 
 %%%%%%%%
@@ -1445,7 +1445,7 @@ triple of (accessible, inaccessible, redundant) GRHSs:
   of them and mark it as inaccessible.
 \item The case for $\red(t;u)$ is trivial: just combine the classifications of $t$ and $u$.
 \end{itemize}
-To illustrate the second case consider |u'| from \cref{sssec:inaccessibility} and its annotated tree:
+To illustrate the second case consider |u'| from \Cref{sssec:inaccessibility} and its annotated tree:
 
 \begin{minipage}{\textwidth}
 \begin{minipage}{0.22\textwidth}
@@ -1523,7 +1523,7 @@ its \emph{solution}, informed by the single positive constraint $x \termeq
 \deltaconapp{K}{a}{y} \in \Delta$, if it exists. For example, $x \termeq
 |Nothing|$ can be understood as a function mapping |x| to |Nothing|. This
 reasoning is justified by \inv{3}. Under this view, $\Delta$ looks like a
-substitution. As we'll see in \cref{sec:normalise}, this view is
+substitution. As we'll see in \Cref{sec:normalise}, this view is
 supported by a close correspondence with unification algorithms.
 
 \inv{2} is actually a condition on the represented substitution. Whenever we
@@ -1653,7 +1653,7 @@ arising from the binding. Equation (4) of $\!\addphi\!$ performs
 some limited, but important reasoning about let bindings: it flattens
 possibly nested constructor applications, such as $\ctlet{|x|}{|Just True|}$.
 Note that equation (6) simply discards let bindings that cannot be expressed
-in $\nabla$; we'll see an extension in \cref{ssec:extviewpat} that avoids
+in $\nabla$; we'll see an extension in \Cref{ssec:extviewpat} that avoids
 this information loss.
 % The last case of $\!\addphi\!$
 % turns the syntactically and semantically identical subset of $\varphi$ into
@@ -1676,8 +1676,8 @@ $\Delta$.
 
 Adding a negative constructor constraint $x \ntermeq Just$ is quite similar (equation (11)),
 except that we have to make sure that $x$ still satisfies \inv{4}, which is
-checked by the $\inhabited{\nabla}{\Delta(x)}$ judgment (\cf \cref{sec:test})
-in \cref{fig:inh}. Handling positive and negative constraints involving $\bot$
+checked by the $\inhabited{\nabla}{\Delta(x)}$ judgment (\cf \Cref{sec:test})
+in \Cref{fig:inh}. Handling positive and negative constraints involving $\bot$
 is analogous.
 
 Adding a type constraint $\gamma$ (equation (9)) entails calling out to the type checker to
@@ -1734,7 +1734,7 @@ contradiction.
 %
 % Why do we have to test guard-bound variables in addition to the pattern
 % variables? It is because of empty data types and strict fields. For example,
-% |v| from \cref{ssec:strictness} does not have any uncovered patterns. And our
+% |v| from \Cref{ssec:strictness} does not have any uncovered patterns. And our
 % approach should see that by looking at its uncovered set $\reft{x : |Maybe
 % Void|}{x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}}$. Specifically, the
 % candidate |SJust y| (for fresh |y|) for |x| should be rejected, because there
@@ -1823,7 +1823,7 @@ contradiction.
 
 The process for adding a constraint to a normalised type above (which turned
 out to be a unification procedure in disguise) makes use of an
-\emph{inhabitation test} $\inhabited{\nabla}{x}$, depicted in \cref{fig:inh}.
+\emph{inhabitation test} $\inhabited{\nabla}{x}$, depicted in \Cref{fig:inh}.
 This tests whether there are any values of $x$ that satisfy $\nabla$. If not,
 $\nabla$ does not uphold \inv{4}.
 For example, the conjunction
@@ -1860,8 +1860,9 @@ which leads to constraints $y \termeq |MkT z|, z \ntermeq \bot$, and so on for
 |z| \etc. An infinite chain of fruitless instantiation attempts!
 
 In practice, we implement a fuel-based approach that conservatively assumes
-that a variable is inhabited after $n$ such iterations and consider
-supplementing that with a simple termination analysis in the future.
+that a variable is inhabited after $n$ such iterations (we have $n=100$ for
+list-like constructors and $n=1$ otherwise) and consider supplementing that
+with a simple termination analysis in the future.
 
 
 \section{Possible extensions} \label{sec:extensions}
@@ -1895,7 +1896,7 @@ as the initial set of reaching values instead of $\reft{x:|Bool|}{\true}$.
 
 \subsection{Empty case}
 
-As can be seen in \cref{fig:srcsyn}, Haskell function definitions need to have
+As can be seen in \Cref{fig:srcsyn}, Haskell function definitions need to have
 at least one clause. That leads to an awkward situation when pattern matching
 on empty data types, like |Void|:
 
@@ -1941,10 +1942,10 @@ the guard tree, thus $\unc(\reft{\Gamma}{x \ntermeq \bot}, \gdtempty)$.
 \label{ssec:extviewpat}
 
 Our source syntax had support for view patterns to start with (\cf
-\cref{fig:srcsyn}). And even the desugaring we gave as part of the definition
-of $\ds$ in \cref{fig:desugar} is accurate. But this desugaring alone is
+\Cref{fig:srcsyn}). And even the desugaring we gave as part of the definition
+of $\ds$ in \Cref{fig:desugar} is accurate. But this desugaring alone is
 insufficient for the checker to conclude that |safeLast| from
-\cref{sssec:viewpat} is an exhaustive definition! To see why, let's look at its
+\Cref{sssec:viewpat} is an exhaustive definition! To see why, let's look at its
 guard tree:
 
 \begin{forest}
@@ -2028,7 +2029,7 @@ n = case P of Q -> 1; P -> 2
 Knowing that the definitions of |P| and |Q| completely overlap, we can see that
 the match on |Q| will cover all values that could reach |P|, so clearly |P| is
 redundant. A sound approximation to that would be not to warn at all. And
-that's reasonable, after all we established in \cref{ssec:patsyn} that
+that's reasonable, after all we established in \Cref{ssec:patsyn} that
 reasoning about pattern synonym definitions is undesirable.
 
 But equipped with long-distance information from the scrutinee expression, the
@@ -2069,7 +2070,7 @@ In a sense, every algebraic data type defines its own builtin
 \extension{COMPLETE} set, consisting of all its data constructors, so the
 coverage checker already manages a single \extension{COMPLETE} set.
 
-We have \inhabitedinst from \cref{fig:inh} currently making sure that this
+We have \inhabitedinst from \Cref{fig:inh} currently making sure that this
 \extension{COMPLETE} set is in fact inhabited. We also have \inhabitednocpl
 that handles the case when we can't find \emph{any} \extension{COMPLETE} set
 for the given type (think |x : Int -> Int|). The obvious way to generalise this
@@ -2112,7 +2113,7 @@ turn. Note that \inhabitednocpl is gone, because it coincides with
 \inhabitedinst for the case where the list returned by $\cons$ was empty. The
 judgment has become simpler and and more general at the same time! Note that
 checking against multiple \extension{COMPLETE} sets so frequently is
-computationally intractable. We will worry about that in \cref{sec:impl}.
+computationally intractable. We will worry about that in \Cref{sec:impl}.
 
 \subsection{Other extensions}
 
@@ -2174,7 +2175,7 @@ arguments! Hence for an implementation it makes sense to compute both results
 together, if only for not having to recompute the results of $\unc$ again in
 $\ann$.
 
-But there's more: Looking at the last clause of $\unc$ in \cref{fig:check},
+But there's more: Looking at the last clause of $\unc$ in \Cref{fig:check},
 we can see that we syntactically duplicate $\Theta$ every time we have a
 pattern guard. That can amount to exponential growth of the refinement
 predicate in the worst case and for the time to prove it empty!
@@ -2187,7 +2188,7 @@ $\nabla$ is! Therefore, in our implementation we don't pass around
 and annotate refinement types, but the result of calling $\construct$ on them
 directly.
 
-You can see the resulting definition in \cref{fig:fastcheck}. The readability
+You can see the resulting definition in \Cref{fig:fastcheck}. The readability
 is clouded by unwrapping of pairs. $\uncann$ requires that each $\nabla$
 individually is non-empty, \ie not $\false$. This invariant is maintained by
 adding $\varphi$ constraints through $\addphiv$, which filters out any $\nabla$
@@ -2195,7 +2196,7 @@ that would become empty.
 
 \subsection{Throttling for graceful degradation} \label{ssec:throttling}
 
-Even with the tweaks from \cref{ssec:interleaving}, checking certain pattern
+Even with the tweaks from \Cref{ssec:interleaving}, checking certain pattern
 matches remains NP-hard \citep{adaptivepm}. Naturally, there will be cases
 where we have to conservatively approximate in order not to slow down
 compilation too much. Consider the following example and its corresponding
@@ -2335,7 +2336,7 @@ process.
 
 \subsection{Reporting uncovered patterns}
 
-The expansion function $\expand$ in \cref{fig:gen} exists purely for presenting
+The expansion function $\expand$ in \Cref{fig:gen} exists purely for presenting
 uncovered patterns to the user. It is very simple and doesn't account for
 negative information, leading to surprising warnings. Consider a definition
 like |f True = ()|. The computed uncovered set of |f| is the refinement type
@@ -2483,7 +2484,7 @@ to coverage checking. These include:
 
 \citet{gadtpm} present GADTs Meet Their Match (\gmtm), an algorithm which
 handles many of the subtleties of GADTs, guards, and laziness mentioned in
-\cref{sec:problem}. Despite this, the \gmtm algorithm still gives incorrect
+\Cref{sec:problem}. Despite this, the \gmtm algorithm still gives incorrect
 warnings in many cases.
 
 \subsubsection{\gmtm does not consider laziness in its full glory}
@@ -2492,7 +2493,7 @@ The formalism in \citet{gadtpm} incorporates strictness constraints, but
 these constraints can only arise from matching against data constructors.
 \gmtm does not consider strict matches that arise from strict fields of
 data constructors or bang patterns. A consequence of this is that \gmtm
-would incorrectly warn that |v| (\cref{ssec:strictness}) is missing a case for
+would incorrectly warn that |v| (\Cref{ssec:strictness}) is missing a case for
 |SJust|, even though such a case is unreachable. \lyg, on the other hand,
 more thoroughly tracks strictness when desugaring Haskell programs.
 
@@ -2502,7 +2503,7 @@ more thoroughly tracks strictness when desugaring Haskell programs.
 the algorithm is parametric over the choice of oracle, in practice the
 implementation of \gmtm in GHC uses an extremely simple oracle that can only
 reason about guards in a limited fashion. More sophisticated uses of guards,
-such as in this variation of the |safeLast| function from \cref{sssec:viewpat},
+such as in this variation of the |safeLast| function from \Cref{sssec:viewpat},
 will cause \gmtm to emit erroneous warnings:
 
 \begin{code}
@@ -2526,7 +2527,7 @@ roughly a counterpart to \gmtm's term oracle, can then reason
 about terms arising from patterns. While $\addphi$ is already more powerful
 than a trivial term oracle, its real strength lies in the fact that it can
 easily be extended, as \lyg's treatment of view patterns
-(\cref{ssec:extviewpat}) demonstrates. While \gmtm's term oracle could be
+(\Cref{ssec:extviewpat}) demonstrates. While \gmtm's term oracle could be
 improved to accomplish the same thing, it is unlikely to be as
 straightforward of a process as extending $\addphi$.
 
@@ -2537,7 +2538,7 @@ straightforward of a process as extending $\addphi$.
 \citet{kalvoda2019structural} implement a variation of \gmtm that leverages an
 SMT solver to give more accurate coverage warnings for programs that use
 guards. For instance, their implementation can conclude that
-the |signum| function from \cref{ssec:guards} is exhaustive. This is something
+the |signum| function from \Cref{ssec:guards} is exhaustive. This is something
 that \lyg cannot do out of the box, although it would be possible to
 extend $\addphi$ with SMT-like reasoning about booleans and linear integer arithmetic.
 % \ryan{Sebastian: is this the thing that would need to be extended?}
@@ -2588,9 +2589,9 @@ and is one of the primary reasons for \lyg's efficiency.
 Besides efficiency, the accuracy of redundancy warnings involving \extension{COMPLETE} sets hinge
 on negative constraints. To see why this isn't possible in other checkers that
 only track positive information, such as those of
-\citet{gadtpm} (\cref{ssec:gmtm})
+\citet{gadtpm} (\Cref{ssec:gmtm})
 and
-\citet{maranget:warnings} (\cref{ssec:maranget}),
+\citet{maranget:warnings} (\Cref{ssec:maranget}),
 consider the following example:
 
 \begin{minipage}{\textwidth}
@@ -2648,14 +2649,14 @@ Negative constraints allow \lyg to compress the 999 value vectors falling throug
 into a single one indicating that the match variable can no longer be |A1|.
 \citeauthor{maranget:warnings} detects wildcard matches to prevent blowup, but
 only can find a subset of all uncovered patterns in doing so
-(\cref{ssec:maranget}).
+(\Cref{ssec:maranget}).
 
 \subsection{Strict fields in inhabitation testing}
 \label{ssec:strict-fields}
 
-The $\mathsf{Inst}$ function in \cref{fig:inh} takes inhabitation testing into
+The $\mathsf{Inst}$ function in \Cref{fig:inh} takes inhabitation testing into
 account, which is essential to conclude that the |v| function from
-\cref{ssec:strictness} is exhaustive. To our knowledge, \lyg is the first
+\Cref{ssec:strictness} is exhaustive. To our knowledge, \lyg is the first
 published coverage checking algorithm to incorporate inhabitation testing.
 This is somewhat surprising, as we are certainly not the first to consider
 coverage checking in a language with strictness. As a point of comparison,
