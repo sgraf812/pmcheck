@@ -965,8 +965,8 @@ All of the syntactic redundancy of the source language is translated
 into a minimal form very similar to pattern guards.  We start with an example:
 
 \begin{code}
-f (Just (!xs,_))  ys@Nothing   = 1
-f Nothing         (g -> True)  = 2
+f (Just (!xs,_))  ys@Nothing   = True
+f Nothing         (g -> True)  = False
 \end{code}
 
 \noindent
@@ -975,8 +975,8 @@ This desugars to the following guard tree:
 \begin{forest}
   grdtree,
   [
-    [{$\grdbang{x_1}, \grdcon{|Just t_1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{xs}{t_2}, \grdlet{ys}{x_2}, \grdbang{ys}, \grdcon{|Nothing|}{ys}$} [|True|]]
-    [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_3}{|g x_2|}, \grdbang{t_3}, \grdcon{|True|}{t_3}$} [|False|]]]
+    [{$\grdbang{x_1}, \grdcon{|Just t_1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{xs}{t_2}, \grdlet{ys}{x_2}, \grdbang{ys}, \grdcon{|Nothing|}{ys}$} [1]]
+    [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_3}{|g x_2|}, \grdbang{t_3}, \grdcon{|True|}{t_3}$} [2]]]
 \end{forest}
 \\
 Here we use a graphical syntax for guard trees, also defined in \Cref{fig:syn}.
