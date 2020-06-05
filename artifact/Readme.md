@@ -72,10 +72,8 @@ Here is what each of these files and directories are:
 * `ghc`: This is a checkout of GHC's source code at this commit:
   https://gitlab.haskell.org/ghc/ghc/-/commit/59c023ba5ccb10fff62810591f20608bd73c97af
   This is a snapshot of GHC that implements LYG as presented in the paper.
-  There is not much of interest in this directory for the sake of the artifact,
-  since building this Docker image will install this version of GHC automatically.
-  Still, you can look at the corresponding source code in this directory if you
-  so wish.
+  (Note that building this Docker image will install this version of GHC
+  automatically.)
 * `head-hackage-eval`: This contains the source code of the seven libraries
   mentioned in Section 6 (Evaluation).
 * `head.hackage`: This is a checkout of the `head.hackage` repository at commit
@@ -631,6 +629,43 @@ Note that this directory only contains examples of Haskell code. Section 7.4,
 which covers examples of OCaml and Idris code, are handled separately in the
 `ocaml` and `idris` sections of this `Readme`, respectively.
 
+# `ghc`
+
+```
+# cd /root/ghc/
+# ls
+CODEOWNERS   aclocal.m4      config.sub                                hadrian          mk
+HACKING.md   appveyor.yml    configure                                 hie.yaml         nofib
+INSTALL.md   autom4te.cache  configure.ac                              includes         packages
+LICENSE      bindisttest     distrib                                   install-sh       rts
+MAKEHELP.md  boot            docs                                      libffi           rules
+Makefile     compiler        driver                                    libffi-tarballs  testsuite
+README.md    config.guess    ghc                                       libraries        utils
+Vagrantfile  config.log      ghc-8.11.0.20200227-x86_64-unknown-linux  llvm-passes      validate
+_build       config.status   ghc.mk                                    llvm-targets
+```
+
+This is a checkout of GHC's source code at this commit:
+https://gitlab.haskell.org/ghc/ghc/-/commit/59c023ba5ccb10fff62810591f20608bd73c97af
+This is a snapshot of GHC that implements LYG as presented in the paper.
+
+Note that the work that went into implementing LYG spans many commits, so
+the best way to examine the code that powers LYG is to look at specific
+modules. In particular, the `GHC.HsToCore.PmCheck` module (located at
+`/root/ghc/compiler/GHC/HsToCore/PmCheck.hs`) in the entrypoint to GHC's
+pattern-match coverage checker, and supporting modules can be found in
+the `/root/ghc/compiler/GHC/HsToCore/PmCheck/` directory.
+
+Here are some notable highlights of `GHC.HsToCore.PmCheck`:
+
+* The `PmGrd` data type corresponds to Grd (defined in Figure 3) from the
+  paper.
+* The `GrdTree` and `AnnotatedTree` data types correspond to Gdt and Ant
+  (defined in Figure 3), respectively, from the paper, which is what the
+  graphical syntax in the paper describes.
+* The `checkGrdTree` function corresponds to UA (defined in Figure 9) from
+  the paper, which is the heart of the coverage-checking algorithm.
+
 # `head-hackage-eval`
 
 ```
@@ -899,4 +934,7 @@ presentation purposes:
 You can run all of the performance tests back to back by running
 `./bench-all.sh`. Note that compared to Figure 10, minor variations in
 allocation numbers (in the range of a few megabytes) are expected due to
-differences in installed package databases.
+differences in installed package databases. Also note that the difference in
+compile times between 8.8.3 and LYG can vary, especially for quick-to-compile
+test cases like `T11276`, where a difference of 1 millisecond can account for
+a ~100% difference in total compile time.
