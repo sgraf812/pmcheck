@@ -2550,19 +2550,15 @@ extend $\addphi$ with SMT-like reasoning about booleans and linear integer arith
 \subsubsection{Warnings for pattern matching}
 \label{ssec:maranget}
 
-\citet{maranget:warnings} presents a coverage checking algorithm for OCaml. While
-OCaml is a strict language, the algorithm claims to be general enough to handle
-languages with non-strict semantics such as Haskell. That claim however builds on
-a broken understanding of laziness. Given the following definition:
-\begin{code}
-f True  = 1
-f _     = 2
-\end{code}
-
-\noindent
-\citeauthor{maranget:warnings} implies that |f bot| evaluates to 2, which is of
-course incorrect. Also, replacing the wild card by a match on |False| would no
-longer be a complete match according to their formalism.
+\citet{maranget:warnings} presents a coverage checking algorithm for OCaml that
+can identify clauses that are not \emph{useful}, \ie \emph{useless}. While
+OCaml is a strict language, the algorithm can be adapted to handle languages
+with non-strict semantics such as Haskell. In a lazy setting, uselessness
+corresponds to our notion of unreachable clauses.
+\citeauthor{maranget:warnings} does not distinguish inaccessible clauses from
+redundant ones; thus clauses flagged as useless (such as the first two clauses
+of |u'| in \Cref{sssec:inaccessibility}) generally can't be deleted without
+changing (lazy) program semantics.
 
 \subsubsection{Elaborating dependent (co)pattern matching}
 
@@ -2646,9 +2642,6 @@ the first match variable, and then \emph{each} of the 999 value vectors reaching
 the second GRHS into another 1000 alternatives over the second match variable.
 Negative constraints allow \lyg to compress the 999 value vectors falling through
 into a single one indicating that the match variable can no longer be |A1|.
-\citeauthor{maranget:warnings} detects wildcard matches to prevent blowup, but
-only can find a subset of all uncovered patterns in doing so
-(\Cref{ssec:maranget}).
 
 \subsection{Strict fields in inhabitation testing}
 \label{ssec:strict-fields}
