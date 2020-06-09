@@ -13,7 +13,7 @@ The artifact is packaged as a Docker image. There are two ways to obtain it:
    This can be obtained by running:
 
    ```
-   $ docker run -it --rm ryanglscott/icfp2020-lyg-artifact:0.5
+   $ docker run -it --rm ryanglscott/icfp2020-lyg-artifact:0.6
    ```
 2. Build the `Dockerfile` from source. This can be done by running `make`
    in the same directory as the source tarball's `Dockerfile`.
