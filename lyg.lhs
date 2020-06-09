@@ -842,14 +842,14 @@ In this section, we describe our new coverage checking algorithm, \lyg.
 \Cref{fig:pipeline} depicts a high-level overview, which divides into three steps:
 \begin{itemize}
 \item First, we desugar the complex source Haskell syntax (\cf \Cref{fig:srcsyn})
-  into a \emph{guard tree} $t:\Gdt$ (\Cref{sec:desugar}).
+  into a \textbf{guard tree} $t \in \Gdt$ (\Cref{sec:desugar}).
   The language of guard trees is tiny but expressive, and allows the subsequent passes to be entirely
   independent of the source syntax.
   \lyg{} can readily be adapted to other languages simply by changing the desugaring
     algorithm.
 \item Next, the resulting guard
   tree is then processed by two different functions (\Cref{sec:check}).   The function $\ann(t)$ produces
-  an \emph{annotated tree} $u : \Ant$, which has the same general branching structure as $t$ but
+  an \textbf{annotated tree} $u \in \Ant$, which has the same general branching structure as $t$ but
   describes which clauses are accessible, inaccessible, or redundant.
   The function $\unc(t)$, on the other hand, returns a \emph{refinement type} $\Theta$
   \cite{rushby1998subtypes,boundschecking}
@@ -2385,12 +2385,11 @@ the |False| guard to quickly try out a code path that prints a more detailed
 error message. Moreover, leaving the first clause in the code ensures that it
 is typechecked and less susceptible to bitrotting over time.
 
-We may consider
-adding a primitive function |keepAlive| such that
-|keepAlive False| does not get marked as redundant in order to support use
-cases like \texttt{HsYAML}'s. The unreachable code in \texttt{Cabal} and
-\texttt{network} is of a
-similar caliber and would also benefit from |keepAlive|.
+We may consider adding a primitive function |considerAccessible| such that
+|considerAccessible False| does not get marked as redundant in order to support
+use cases like \texttt{HsYAML}'s. The unreachable code in \texttt{Cabal} and
+\texttt{network} is of a similar caliber and would also benefit from
+|considerAccessible|.
 
 \subsection{Performance tests}
 
@@ -2618,9 +2617,9 @@ encountering the match on |False|, without any semantic considerations.
 Choosing $\{|True'|,|False|\}$ here will mark the third GRHS as redundant,
 while choosing $\{|True|,|False|\}$ won't. GHC's implementation used to try
 each \extension{COMPLETE} set in turn and would disambiguate using a
-complicated metric based on the number and kinds of warnings the choice of each set would generate
-\cite{complete-users-guide},
-which was broken still \cite{gitlab:13363}.
+complicated metric based on the number and kinds of warnings the choice of each
+set would generate \cite{complete-users-guide}, which was broken still
+\cite{gitlab:13363}.
 
 Negative constraints make \lyg efficient in other places too, such as in this example:
 
