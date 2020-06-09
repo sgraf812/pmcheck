@@ -842,14 +842,14 @@ In this section, we describe our new coverage checking algorithm, \lyg.
 \Cref{fig:pipeline} depicts a high-level overview, which divides into three steps:
 \begin{itemize}
 \item First, we desugar the complex source Haskell syntax (\cf \Cref{fig:srcsyn})
-  into a \emph{guard tree} $t:\Gdt$ (\Cref{sec:desugar}).
+  into a \textbf{guard tree} $t \in \Gdt$ (\Cref{sec:desugar}).
   The language of guard trees is tiny but expressive, and allows the subsequent passes to be entirely
   independent of the source syntax.
   \lyg{} can readily be adapted to other languages simply by changing the desugaring
     algorithm.
 \item Next, the resulting guard
   tree is then processed by two different functions (\Cref{sec:check}).   The function $\ann(t)$ produces
-  an \emph{annotated tree} $u : \Ant$, which has the same general branching structure as $t$ but
+  an \textbf{annotated tree} $u \in \Ant$, which has the same general branching structure as $t$ but
   describes which clauses are accessible, inaccessible, or redundant.
   The function $\unc(t)$, on the other hand, returns a \emph{refinement type} $\Theta$
   \cite{rushby1998subtypes,boundschecking}
