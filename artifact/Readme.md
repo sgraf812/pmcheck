@@ -49,6 +49,24 @@ will default to the LYG version of GHC. As a result, you will have to type out
 `/opt/ghc/8.8.3/bin/ghc` if you want to use version 8.8.3 in particular
 (and similarly for version 8.6.5).
 
+# Interacting with the artifact
+
+The instructions in this `Readme` will point out which directories to navigate
+along with the accompanying commands. Individual files can be inspected with
+standard Unix utilities such as `less`. If you wish to edit a file (perhaps to
+tweak some code in a file), you will need to install a text editor. Since there
+are many choices of text editor, we have avoided installing particular ones in
+this image by default. Since this image is based on Ubuntu 18.04, you can
+install most widely used text editors through `apt`. For example, if you are a
+`vim` user, you can install it by running the following command:
+
+```
+apt-get install -y vim
+```
+
+Note that there is no need to put `sudo` in front of this command, since the
+Docker image already grants superuser permissions.
+
 # Directory structure
 
 When you enter the Docker image, you will be placed in the `/root` directory,
@@ -99,8 +117,9 @@ The following sections will describe these directories in more detail.
 ```
 # cd /root/examples/
 # ls
-Ex1.hs    Ex2_2_1.hs  Ex2_3.hs  Ex3_3.hs  Ex4_1.hs  Ex4_4.hs  Ex5_3.hs  Ex7_1_1.hs  Ex7_3.hs
-Ex2_1.hs  Ex2_2_2.hs  Ex3_1.hs  Ex3_7.hs  Ex4_2.hs  Ex5_2.hs  Ex5_4.hs  Ex7_1_2.hs
+8.8.3-inhabitation-testing.patch  Ex2_2_1.hs  Ex3_1.hs  Ex4_1.hs  Ex5_2.hs  Ex7_1_1.hs
+Ex1.hs                            Ex2_2_2.hs  Ex3_3.hs  Ex4_2.hs  Ex5_3.hs  Ex7_1_2.hs
+Ex2_1.hs                          Ex2_3.hs    Ex3_7.hs  Ex4_4.hs  Ex5_4.hs  Ex7_3.hs
 ```
 
 The `examples` directory contains code fragments from the paper, condensed into
@@ -113,6 +132,9 @@ The naming conventions reflect which sections of the paper the code can be
 found in. For instance, `Ex2_1.hs` contains the code from Section 2.1,
 `Ex2_2_1.hs` contains the code from Section 2.2.1, etc. You can compile them
 yourself by running `ghc <filename>.hs`.
+
+This directory also contains `8.8.3-inhabitation-testing.patch`, whose purpose
+is explained below in the notes for `Ex7_1_1.hs`.
 
 Here are some assorted notes on each of the programs in this directory:
 
@@ -180,7 +202,32 @@ Here are some assorted notes on each of the programs in this directory:
   ```
 
   The view patterns in `safeLast`, however, are deemed exhaustive, so
-  `safeLast` will not emit any warnings.
+  `safeLast` will not emit any warnings. The reason that LYG is able to
+  conclude that `safeLast` is exhaustive is because LYG recognizes that the
+  expressions in both view patterns are equivalent. (See Section 4.3 of the
+  paper for more information on LYG's notion of semantic equivalence of
+  expressions.)
+
+  Note that GHC 8.8.3 (which implements GADTs Meet Their Match, or GMTM for
+  short) is not able to recognize `safeLast` as exhaustive:
+
+  ```
+  # /opt/ghc/8.8.3/bin/ghc Ex2_2_1.hs
+  [1 of 1] Compiling Ex2_2_1          ( Ex2_2_1.hs, Ex2_2_1.o )
+
+  <elided>
+
+  Ex2_2_1.hs:14:1: warning: [-Wincomplete-patterns]
+      Pattern match(es) are non-exhaustive
+      In an equation for ‘safeLast’: Patterns not matched: _
+     |
+  14 | safeLast (reverse -> [])    = Nothing
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+  ```
+
+  Indeed, the design of GMTM makes checking functions like `safeLast` for
+  exhaustiveness difficult. (See Section 7.1.2 of the paper for more information
+  on this shortcoming of GMTM.)
 * `Ex2_2_2.hs`: This contains examples of pattern synonyms, `Nil` and `Cons`,
   as well as a modified version of `length` from `Ex2_2_1.hs` that is defined
   using these pattern synonyms. Note that `Nil` and `Cons` are declared to be
@@ -310,6 +357,33 @@ Here are some assorted notes on each of the programs in this directory:
     *Ex2_3> :quit
     Leaving GHCi.
     ```
+  * One further note about the `u` function is that it provides another example
+    where LYG and GMTM differ. While GMTM warns that the first and third matches
+    of `u` are redundant, GMTM will only mark the third match as redundant:
+
+    ```
+    # /opt/ghc/8.8.3/bin/ghc Ex2_3.hs
+    [1 of 1] Compiling Ex2_3            ( Ex2_3.hs, Ex2_3.o )
+
+    <elided>
+
+    Ex2_3.hs:20:1: warning: [-Woverlapping-patterns]
+        Pattern match is redundant
+        In an equation for ‘u’: u _ = ...
+       |
+    20 | u _          = 3
+       | ^^^^^^^^^^^^^^^^
+    ```
+
+    The first match of `u`, which simply uses a guarded `False` expression, is
+    somewhat interesting, as it is a debugging trick that certain libraries
+    use in order to typecheck code only meant for debugging purposes (in order
+    to prevent it from bitrotting). Section 6 of the paper identifies libraries
+    that use this debugging trick, including the `HsYAML` library, which
+    literally uses a guarded `False` expression like the `u` function in
+    `Ex2_3.hs` does. Section 6 also discusses a possible way that LYG could
+    be extended to allow this sort of debugging-only code without emitting
+    warnings.
   * The `v'` function is a modified version of `v` that matches on `Maybe`,
     which is the lazy version of `SMaybe`. The bang pattern on the argument
     of `Just` makes the right-hand side of the `v' (Just !_) = 1` equation
@@ -396,6 +470,11 @@ Here are some assorted notes on each of the programs in this directory:
   9 | f SNothing = ()
     | ^^^^^^^^^^^^^^^
   ```
+
+  As the last paragraph of Section 3.7 of the paper notes, it would be possible
+  to extend LYG with a simple termination analysis in order to mark functions
+  like as `f` as exhaustive, but our implementation in GHC currently does not
+  do so.
 * `Ex4_1.hs`: This contains a function `f` that matches on `True` twice: once
   in the first equation, and once again (redundantly) in the `case` expression.
   LYG is able to use long-distance information to conclude that the second
@@ -412,6 +491,9 @@ Here are some assorted notes on each of the programs in this directory:
   6 | f x    = g (case x of { False -> 2; True -> 3 }) ()
     |                                     ^^^^^^^^^
   ```
+
+  Note that GMTM is unable to recognize this, as running
+  `/opt/ghc/8.8.3/bin/ghc Ex4_1.hs` will produce no warnings at all.
 * `Ex4_2.hs`: This contains three ways of defining a function of type
   `Void -> a`, where `Void` is a data type with no constructors. As the paper
   claims, LYG will report that the right-hand side of `absurd2` is
@@ -429,6 +511,14 @@ Here are some assorted notes on each of the programs in this directory:
   10 | absurd2 !_ = undefined
      | ^^^^^^^^^^^^^^^^^^^^^^
   ```
+
+  Note that GMTM is unable to recognize `absurd2` as having a redundant match,
+  as running `/opt/ghc/8.8.3/bin/ghc Ex4_2.hs` will produce no warnings at all.
+
+  Because LYG marks `absurd2` as redundant, the only way to make the argument
+  diverge without warnings is to force the argument on the right-hand side of
+  the match. GHC's `EmptyCase` language extension is a common way of doing
+  this, and this is exactly what the `absurd3` function does.
 * `Ex4_4.hs`: This contains examples of pattern synonyms `P` and `Q` that are
   _not_ associated with `COMPLETE` sets. Per Section 2.2.2, we do not wish to
   equip LYG with any special reasoning about non-`COMPLETE` pattern synonyms.
@@ -524,7 +614,13 @@ Here are some assorted notes on each of the programs in this directory:
 
   Note that you need to use GHC 8.6.5 (not 8.8.3) here, since 8.8.3 implements
   an ad hoc form of inhabitation testing for data types with strict fields, so
-  8.8.3 will not produce any warnings either.
+  8.8.3 will not produce any warnings either. If you wish to learn more about
+  how 8.8.3's ad hoc inhabitation testing works, you can refer to the commit
+  which implements it at
+  https://gitlab.haskell.org/ghc/ghc/-/commit/744b034dc2ea5b7b82b5586a263c12f231e803f1.
+  If that link is unavailable, we have manually checked in a copy of the
+  corresponding patch in `/root/examples/8.8.3-inhabitation-testing.patch`
+  as well.
 * `Ex7_1_2.hs`: This contains `safeLast2`, a variant of `safeLast` (from
   `Ex2_2_1.hs`). Because both pattern guards in `safeLast2` scrutinise the same
   expression (`reverse xs`), the LYG version of GHC is able to conclude that
@@ -564,9 +660,9 @@ Here are some assorted notes on each of the programs in this directory:
     <elided>
     ```
 
-    GHC 8.6.5 and 8.8.3, on the other hand, implement GMTM, commit to the set
-    `{True, False}` as soon as they match on `False`, which causes them to
-    incorrectly report that the second equation (`f True' = 2`) is redundant:
+    GHC 8.6.5 and 8.8.3, on the other hand, implement GMTM, and they commit to
+    the set `{True, False}` as soon as they match on `False`, which causes them
+    to incorrectly report that the second equation (`f True' = 2`) is redundant:
 
     ```
     # /opt/ghc/8.8.3/bin/ghc Ex7_3.hs
@@ -581,6 +677,10 @@ Here are some assorted notes on each of the programs in this directory:
 
     <elided>
     ```
+
+    This is incorrect since in fact deleting the second clause changes `f True`
+    from returning 2 to returning 3. So in this case, the `{True', False}`
+    `COMPLETE` set must be favored over the `{True, False}` set.
   * The `h` function demonstrates a crucial application of negative constraints
     in efficient coverage checking. Because of LYG's use of negative
     constraints, it is able to quickly recognize that `h` is non-exhaustive:
@@ -842,6 +942,8 @@ Notes:
   this and emit a warning stating that this case is unreachable.
 * The `f` function is exhaustive, since it does not include a redundant match
   on `Just`. OCaml will nevertheless warn that `f` is not exhaustive.
+* The syntax used in `type void = |;;` was introduced fairly recently into
+  OCaml, debuting in version 4.07.0.
 
 # `perf-tets`
 
