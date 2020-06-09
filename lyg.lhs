@@ -2385,12 +2385,11 @@ the |False| guard to quickly try out a code path that prints a more detailed
 error message. Moreover, leaving the first clause in the code ensures that it
 is typechecked and less susceptible to bitrotting over time.
 
-We may consider
-adding a primitive function |keepAlive| such that
-|keepAlive False| does not get marked as redundant in order to support use
-cases like \texttt{HsYAML}'s. The unreachable code in \texttt{Cabal} and
-\texttt{network} is of a
-similar caliber and would also benefit from |keepAlive|.
+We may consider adding a primitive function |considerAccessible| such that
+|considerAccessible False| does not get marked as redundant in order to support
+use cases like \texttt{HsYAML}'s. The unreachable code in \texttt{Cabal} and
+\texttt{network} is of a similar caliber and would also benefit from
+|considerAccessible|.
 
 \subsection{Performance tests}
 
