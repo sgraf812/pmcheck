@@ -2617,9 +2617,9 @@ encountering the match on |False|, without any semantic considerations.
 Choosing $\{|True'|,|False|\}$ here will mark the third GRHS as redundant,
 while choosing $\{|True|,|False|\}$ won't. GHC's implementation used to try
 each \extension{COMPLETE} set in turn and would disambiguate using a
-complicated metric based on the number and kinds of warnings the choice of each set would generate
-\cite{complete-users-guide},
-which was broken still \cite{gitlab:13363}.
+complicated metric based on the number and kinds of warnings the choice of each
+set would generate \cite{complete-users-guide}, which was broken still
+\cite{gitlab:13363}.
 
 Negative constraints make \lyg efficient in other places too, such as in this example:
 
