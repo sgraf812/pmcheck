@@ -633,7 +633,7 @@ weak-head normal form (WHNF). Here is a variant of $v$, this time using the stan
 \begin{code}
 v' :: Maybe Void -> Int
 v' Nothing = 0
-v' (Just !_) = 1    -- Not redundant, but RHS is inaccessible
+v' (Just !_) = 1    -- Not redundant, but GRHS is inaccessible
 \end{code}
 The inhabitants of the type |Maybe Void| are $\bot$, |Nothing|, and $(|Just|~\bot)$.
 The input $\bot$ makes the first equation diverge; |Nothing| matches on the first equation;
@@ -1887,14 +1887,14 @@ absurd3 x = case x of {}
 \noindent
 |absurd1| returns |undefined| when called with $\bot$, thus masking the original $\bot$
 with the error thrown by |undefined|. |absurd2| would diverge alright, but
-\lyg will report its RHS as inaccessible! Hence GHC provides an extension,
+\lyg will report its GRHS as inaccessible! Hence GHC provides an extension,
 called \extension{EmptyCase}, that allows the definition of |absurd3| above.
 Such a |case| expression without any alternatives evaluates its argument to
 WHNF and crashes when evaluation returns.
 
 It is quite easy to see that $\Gdt$ lacks expressive power to desugar
 \extension{EmptyCase} into, since all leaves in a guard tree need to have
-corresponding RHSs. Therefore, we need to introduce empty alternatives
+corresponding GRHSs. Therefore, we need to introduce empty alternatives
 $\gdtempty$ to $\Gdt$ and $\antempty$ to $\Ant$. This is how they affect the
 checking process:
 \[
