@@ -2097,8 +2097,11 @@ and a strict-by-default source syntax, in Appendix A.
 \section{Implementation}
 \label{sec:impl}
 
-The implementation of \lyg in GHC accumulates quite a few tricks that
-go beyond the pure formalism. This section is dedicated to describing these.
+We have implemented \lyg in a to-be-released version of GHC\footnote{The
+functionality described in this paper will be available in GHC 8.12 and later.},
+including all extensions in \Cref{sec:extensions} (except for strict-by-default
+source syntax). Our implementation accumulates quite a few tricks that go
+beyond the pure formalism. This section is dedicated to describing these.
 
 \sg{Delete this paragraph?}
 Warning messages need to reference source syntax in order to be comprehensible
@@ -2324,10 +2327,8 @@ information on before handing off to $\expand$.
 \section{Evaluation}
 \label{sec:eval}
 
-We have implemented \lyg in a to-be-released version of GHC.
-To put the new coverage checker to the
-test, we performed a survey of real-world Haskell code using the
-\texttt{head.hackage} repository
+To put the new coverage checker to the test, we performed a survey of
+real-world Haskell code using the \texttt{head.hackage} repository
 \footnote{\url{https://gitlab.haskell.org/ghc/head.hackage/commit/30a310fd8033629e1cbb5a9696250b22db5f7045}}.
 \texttt{head.hackage} contains a sizable collection of libraries and minimal
 patches necessary to make them build with a development version of GHC.
