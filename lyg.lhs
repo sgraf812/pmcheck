@@ -2743,7 +2743,10 @@ distills rich pattern matching into simple guard trees. Guard trees are
 amenable to analyses that are not easily expressible in coverage checkers
 that work over structural pattern matches. This allows \lyg to report more
 accurate warnings while also avoiding performance issues when checking
-complex programs. Moreover, \lyg is extensible, and we anticipate that this will
+complex programs. Moreover, \lyg is extensible: the guard and tree constructs
+are both simple and expressive. That makes for a slightly excessive number of
+translation steps, but at the same time offers many \emph{seams}
+\citep{legacycode} to hook into. We anticipate that this extensibility will
 streamline the process of checking new forms of patterns in the future.
 
 \bibliography{references}
