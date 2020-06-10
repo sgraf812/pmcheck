@@ -1856,15 +1856,18 @@ f x     = ... (case x of{ False -> 2; True -> 3 }) ...
 \end{code}
 
 \noindent
-\lyg as is will not produce any warnings for this definition. But the
-reader can easily make the ``long distance connection'' that the last GRHS of
-the |case| expression is redundant! That simply follows by context-sensitive
+\gmtm and unextended \lyg will not produce any warnings for this definition.
+But the reader can easily make the ``long distance connection'' that the last
+GRHS of the |case| expression is redundant! That follows by context-sensitive
 reasoning, knowing that |x| was already matched against |True|.
 
-In terms of \lyg, the input values of the second GRHS $\Theta_{2}$ (which
-determine whether the GRHS is accessible) encode the information we are after.
-We just have to start checking the |case| expression starting from $\Theta_{2}$
-as the initial set of reaching values instead of $\reft{x:|Bool|}{\true}$.
+In terms of \lyg, the input values of the second GRHS of |f|, described by
+$\Theta_{2}=\reft{x:|Bool|}{x \ntermeq \bot, x \ntermeq |True|}$, encode the
+information we are after: we just have to start checking the |case| expression
+starting from $\Theta_{2}$ as the initial set of reaching values instead of
+$\reft{x:|Bool|}{\true}$. We already need $\Theta_2$ to determine whether the
+second GRHS of |f| is accessible, so long-distance information comes almost for
+free.
 
 \subsection{Empty case}
 
@@ -2100,8 +2103,9 @@ and a strict-by-default source syntax, in Appendix A.
 We have implemented \lyg in a to-be-released version of GHC\footnote{The
 functionality described in this paper will be available in GHC 8.12 and later.},
 including all extensions in \Cref{sec:extensions} (except for strict-by-default
-source syntax). Our implementation accumulates quite a few tricks that go
-beyond the pure formalism. This section is dedicated to describing these.
+source syntax in Appendix A). Our implementation accumulates quite a few tricks
+that go beyond the pure formalism. This section is dedicated to describing
+these.
 
 \sg{Delete this paragraph?}
 Warning messages need to reference source syntax in order to be comprehensible
