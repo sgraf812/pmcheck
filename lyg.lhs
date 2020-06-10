@@ -933,7 +933,7 @@ f Nothing         (g -> True)  = False
 \end{code}
 
 \noindent
-This desugars to the following guard tree:
+This desugars to the following guard tree (where the $x_i$ represent |f|'s arguments):
 
 \begin{forest}
   grdtree,
