@@ -11,7 +11,7 @@
 %\documentclass[acmsmall]{acmart}\settopmatter{}
 
 %\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
-\documentclass[acmsmall]{acmart}\settopmatter{}
+\documentclass[acmsmall,review]{acmart}\settopmatter{}
 
 %include custom.fmt
 
@@ -609,11 +609,12 @@ u' _              = 3
 Within |u|, the equations that return |1| and |3| could be deleted without
 changing the semantics of |u|, so they are classified as redundant. Within |u'|,
 one can never reach the right-hand sides of the equations that return |1| and |2|,
-but they cannot be removed so easily. Using the
-definition above, $|u'|~\bot~|=|~\bot$, but if the first two equations were removed,
-then $|u'|~\bot~|= 3|$. As a result, \lyg warns that the first two equations in |u'| are
-inaccessible, which suggests to the programmer that |u'| might benefit from
-a refactor to avoid this (e.g., |u' () = 3|).
+but they cannot be removed so easily. Using the definition above,
+$|u'|~\bot~|=|~\bot$, but if the first two equations were removed, then
+$|u'|~\bot~|= 3|$ because the argument is no longer forced by the |()|
+pattern. As a result, \lyg warns that the first two equations in |u'| are
+inaccessible, which suggests to the programmer that |u'| might benefit from a
+refactor to avoid this (e.g., |u' () = 3|).
 
 Observe that |u| and |u'| have completely different warnings, but the
 only difference between the two functions is whether the second equation uses |True| or |False| in its guard.
