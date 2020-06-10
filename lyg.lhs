@@ -909,7 +909,7 @@ advantages are:
 \ds(x, expr \rightarrow pat) &=& \grdlet{|y|}{expr \; x}, \ds(y, pat) \\
 \end{array}
 \]
-\caption{Desugaring from source language to $\Gdt$}
+\caption{$\ds$esugaring from source language to $\Gdt$}
 \label{fig:desugar}
 \end{figure}
 
@@ -1160,20 +1160,22 @@ over the guard tree, using the operation $\Theta \andtheta \varphi$ (also
 defined in \Cref{fig:check}) to extend $\Theta$ with an extra literal
 $\varphi$.
 
-While $\unc$ finds a refinement type describing values that are \emph{not} matched by a
-guard tree, the function $\ann$ finds refinements describing values that
-\emph{are} matched by a guard tree, or that cause matching to diverge.
-It does so by producing an \emph{annotated tree}, whose syntax is given in \Cref{fig:syn}.
-An annotated tree has the same general structure as the guard tree from whence it came:
-in particular the top-to-bottom compositions ``;'' are in the same places.  But
-in an annotated tree, each \texttt{Rhs} leaf is annotated with a refinement type
-describing the input values that will lead to that right-hand side; and each
-$\antbang{}{\hspace{-0.6em}}$ node is annotated with a refinement type that describes
-the input values on which matching will diverge.  Once again, $\ann$ can
-be defined by a simple recursive descent over the guard tree (\Cref{fig:check}), but note
-that the second equation uses $\unc$ as an auxiliary function\footnote{
-Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
--- but the formulation in \Cref{fig:check} emphasises clarity over efficiency.}.
+While $\unc$ finds a refinement type describing values that are \emph{not}
+matched by a guard tree (its set of $\unc$ncovered values), the function $\ann$
+finds refinements describing values that \emph{are} matched by a guard tree, or
+that cause matching to diverge. It does so by producing an \emph{annotated
+tree} (hence $\ann$nnotate), whose syntax is given in \Cref{fig:syn}. An
+annotated tree has the same general structure as the guard tree from whence it
+came: in particular the top-to-bottom compositions ``;'' are in the same
+places.  But in an annotated tree, each \texttt{Rhs} leaf is annotated with a
+refinement type describing the input values that will lead to that right-hand
+side; and each $\antbang{}{\hspace{-0.6em}}$ node is annotated with a
+refinement type that describes the input values on which matching will diverge.
+Once again, $\ann$ can be defined by a simple recursive descent over the guard
+tree (\Cref{fig:check}), but note that the second equation uses $\unc$ as an
+auxiliary function\footnote{ Our implementation avoids this duplicated work --
+see \Cref{ssec:interleaving} -- but the formulation in \Cref{fig:check}
+emphasises clarity over efficiency.}.
 
 % Coverage checking works by gradually refining the set of reaching values
 % \ryan{Did you mean to write ``reachable values'' here? ``Reaching values''
@@ -1296,7 +1298,7 @@ Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
 
 \begin{figure}
 \centering
-\[ \textbf{Collect accessible $(\overline{k})$, inaccessible $(\overline{n})$ and redundant $(\overline{m})$ GRHSs} \]
+\[ \textbf{Collect accessible $(\overline{k})$, inaccessible $(\overline{n})$ and $\red$edundant $(\overline{m})$ GRHSs} \]
 \[ \ruleform{ \red(u) = (\overline{k}, \overline{n}, \overline{m}) } \]
 \[
 \begin{array}{lcl}
@@ -1324,7 +1326,7 @@ Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
 \end{array}
 \]
 
-\[ \textbf{Generate inhabitants of $\Theta$} \]
+\[ \textbf{$\generate$enerate inhabitants of $\Theta$} \]
 \[ \ruleform{ \generate(\Theta) = \mathcal{P}(\overline{p}) } \]
 \[
 \begin{array}{c}
@@ -1332,7 +1334,7 @@ Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
 \end{array}
 \]
 
-\[ \textbf{Construct inhabited $\nabla$s from $\Phi$} \]
+\[ \textbf{$\construct$onstruct inhabited $\nabla$s from $\Phi$} \]
 \[ \ruleform{ \construct(\nabla, \Phi) = \mathcal{P}(\nabla) } \]
 \[
 \begin{array}{lcl}
@@ -1347,7 +1349,7 @@ Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
 \end{array}
 \]
 
-\[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
+\[ \textbf{$\expand$xpand variables to $\Pat$ with $\nabla$} \]
 \[ \ruleform{ \expand(\nabla, \overline{x}) = \overline{p} } \]
 \[
 \begin{array}{lcl}
@@ -1399,12 +1401,12 @@ to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, some
       f (Just B) = ...
       f (Just C) = ...
 \end{Verbatim}
-Producing these inhabitants is done by $\generate(\Theta)$ in \Cref{fig:gen},
+$\generate$enerating these inhabitants is done by $\generate(\Theta)$ in \Cref{fig:gen},
 which we discuss next in \Cref{sec:generate}.
 But before doing so, notice that the very same function $\generate$ allows
 us to report accessible, inaccessible, and redundant GRHSs.  The function $\red$,
 also defined in \Cref{fig:gen} does exactly this, returning a
-triple of (accessible, inaccessible, redundant) GRHSs:
+triple of (accessible, inaccessible, $\red$edundant) GRHSs:
 \begin{itemize}
 \item Having reached a leaf $\antrhs{\Theta}{n}$, if the refinement type $\Theta$ is
   uninhabited ($\generate(\Theta) = \emptyset$), then no input values can cause execution to reach this right-hand side,
@@ -1511,7 +1513,7 @@ Therefore, we can assert that |x| has |Nothing| as a solution simply by writing 
 
 \subsection{Expanding a normalised refinement type to a pattern} \label{sec:expand}
 
-Expanding a $\nabla$ to a pattern vector, by calling $\expand(\nabla)$ in \Cref{fig:gen},
+$\expand$xpanding a $\nabla$ to a pattern vector, by calling $\expand(\nabla)$ in \Cref{fig:gen},
 is syntactically heavy, but straightforward.
 When there is a solution like $\Delta(x) \termeq |Just y|$
 in $\Delta$ for the head $x$ of the variable vector of interest, expand $y$ in
