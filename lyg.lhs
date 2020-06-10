@@ -796,44 +796,6 @@ Stardust \cite{dunfieldthesis}.
 \end{array}
 \]
 
-\[ \textbf{Graphical notation} \]
-\[
-\begin{array}{cc}
-  \begin{array}{rcll}
-    \vcenter{\hbox{\begin{forest}
-      grdtree,
-      for tree={delay={edge={-}}},
-      [ [{$t_1$}] [{$t_2$}] ]
-    \end{forest}}} & \Coloneqq & \gdtseq{t_1}{t_2} \\
-    \vcenter{\hbox{\begin{forest}
-      grdtree,
-      for tree={delay={edge={-}}},
-      [ {$g_1, ...\;, g_n$} [{$t$}] ]
-    \end{forest}}} & \Coloneqq & \gdtguard{g_1}{...\; (\gdtguard{g_n}{t})} \\
-    \vcenter{\hbox{\begin{forest}
-      grdtree,
-      [ [{$n$}] ]
-    \end{forest}}} & \Coloneqq & \gdtrhs{n} \\
-  \end{array}&
-  \begin{array}{rcll}
-    \vcenter{\hbox{\begin{forest}
-      anttree,
-      for tree={delay={edge={-}}},
-      [ [{$u_1$}] [{$u_2$}] ]
-    \end{forest}}} & \Coloneqq & \antseq{u_1}{u_2} \\
-    \vcenter{\hbox{\begin{forest}
-      anttree,
-      for tree={delay={edge={-}}},
-      [{$\Theta$\,\lightning} [{$u$}] ]
-    \end{forest}}} & \Coloneqq & \antbang{\Theta}{u} \\
-    \vcenter{\hbox{\begin{forest}
-      anttree,
-      [ [{$\Theta$\,$n$}] ]
-    \end{forest}}} & \Coloneqq & \antrhs{\Theta}{n} \\
-  \end{array}
-\end{array}
-\]
-
 \caption{IR syntax}
 \label{fig:syn}
 \end{figure}
@@ -947,7 +909,7 @@ advantages are:
 \ds(x, expr \rightarrow pat) &=& \grdlet{|y|}{expr \; x}, \ds(y, pat) \\
 \end{array}
 \]
-\caption{Desugaring from source language to $\Gdt$}
+\caption{$\ds$esugaring from source language to $\Gdt$}
 \label{fig:desugar}
 \end{figure}
 
@@ -960,9 +922,10 @@ but also a representative selection of extensions: wildcards, as-patterns, bang
 patterns, and view patterns. We explore several other extensions in
 \Cref{sec:extensions}.
 
-The language of guard trees $\Gdt$ is much smaller; its syntax is given in \Cref{fig:syn}.
-All of the syntactic redundancy of the source language is translated
-into a minimal form very similar to pattern guards.  We start with an example:
+The language of guard trees $\Gdt$ is much smaller; its graphical syntax is
+given in \Cref{fig:syn}. All of the syntactic redundancy of the source language
+is translated into a minimal form very similar to pattern guards.  We start
+with an example:
 
 \begin{code}
 f (Just (!xs,_))  ys@Nothing   = True
@@ -970,7 +933,7 @@ f Nothing         (g -> True)  = False
 \end{code}
 
 \noindent
-This desugars to the following guard tree:
+This desugars to the following guard tree (where the $x_i$ represent |f|'s arguments):
 
 \begin{forest}
   grdtree,
@@ -979,25 +942,31 @@ This desugars to the following guard tree:
     [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_3}{|g x_2|}, \grdbang{t_3}, \grdcon{|True|}{t_3}$} [2]]]
 \end{forest}
 \\
-Here we use a graphical syntax for guard trees, also defined in \Cref{fig:syn}.
 The first line says ``evaluate $x_1$; then match $x_1$ against $Just~ t_1$;
 then evaluate $t_1$; then match $t_1$ against $(t_2,t_3)$; and so on''. If any
-of those matches fail, we fall through into the second line.
+of those matches fail, we fall through into the second line. Note that we write
+$\gdtguard{g_1, ..., g_n}{t}$ instead of
+$\vcenter{\hbox{\begin{forest}
+    grdtree,
+    grhs/.style={tier=rhs,edge={-}},
+    [[{$g_1$} [... [{$g_n$} [{$t$}]]]]]
+  \end{forest}}}$
+for notational convenience.
 
 More formally, matching a guard tree may \emph{succeed} (with some bindings for
 the variables bound in the tree), \emph{fail}, or \emph{diverge}.  Matching is
 defined as follows:
 \begin{itemize}
-\item Matching a guard tree $(\gdtrhs{n})$ succeeds.
-\item Matching a guard tree $(\gdtseq{t_1}{t_2})$ means matching against $t_1$;
+\item Matching a guard tree $\gdtrhs{n}$ succeeds.
+\item Matching a guard tree $\gdtseq{t_1}{t_2}$ means matching against $t_1$;
   if that succeeds, the overall match succeeds; if not, match against $t_2$.
-\item Matching a guard tree $(\gdtguard{\grdbang{x}}{t})$ evaluates $x$;
+\item Matching a guard tree $\gdtguard{\grdbang{x}}{t}$ evaluates $x$;
   if that diverges the match diverges; if not match $t$.
-\item Matching a guard tree $(\gdtguard{(\grdcon{|K|~ y_1 \ldots y_n}{x})}{t})$
+\item Matching a guard tree $\gdtguard{\grdcon{|K|~ y_1 \ldots y_n}{x}}{t}$
   matches $x$ against constructor |K|. If the match succeeds, bind $y_1 \ldots
   y_n$ to the components, and match $t$; if the constructor match fails, then the
   entire match fails.
-\item Matching a guard tree $(\gdtguard{(\grdlet{x}{e})}{t})$ binds $x$
+\item Matching a guard tree $\gdtguard{\grdlet{x}{e}}{t}$ binds $x$
   (lazily) to $e$, and matches $t$.
 \end{itemize}
 The desugaring algorithm, $\ds$, is given in \Cref{fig:desugar}.
@@ -1139,19 +1108,19 @@ time to come up with the language of guard trees.  We recommend it!
 \begin{array}{lcl}
 \unc(\reft{\Gamma}{\Phi}, \gdtrhs{n}) &=& \reft{\Gamma}{\false} \\
 \unc(\Theta, \gdtseq{t_1}{t_2}) &=& \unc(\unc(\Theta, t_1), t_2) \\
-\unc(\Theta, \gdtguard{(\grdbang{x})}{t}) &=& \unc(\Theta \andtheta (x \ntermeq \bot), t) \\
-\unc(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \unc(\Theta \andtheta (\ctlet{x}{e}), t) \\
-\unc(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& (\Theta \andtheta (x \ntermeq K)) \uniontheta \unc(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
+\unc(\Theta, \gdtguard{\grdbang{x}}{t}) &=& \unc(\Theta \andtheta (x \ntermeq \bot), t) \\
+\unc(\Theta, \gdtguard{\grdlet{x}{e}}{t}) &=& \unc(\Theta \andtheta (\ctlet{x}{e}), t) \\
+\unc(\Theta, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& (\Theta \andtheta (x \ntermeq K)) \uniontheta \unc(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
 \[ \ruleform{ \ann(\Theta, t) = u } \]
 \[
 \begin{array}{lcl}
 \ann(\Theta,\gdtrhs{n}) &=& \antrhs{\Theta}{n} \\
-\ann(\Theta, (\gdtseq{t_1}{t_2})) &=& \antseq{\ann(\Theta, t_1)}{\ann(\unc(\Theta, t_1), t_2)} \\
-\ann(\Theta, \gdtguard{(\grdbang{x})}{t}) &=& \antbang{(\Theta \andtheta (x \termeq \bot))}{\ann(\Theta \andtheta (x \ntermeq \bot), t)} \\
-\ann(\Theta, \gdtguard{(\grdlet{x}{e})}{t}) &=& \ann(\Theta \andtheta (\ctlet{x}{e}), t) \\
-\ann(\Theta, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& \ann(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
+\ann(\Theta, \gdtseq{t_1}{t_2}) &=& \antseq{\ann(\Theta, t_1)}{\ann(\unc(\Theta, t_1), t_2)} \\
+\ann(\Theta, \gdtguard{\grdbang{x}}{t}) &=& \antbang{\Theta \andtheta (x \termeq \bot)}{\ann(\Theta \andtheta (x \ntermeq \bot), t)} \\
+\ann(\Theta, \gdtguard{\grdlet{x}{e}}{t}) &=& \ann(\Theta \andtheta (\ctlet{x}{e}), t) \\
+\ann(\Theta, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& \ann(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
 
@@ -1191,20 +1160,22 @@ over the guard tree, using the operation $\Theta \andtheta \varphi$ (also
 defined in \Cref{fig:check}) to extend $\Theta$ with an extra literal
 $\varphi$.
 
-While $\unc$ finds a refinement type describing values that are \emph{not} matched by a
-guard tree, the function $\ann$ finds refinements describing values that
-\emph{are} matched by a guard tree, or that cause matching to diverge.
-It does so by producing an \emph{annotated tree}, whose syntax is given in \Cref{fig:syn}.
-An annotated tree has the same general structure as the guard tree from whence it came:
-in particular the top-to-bottom compositions ``;'' are in the same places.  But
-in an annotated tree, each \texttt{Rhs} leaf is annotated with a refinement type
-describing the input values that will lead to that right-hand side; and each
-$\antbang{}{\hspace{-0.6em}}$ node is annotated with a refinement type that describes
-the input values on which matching will diverge.  Once again, $\ann$ can
-be defined by a simple recursive descent over the guard tree (\Cref{fig:check}), but note
-that the second equation uses $\unc$ as an auxiliary function\footnote{
-Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
--- but the formulation in \Cref{fig:check} emphasises clarity over efficiency.}.
+While $\unc$ finds a refinement type describing values that are \emph{not}
+matched by a guard tree (its set of $\unc$ncovered values), the function $\ann$
+finds refinements describing values that \emph{are} matched by a guard tree, or
+that cause matching to diverge. It does so by producing an \emph{annotated
+tree} (hence $\ann$nnotate), whose syntax is given in \Cref{fig:syn}. An
+annotated tree has the same general structure as the guard tree from whence it
+came: in particular the top-to-bottom compositions ``;'' are in the same
+places.  But in an annotated tree, each \texttt{Rhs} leaf is annotated with a
+refinement type describing the input values that will lead to that right-hand
+side; and each $\antbang{}{\hspace{-0.6em}}$ node is annotated with a
+refinement type that describes the input values on which matching will diverge.
+Once again, $\ann$ can be defined by a simple recursive descent over the guard
+tree (\Cref{fig:check}), but note that the second equation uses $\unc$ as an
+auxiliary function\footnote{ Our implementation avoids this duplicated work --
+see \Cref{ssec:interleaving} -- but the formulation in \Cref{fig:check}
+emphasises clarity over efficiency.}.
 
 % Coverage checking works by gradually refining the set of reaching values
 % \ryan{Did you mean to write ``reachable values'' here? ``Reaching values''
@@ -1327,7 +1298,7 @@ Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
 
 \begin{figure}
 \centering
-\[ \textbf{Collect accessible $(\overline{k})$, inaccessible $(\overline{n})$ and redundant $(\overline{m})$ GRHSs} \]
+\[ \textbf{Collect accessible $(\overline{k})$, inaccessible $(\overline{n})$ and $\red$edundant $(\overline{m})$ GRHSs} \]
 \[ \ruleform{ \red(u) = (\overline{k}, \overline{n}, \overline{m}) } \]
 \[
 \begin{array}{lcl}
@@ -1355,7 +1326,7 @@ Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
 \end{array}
 \]
 
-\[ \textbf{Generate inhabitants of $\Theta$} \]
+\[ \textbf{$\generate$enerate inhabitants of $\Theta$} \]
 \[ \ruleform{ \generate(\Theta) = \mathcal{P}(\overline{p}) } \]
 \[
 \begin{array}{c}
@@ -1363,7 +1334,7 @@ Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
 \end{array}
 \]
 
-\[ \textbf{Construct inhabited $\nabla$s from $\Phi$} \]
+\[ \textbf{$\construct$onstruct inhabited $\nabla$s from $\Phi$} \]
 \[ \ruleform{ \construct(\nabla, \Phi) = \mathcal{P}(\nabla) } \]
 \[
 \begin{array}{lcl}
@@ -1378,7 +1349,7 @@ Our implementation avoids this duplicated work -- see \Cref{ssec:interleaving}
 \end{array}
 \]
 
-\[ \textbf{Expand variables to $\Pat$ with $\nabla$} \]
+\[ \textbf{$\expand$xpand variables to $\Pat$ with $\nabla$} \]
 \[ \ruleform{ \expand(\nabla, \overline{x}) = \overline{p} } \]
 \[
 \begin{array}{lcl}
@@ -1430,12 +1401,12 @@ to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, some
       f (Just B) = ...
       f (Just C) = ...
 \end{Verbatim}
-Producing these inhabitants is done by $\generate(\Theta)$ in \Cref{fig:gen},
+$\generate$enerating these inhabitants is done by $\generate(\Theta)$ in \Cref{fig:gen},
 which we discuss next in \Cref{sec:generate}.
 But before doing so, notice that the very same function $\generate$ allows
 us to report accessible, inaccessible, and redundant GRHSs.  The function $\red$,
 also defined in \Cref{fig:gen} does exactly this, returning a
-triple of (accessible, inaccessible, redundant) GRHSs:
+triple of (accessible, inaccessible, $\red$edundant) GRHSs:
 \begin{itemize}
 \item Having reached a leaf $\antrhs{\Theta}{n}$, if the refinement type $\Theta$ is
   uninhabited ($\generate(\Theta) = \emptyset$), then no input values can cause execution to reach this right-hand side,
@@ -1542,7 +1513,7 @@ Therefore, we can assert that |x| has |Nothing| as a solution simply by writing 
 
 \subsection{Expanding a normalised refinement type to a pattern} \label{sec:expand}
 
-Expanding a $\nabla$ to a pattern vector, by calling $\expand(\nabla)$ in \Cref{fig:gen},
+$\expand$xpanding a $\nabla$ to a pattern vector, by calling $\expand(\nabla)$ in \Cref{fig:gen},
 is syntactically heavy, but straightforward.
 When there is a solution like $\Delta(x) \termeq |Just y|$
 in $\Delta$ for the head $x$ of the variable vector of interest, expand $y$ in
@@ -1923,8 +1894,9 @@ WHNF and crashes when evaluation returns.
 
 It is quite easy to see that $\Gdt$ lacks expressive power to desugar
 \extension{EmptyCase} into, since all leaves in a guard tree need to have
-corresponding RHSs. Therefore, we need to introduce $\gdtempty$ to $\Gdt$ and
-$\antempty$ to $\Ant$. This is how they affect the checking process:
+corresponding RHSs. Therefore, we need to introduce empty alternatives
+$\gdtempty$ to $\Gdt$ and $\antempty$ to $\Ant$. This is how they affect the
+checking process:
 \[
 \begin{array}{cc}
 \unc(\Theta, \gdtempty) = \Theta
@@ -1936,7 +1908,8 @@ $\antempty$ to $\Ant$. This is how they affect the checking process:
 Since \extension{EmptyCase}, unlike regular |case|, evaluates its scrutinee
 to WHNF \emph{before} matching any of the patterns, the set of reaching
 values is refined with a $x \ntermeq \bot$ constraint \emph{before} traversing
-the guard tree, thus $\unc(\reft{\Gamma}{x \ntermeq \bot}, \gdtempty)$.
+the guard tree, thus checking starts starts with
+$\unc(\reft{\Gamma}{x \ntermeq \bot}, \gdtempty)$.
 
 \subsection{View patterns}
 \label{ssec:extviewpat}
@@ -2156,10 +2129,10 @@ checking in the same tree traversal as desugaring.
     (\overline{\nabla}_1, u_1) &=& \uncann(\overline{\nabla}, t_1) \\
     (\overline{\nabla}_2, u_2) &=& \uncann(\overline{\nabla}_1, t_2)
   \end{array} \\
-\uncann(\overline{\nabla}, \gdtguard{(\grdbang{x})}{t}) &=& \antbang{(\overline{\nabla} \addphiv (x \termeq \bot))}{u} \\
+\uncann(\overline{\nabla}, \gdtguard{\grdbang{x}}{t}) &=& \antbang{\overline{\nabla} \addphiv (x \termeq \bot)}{u} \\
   && \quad \text{where } (\overline{\nabla}', u) = \uncann(\overline{\nabla} \addphiv (x \ntermeq \bot), t) \\
-\uncann(\overline{\nabla}, \gdtguard{(\grdlet{x}{e})}{t}) &=& \uncann(\overline{\nabla} \addphiv (\ctlet{x}{e}), t) \\
-\uncann(\overline{\nabla}, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& ((\overline{\nabla} \addphiv (x \ntermeq K)) \, \overline{\nabla}', u) \\
+\uncann(\overline{\nabla}, \gdtguard{\grdlet{x}{e}}{t}) &=& \uncann(\overline{\nabla} \addphiv (\ctlet{x}{e}), t) \\
+\uncann(\overline{\nabla}, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& ((\overline{\nabla} \addphiv (x \ntermeq K)) \, \overline{\nabla}', u) \\
   && \quad \text{where } (\overline{\nabla}', u) = \uncann(\overline{\nabla} \addphiv (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
@@ -2202,7 +2175,7 @@ where we have to conservatively approximate in order not to slow down
 compilation too much. Consider the following example and its corresponding
 guard tree:
 \\
-\begin{minipage}[b]{0.32\textwidth}
+\begin{minipage}[t]{0.32\textwidth}
 \begin{code}
 data T = A | B; f1, f2 :: Int -> T
 g _
@@ -2212,8 +2185,8 @@ g _
   | A <- f1 N,  A <- f2 N  = ()
 \end{code}
 \end{minipage}%
-\begin{minipage}[b]{0.68\textwidth}
-\scalebox{0.95}{
+\begin{minipage}[t][][b]{0.68\textwidth}
+\vspace{2em}
 \begin{forest}
   grdtree,
   [
@@ -2221,7 +2194,7 @@ g _
     [{$\grdlet{a_2}{|f1 2|}, \grdbang{a_2}, \grdcon{|A|}{a_2}, \grdlet{b_2}{|f2 2|}, \grdbang{b_2}, \grdcon{|A|}{b_2}$} [2]]
     [... [...]]
     [{$\grdlet{a_{N}}{|f1 N|}, \grdbang{a_{N}}, \grdcon{|A|}{a_{N}}, \grdlet{b_{N}}{|f2 N|}, \grdbang{b_{N}}, \grdcon{|A|}{b_{N}}$} [N]]]
-\end{forest}}
+\end{forest}
 \end{minipage}
 
 Each of the $N$ GRHS can fall through in two distinct ways: By failure of
@@ -2255,7 +2228,7 @@ that particular subtree. Throttling is refreshingly easy to implement! Only the
 last clause of $\uncann$, where splitting is performed, needs to change:
 \[
 \begin{array}{r@@{\,}c@@{\,}lcl}
-\uncann(\overline{\nabla}, \gdtguard{(\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x})}{t}) &=& (\throttle{\overline{\nabla}}{(\overline{\nabla} \addphiv (x \ntermeq K)) \, \overline{\nabla}'}, u) \\
+\uncann(\overline{\nabla}, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& (\throttle{\overline{\nabla}}{(\overline{\nabla} \addphiv (x \ntermeq K)) \, \overline{\nabla}'}, u) \\
   && \quad \text{where } (\overline{\nabla}', u) = \uncann(\overline{\nabla} \addphiv (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t)
 \end{array}
 \]

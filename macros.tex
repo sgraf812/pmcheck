@@ -64,30 +64,60 @@
 
 % GrdTree Gdt
 \newcommand{\Gdt}{\ty{Gdt}}
-\newcommand{\gdtrhs}[1]{\texttt{GRhs} \; #1}
-\newcommand{\gdtseq}[2]{#1; #2}
-\newcommand{\gdtguard}[2]{\texttt{Guard} \; #1 \; #2}
-\newcommand{\gdtempty}{\texttt{GEmpty}}
+\newcommand{\gdtrhs}[1]{
+  \vcenter{\hbox{\begin{forest}
+    grdtree,
+    [ [{$#1$}] ]
+  \end{forest}}}}
+\newcommand{\gdtseq}[2]{
+  \vcenter{\hbox{\begin{forest}
+    grdtree,
+    for tree={delay={edge={-}}},
+    [ [{$#1$}] [{$#2$}] ]
+  \end{forest}}}}
+\newcommand{\gdtguard}[2]{
+  \vcenter{\hbox{\begin{forest}
+    grdtree,
+    grhs/.style={tier=rhs,edge={-}},
+    [ [{$#1$} [{$#2$}] ] ]
+  \end{forest}}}}
+\newcommand{\gdtempty}{\cdot_{\Gdt}}
 
 % AnnTree Ant
 \newcommand{\Ant}{\ty{Ant}}
-\newcommand{\antrhs}[2]{\texttt{ARhs} \; #1 \; #2}
-\newcommand{\antseq}[2]{#1; #2}
-\newcommand{\antbang}[2]{\texttt{Bang} \; #1 \; #2}
-\newcommand{\antempty}{\texttt{AEmpty}}
+\newcommand{\antrhs}[2]{
+  \vcenter{\hbox{\begin{forest}
+    anttree,
+    [ [{$#1$\,$#2$}] ]
+  \end{forest}}}}
+\newcommand{\antseq}[2]{
+  \vcenter{\hbox{\begin{forest}
+    anttree,
+    for tree={delay={edge={-}}},
+    [ [{$#1$}] [{$#2$}] ]
+  \end{forest}}}}
+\newcommand{\antbang}[2]{
+  \vcenter{\hbox{\begin{forest}
+    anttree,
+    for tree={delay={edge={-}}},
+    [ [{$#1$\,\lightning} [{$#2$}] ] ]
+  \end{forest}}}}
+\newcommand{\antempty}{\cdot_{\Ant}}
 
 % Graphic notation for trees
 \forestset{%
   clausetree/.style={
     for tree={
       grow'=0,
-      align=left,
       calign=first,
-      anchor=west,
-      line width=0.2mm,
+      anchor=parent,
+      line width=0.2mm, % This one only affects layout, not appearance of lines. Hence we set this again in delay
       inner sep=2pt,
       s sep=0pt,
-      delay={edge={line width=0.2mm}}},
+      delay={
+        edge={line width=0.2mm}},
+        l=0em % fix some excessive horizontal space usage for empty nodes
+      },
     forked edges
   },
   grdtree/.style={
