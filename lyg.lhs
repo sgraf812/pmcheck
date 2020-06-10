@@ -2415,6 +2415,11 @@ of GHC's equality constraint solver has become more expensive in HEAD
 ~\cite{gitlab:17891}, and these extra costs outweigh the performance benefits
 of using \lyg.
 
+Note that for typical code (rather than for regression tests), time spent doing
+coverage checking is dwarfed by the time the rest of the desugarer takes. A
+very desirable property for a static analysis that is irrelevant to the
+compilation process!
+
 \subsection{GHC issues} \label{sec:ghc-issues}
 
 Implementing \lyg in GHC has fixed over 30 bug reports related
