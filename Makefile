@@ -14,6 +14,12 @@ main:
 	pdflatex $(REPL_FLAGS) lyg
 	pdflatex $(REPL_FLAGS) lyg
 
+diff:
+	pdflatex $(REPL_FLAGS) diff
+	bibtex   diff
+	pdflatex $(REPL_FLAGS) diff
+	pdflatex $(REPL_FLAGS) diff
+
 extended:
 	lhs2TeX --poly appendix_ext.lhs >appendix_ext.tex
 	lhs2TeX --poly lyg_ext.lhs >lyg_ext.tex
