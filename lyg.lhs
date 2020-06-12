@@ -1836,6 +1836,32 @@ that a variable is inhabited after $n$ such iterations (we have $n=100$ for
 list-like constructors and $n=1$ otherwise) and consider supplementing that
 with a simple termination analysis in the future.
 
+\subsubsection{A note on precision}
+
+Using fuel to limit the number of inhabitation tests is one example
+where \lyg sacrifices a small amount of precision in its warnings. It is worth
+noting that this does not impact \lyg's soundness. In terms of the formalism,
+\lyg overapproximates---but never underapproximates---the set of reaching
+values passed to $\unc$ and $\ann$. As a result, \lyg will never fail to report
+uncovered clauses (no false negatives), but it may report false positives.
+Similarly, \lyg will never report accessible clauses as redundant (no false
+positives), but it may fail to report clauses which are redundant when the code
+involved is too close to ``undecidable territory''. We can broadly describe
+three places where \lyg overapproximates:
+
+\begin{itemize}
+  \item
+    \lyg can run out of fuel for inhabitation testing (\Cref{sec:inhabitation}).
+
+  \item
+    Throttling (\Cref{ssec:throttling}) is useful when implementing \lyg.
+
+  \item
+    \lyg forgoes non-trivial semantic analysis of expressions. \lyg can
+    recognize identical patterns or subexpressions, but it stops short of
+    anything more sophisticated, such as interprocedural analysis or
+    SMT-style reasoning (\Cref{ssec:comparison-with-structural}).
+\end{itemize}
 
 \section{Possible extensions} \label{sec:extensions}
 
@@ -2517,6 +2543,7 @@ straightforward of a process as extending $\addphi$.
 \subsection{Comparison with similar coverage checkers}
 
 \subsubsection{Structural and semantic pattern matching analysis in Haskell}
+\label{ssec:comparison-with-structural}
 
 \citet{kalvoda2019structural} implement a variation of \gmtm that leverages an
 SMT solver to give more accurate coverage warnings for programs that use
@@ -2554,6 +2581,70 @@ desugars definitions by clauses to \emph{case trees}. Case trees present a simpl
 form of pattern matching that is easier to check for coverage, much like guard trees
 in \lyg. Guard trees could take inspiration from case trees should a future
 version of GHC add dependent types or copatterns.
+
+\subsubsection{Refinement type--based totality checking in Liquid Haskell}
+
+In addition to \lyg, Liquid Haskell uses refinement types to perform a limited form of
+exhaustivity checking \cite{liquidhaskell,refinement-reflection}.
+While exhaustiveness checks are optional in ordinary
+Haskell, they are mandatory for Liquid Haskell, as proofs written in Liquid
+Haskell require user-defined functions to be total (and therefore exhaustive)
+in order to be sound.
+For example, consider this non-exhaustive function:
+
+\begin{code}
+fibPartial :: Integer -> Integer
+fibPartial 0 = 0
+fibPartial 1 = 1
+\end{code}
+
+When compiled, GHC fills out this definition by adding an extra
+|fibPartial _ = error "undefined"| clause.
+Liquid Haskell leverages this by
+giving |error| the refinement type:
+
+\begin{code}
+error :: { v:String | false } -> a
+\end{code}
+
+As a result, attempting to use |fibPartial| in a proof will fail to verify
+unless the user can prove that |fibPartial| is only ever invoked with the
+arguments |0| or |1|.
+
+\subsection{Other representations of constraints}
+
+\subsubsection{Leveraging existing constraint solvers}
+
+\lyg represents $\Phi$ constraints using logical predicates that are
+tailor-made for \lyg's purposes. One could instead imagine encoding $\Phi$
+constraints in a more standard logic and then using an ``off-the-shelf''
+constraint solver to check them. This would render \Cref{fig:add} and the
+arguably rather intricate \Cref{sec:normalise,sec:inhabitation} unnecessary,
+and it allows the checker to benefit from improvements to the solver without
+any further maintenance burden.
+
+Encoding $\Phi$ constraints into another logic would have its downsides,
+however. The $\addphi$ function is able to reason about \lyg-oriented
+predicates rather efficiently, but other constraint solvers (e.g., STM solvers)
+might incur significant constant factors. Moreover, elaborating from
+one logic to another could inhibit programmers from forming a mental model of
+how coverage checking works.
+
+\subsubsection{Refinement types versus predicates}
+
+Refinement types $\Theta$ and predicates $\Phi$ are very similar. The main
+difference between the two is that refinement types carry a typing context
+$\Gamma$ that is used for inhabitation testing. Predicates are quite fully
+featured on their own, however, as they can bind variables that scope over
+conjunctions. The scoping semantics of predicates allows $\unc$ and $\ann$ to
+be purely syntactic transformations, and in fact, they could be modified to take
+$\Phi$ as an argument rather than $\Theta$.
+
+Making $\unc$ and $\ann$ operate over $\Theta$ or $\Phi$ is ultimately a design
+choice. We have opted to operate over $\Theta$ mainly because we find it
+more intuitive to think about coverage checking as refining a vector of values as
+it falls from one match to the next. In our opinion, that intuition is more
+easily expressed with refinement types than predicates alone.
 
 \subsection{Positive and negative information}
 \label{ssec:negative-information}
@@ -2710,35 +2801,6 @@ is something that programming language implementors have discovered
 independently, but with varying degrees
 of success in putting into practice. We hope that \lyg can bring this heretofore
 folklore knowledge into wider use.
-
-\subsection{Refinement types in coverage checking}
-
-In addition to \lyg, Liquid Haskell uses refinement types to perform a limited form of
-exhaustivity checking \cite{liquidhaskell,refinement-reflection}.
-While exhaustiveness checks are optional in ordinary
-Haskell, they are mandatory for Liquid Haskell, as proofs written in Liquid
-Haskell require user-defined functions to be total (and therefore exhaustive)
-in order to be sound.
-For example, consider this non-exhaustive function:
-
-\begin{code}
-fibPartial :: Integer -> Integer
-fibPartial 0 = 0
-fibPartial 1 = 1
-\end{code}
-
-When compiled, GHC fills out this definition by adding an extra
-|fibPartial _ = error "undefined"| clause.
-Liquid Haskell leverages this by
-giving |error| the refinement type:
-
-\begin{code}
-error :: { v:String | false } -> a
-\end{code}
-
-As a result, attempting to use |fibPartial| in a proof will fail to verify
-unless the user can prove that |fibPartial| is only ever invoked with the
-arguments |0| or |1|.
 
 \section{Conclusion}
 
