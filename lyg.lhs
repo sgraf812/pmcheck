@@ -2586,16 +2586,28 @@ redundant ones; thus clauses flagged as useless (such as the first two clauses
 of |u'| in \Cref{sssec:inaccessibility}) generally can't be deleted without
 changing (lazy) program semantics.
 
-\subsubsection{Elaborating dependent (co)pattern matching}
+\subsubsection{Case trees in dependently typed languages}
 
-\citet{dependent-copattern} design a coverage checking algorithm for a dependently
-typed language with both pattern matching and \emph{copattern} matching, which is
-a feature that GHC lacks. While the source language for their algorithm is much more
-sophisticated than GHC's, their algorithm is similar to \lyg in that it first
-desugars definitions by clauses to \emph{case trees}. Case trees present a simplified
-form of pattern matching that is easier to check for coverage, much like guard trees
-in \lyg. Guard trees could take inspiration from case trees should a future
-version of GHC add dependent types or copatterns.
+\emph{Case tree}s \citep{augustsson-case-trees} are a standard way of compiling
+pattern matches to efficient code. Much like \lyg's guard trees, case trees
+present a simplified representation of pattern matching. Several compilers for
+dependently typed languages also use case trees as coverage checking algorithms,
+as a well typed case tree can guarantee that it covers all possible cases.
+Case trees play an integral role in coverage checking in
+Agda \citep{norellphd,dependent-copattern} and the Equations plugin for Coq
+\citep{equations,equations-reloaded}. \citet{oury} checks for coverage in
+a dependently typed setting using sets of inhabitants of data types,
+which have similarities to case trees.
+
+One could take inspiration from case trees should one wish to extend \lyg to
+support dependent types. Our implementation of \lyg in GHC can already handle
+quasi-dependently typed code, such as the \texttt{singletons} library
+\citep{singletons,singletons-promotion}, so we expect that it can be adapted to
+full dependent types. One key change that would be required is extending equation
+(9) in \Cref{fig:add} to reason about term constraints in addition to type
+constraints. GHC's constraint solver already has limited support for term-level
+reasoning as part of its \texttt{DataKinds} language extension
+\citep{hspromoted}, so the groundwork is present.
 
 \subsubsection{Refinement type--based totality checking in Liquid Haskell}
 
@@ -2736,14 +2748,14 @@ into a single one indicating that the match variable can no longer be |A1|.
 \subsection{Strict fields in inhabitation testing}
 \label{ssec:strict-fields}
 
-The $\mathsf{Inst}$ function in \Cref{fig:inh} takes inhabitation testing into
-account, which is essential to conclude that the |v| function from
-\Cref{ssec:strictness} is exhaustive. To our knowledge, \lyg is the first
-published coverage checking algorithm to incorporate inhabitation testing.
-This is somewhat surprising, as we are certainly not the first to consider
-coverage checking in a language with strictness. As a point of comparison,
-we decided to see how OCaml and Idris, two call-by-value languages that
-check for pattern-match coverage
+The $\mathsf{Inst}$ function in \Cref{fig:inh} takes strict fields into account
+during inhabitation testing, which is essential to conclude that the |v|
+function from \Cref{ssec:strictness} is exhaustive. This trick was pioneered
+by \citet{oury}, who uses it to check for unreachable cases in the presence of
+dependent types. Coverage checkers for strict and total programming
+languages usually implement inhabitation testing, but sometimes with
+less-than-perfect results. As two data points, we decided to see how OCaml and
+Idris, two call-by-value languages that check for pattern-match coverage
 \footnote{Idris has separate compile-time and runtime semantics, the latter
 of which is call by value.},
 would fare when checking functions like |v|:
@@ -2814,8 +2826,8 @@ as a case that is not matched, which suggests that OCaml may also be using
 a fuel-based approach. We believe these examples show that inhabitation testing
 is something that programming language implementors have discovered
 independently, but with varying degrees
-of success in putting into practice. We hope that \lyg can bring this heretofore
-folklore knowledge into wider use.
+of success in putting into practice. We hope that \lyg can bring this
+knowledge into wider use.
 
 \section{Conclusion}
 
