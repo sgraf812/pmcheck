@@ -11,7 +11,7 @@
 %\documentclass[acmsmall]{acmart}\settopmatter{}
 
 %\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
-\documentclass[acmsmall]{acmart}\settopmatter{}
+\documentclass[acmsmall,review]{acmart}\settopmatter{}
 
 %include custom.fmt
 
@@ -609,11 +609,12 @@ u' _              = 3
 Within |u|, the equations that return |1| and |3| could be deleted without
 changing the semantics of |u|, so they are classified as redundant. Within |u'|,
 one can never reach the right-hand sides of the equations that return |1| and |2|,
-but they cannot be removed so easily. Using the
-definition above, $|u'|~\bot~|=|~\bot$, but if the first two equations were removed,
-then $|u'|~\bot~|= 3|$. As a result, \lyg warns that the first two equations in |u'| are
-inaccessible, which suggests to the programmer that |u'| might benefit from
-a refactor to avoid this (e.g., |u' () = 3|).
+but they cannot be removed so easily. Using the definition above,
+$|u'|~\bot~|=|~\bot$, but if the first two equations were removed, then
+$|u'|~\bot~|= 3|$ because the argument is no longer forced by the |()|
+pattern. As a result, \lyg warns that the first two equations in |u'| are
+inaccessible, which suggests to the programmer that |u'| might benefit from a
+refactor to avoid this (e.g., |u' () = 3|).
 
 Observe that |u| and |u'| have completely different warnings, but the
 only difference between the two functions is whether the second equation uses |True| or |False| in its guard.
@@ -1855,15 +1856,18 @@ f x     = ... (case x of{ False -> 2; True -> 3 }) ...
 \end{code}
 
 \noindent
-\lyg as is will not produce any warnings for this definition. But the
-reader can easily make the ``long distance connection'' that the last GRHS of
-the |case| expression is redundant! That simply follows by context-sensitive
+\gmtm and unextended \lyg will not produce any warnings for this definition.
+But the reader can easily make the ``long distance connection'' that the last
+GRHS of the |case| expression is redundant! That follows by context-sensitive
 reasoning, knowing that |x| was already matched against |True|.
 
-In terms of \lyg, the input values of the second GRHS $\Theta_{2}$ (which
-determine whether the GRHS is accessible) encode the information we are after.
-We just have to start checking the |case| expression starting from $\Theta_{2}$
-as the initial set of reaching values instead of $\reft{x:|Bool|}{\true}$.
+In terms of \lyg, the input values of the second GRHS of |f|, described by
+$\Theta_{2}=\reft{x:|Bool|}{x \ntermeq \bot, x \ntermeq |True|}$, encode the
+information we are after: we just have to start checking the |case| expression
+starting from $\Theta_{2}$ as the initial set of reaching values instead of
+$\reft{x:|Bool|}{\true}$. We already need $\Theta_2$ to determine whether the
+second GRHS of |f| is accessible, so long-distance information comes almost for
+free.
 
 \subsection{Empty case}
 
@@ -2096,8 +2100,12 @@ and a strict-by-default source syntax, in Appendix A.
 \section{Implementation}
 \label{sec:impl}
 
-The implementation of \lyg in GHC accumulates quite a few tricks that
-go beyond the pure formalism. This section is dedicated to describing these.
+We have implemented \lyg in a to-be-released version of GHC\footnote{The
+functionality described in this paper will be available in GHC 8.12 and later.},
+including all extensions in \Cref{sec:extensions} (except for strict-by-default
+source syntax in Appendix A). Our implementation accumulates quite a few tricks
+that go beyond the pure formalism. This section is dedicated to describing
+these.
 
 \sg{Delete this paragraph?}
 Warning messages need to reference source syntax in order to be comprehensible
@@ -2323,10 +2331,8 @@ information on before handing off to $\expand$.
 \section{Evaluation}
 \label{sec:eval}
 
-We have implemented \lyg in a to-be-released version of GHC.
-To put the new coverage checker to the
-test, we performed a survey of real-world Haskell code using the
-\texttt{head.hackage} repository
+To put the new coverage checker to the test, we performed a survey of
+real-world Haskell code using the \texttt{head.hackage} repository
 \footnote{\url{https://gitlab.haskell.org/ghc/head.hackage/commit/30a310fd8033629e1cbb5a9696250b22db5f7045}}.
 \texttt{head.hackage} contains a sizable collection of libraries and minimal
 patches necessary to make them build with a development version of GHC.
@@ -2412,6 +2418,11 @@ cases exhibit a noticeable improvement under \lyg, with the exception of
 of GHC's equality constraint solver has become more expensive in HEAD
 ~\cite{gitlab:17891}, and these extra costs outweigh the performance benefits
 of using \lyg.
+
+Note that for typical code (rather than for regression tests), time spent doing
+coverage checking is dwarfed by the time the rest of the desugarer takes. A
+very desirable property for a static analysis that is irrelevant to the
+compilation process!
 
 \subsection{GHC issues} \label{sec:ghc-issues}
 
@@ -2736,7 +2747,10 @@ distills rich pattern matching into simple guard trees. Guard trees are
 amenable to analyses that are not easily expressible in coverage checkers
 that work over structural pattern matches. This allows \lyg to report more
 accurate warnings while also avoiding performance issues when checking
-complex programs. Moreover, \lyg is extensible, and we anticipate that this will
+complex programs. Moreover, \lyg is extensible: the guard and tree constructs
+are both simple and expressive. That makes for a slightly excessive number of
+translation steps, but at the same time offers many \emph{seams}
+\citep{legacycode} to hook into. We anticipate that this extensibility will
 streamline the process of checking new forms of patterns in the future.
 
 \bibliography{references}
