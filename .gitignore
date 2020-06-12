@@ -1,3 +1,6 @@
+## Temporary measure while following a PR workflow
+*.pdf
+
 ## Core latex/pdflatex auxiliary files:
 *.aux
 *.lof
