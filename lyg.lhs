@@ -2344,15 +2344,30 @@ process.
 \subsection{Reporting uncovered patterns}
 
 The expansion function $\expand$ in \Cref{fig:gen} exists purely for presenting
-uncovered patterns to the user. It is very simple and doesn't account for
-negative information, leading to surprising warnings. Consider a definition
-like |f True = ()|. The computed uncovered set of |f| is the refinement type
-$\reft{x:|Bool|}{x \ntermeq \bot, x \ntermeq |True|}$, which crucially
-contains no positive information! As a result, expanding the resulting $\nabla$
-(which looks quite similar) with $\expand$ just unhelpfully reports |_| as an
-uncovered pattern. Our implementation thus splits the $\nabla$ into (possibly
-multiple) sub-$\nabla$s with positive information on variables we have negative
-information on before handing off to $\expand$.
+uncovered patterns to the user. It doesn't account for negative information,
+however, which can lead to surprising warnings. Consider a definition like |b
+True = ()|. The computed uncovered set of |b| is the normalised refinement type
+$\nabla_b = \nreft{x:|Bool|}{x \ntermeq \bot, x \ntermeq |True|}$, which crucially
+contains no positive information on |x|! As a result, $\expand(\nabla_b) = \_$
+and only the very unhelpful wildcard pattern |_| will be reported as uncovered.
+
+Our implementation does better and shows that this is just a presentational
+matter. It splits $\nabla_b$ on all possible constructors of |Bool|, immediately
+rejecting the refinement $\nabla_b \adddelta x \termeq |True|$ due to $x \ntermeq
+|True| \in \nabla_b$. What remains is the refinement $\nabla_b \adddelta x
+\termeq False = \nreft{x:|Bool|}{x \ntermeq \bot, x \ntermeq |True|, x \termeq
+|False|}$, which has the desired positive information for which $\expand$ will
+happily report |False| as the uncovered pattern.
+
+Additionally, our implementation formats negative information on opaque data
+types such as |Int| and |Char|, since idiomatic use would match on literals
+rather than on GHC-specific data constructors. For example, coverage checking
+|f 0 = ()| will report something like this:
+
+\begin{Verbatim}
+    Missing equations for function 'f':
+      f x = ... where 'x' is not one of {0}
+\end{Verbatim}
 
 \section{Evaluation}
 \label{sec:eval}
