@@ -2095,7 +2095,7 @@ computationally intractable. We will worry about that in \Cref{sec:impl}.
 \subsection{Other extensions}
 
 We consider further extensions, including overloaded literals, newtypes,
-and a strict-by-default source syntax, in Appendix A.
+and a strict-by-default (or total) language semantics, in Appendix A.
 
 \section{Implementation}
 \label{sec:impl}

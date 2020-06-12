@@ -173,14 +173,15 @@ coercions and at the level of $\Delta$ consider equivalence classes modulo
 coercions. That entails a slew of modifications and has deep ramifications
 throughout the presentation.
 
-\subsection{Strictness}
+\subsection{Strictness and totality}
 
 Instead of extending the source language, let's discuss ripping out a language
 feature, for a change! So far, we have focused on Haskell as the source
 language, which is lazy by default. Although after desugaring  the difference
 in evaluation strategy of the source language becomes irrelevant, it raises the
 question of how much our approach could be simplified if we targeted a source
-language that was strict by default, such as OCaml or Idris.
+language that was strict by default, such as OCaml or
+Idris.
 
 First off, both languages offer language support for laziness and lazy pattern
 matches, so the question rather becomes whether the gained simplification is
@@ -195,3 +196,6 @@ directly! Since there wouldn't be any bang guards, there is no reason to have
 $x \termeq \bot$ and $x \ntermeq \bot$ constraints either. Most importantly,
 the \inhabitedbot judgment form has to go, because $\bot$ does not inhabit any
 types anymore.
+
+Note that in a total language, reasoning about $x \termeq \bot$ makes no sense
+to begin with! All the same simplifications apply.
