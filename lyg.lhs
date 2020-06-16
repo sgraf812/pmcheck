@@ -120,9 +120,22 @@
 }
 \email{rgscott@@indiana.edu}
 
-% Comment out to build the Appendix only
-\newcommand*{\MAIN}{}
-\ifdefined\MAIN
+% Some conditional build stuff for handling the Appendix
+
+\newif\ifmain
+\newif\ifappendix
+
+% Builds only the main paper by default.
+\maintrue
+\appendixfalse
+% But we provide a switch to build the Appendix only.
+\def\appendixonly{\mainfalse{}\appendixtrue{}}
+
+% .. so that you can comment out the following line to build the Appendix only
+% This is done by the `make appendix` target.
+%\appendixonly
+
+\ifmain
 
 \begin{abstract}
 A compiler should warn if a function defined by pattern matching
@@ -2860,11 +2873,13 @@ streamline the process of checking new forms of patterns in the future.
 
 \bibliography{references}
 
-\else % \ifdefined\MAIN
+\fi % \ifmain
+
 % Appendix
+\ifappendix
 \appendix
 \section{Appendix}\label{sec:appendix}
 \input{appendix}
-\fi
+\fi % \ifappendix
 
 \end{document}

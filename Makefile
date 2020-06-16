@@ -4,15 +4,21 @@
 all: main
 
 # -halt-on-error: Halts on first error, rather than prompting the user
-REPL_FLAGS = -halt-on-error
+REPL_FLAGS := -halt-on-error
 
-main:
-	lhs2TeX --poly appendix.lhs >appendix.tex
+.PHONY: main
+
+main: lyg.lhs macros.tex
 	lhs2TeX --poly lyg.lhs >lyg.tex
 	pdflatex $(REPL_FLAGS) lyg
 	bibtex   lyg
 	pdflatex $(REPL_FLAGS) lyg
 	pdflatex $(REPL_FLAGS) lyg
+
+appendix: lyg.lhs macros.tex appendix.lhs
+	lhs2TeX --poly appendix.lhs >appendix.tex
+	lhs2TeX --poly lyg.lhs | sed -e 's/^%\\appendixonly/\\appendixonly/g' >lyg.tex
+	pdflatex $(REPL_FLAGS) -jobname=appendix lyg.tex
 
 diff:
 	pdflatex $(REPL_FLAGS) diff
