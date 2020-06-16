@@ -1041,11 +1041,11 @@ boolean guard |(x == y)| have both turned into the same constructor-matching
 construct in the guard tree.
 
 In equation $(\dagger)$ of \Cref{fig:desugar} we generate an explicit
-bang-guard $!x$ to reflect that fact that pattern matching against a data constructor
+bang guard $!x$ to reflect that fact that pattern matching against a data constructor
 requires evaluation.  However, Haskell's |newtype| declarations introduce data
 constructors that are \emph{not} strict, so their desugaring is just like $(\dagger)$ but
 with no $!x$ (see Appendix A).  From this point onwards, then, strictness is expressed \emph{only} through
-bang-guards $!x$, while constructor guards $\grdcon{|K a b|}{y}$ are not considered
+bang guards $!x$, while constructor guards $\grdcon{|K a b|}{y}$ are not considered
 strict.
 
 In a way there is nothing very deep here, but it took us a surprisingly long
@@ -2123,7 +2123,7 @@ them for the purposes of reporting warnings. Fixing that requires a bit of
 boring engineering.
 
 Another subtle point appears in rule $(\dagger)$ in \Cref{fig:desugar}: should
-we or should we not add a bang-guard for pattern synonyms.  There is no way to
+we or should we not add a bang guard for pattern synonyms.  There is no way to
 know without breaking the abstraction offered by the syonym.  In effect, its
 strictness or otherwise is part of its client-visible semantics.  In our implementation
 we have (thus far) compromised, by assuming that all pattern synonyms are strict for the
