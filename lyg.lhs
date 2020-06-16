@@ -1041,7 +1041,7 @@ boolean guard |(x == y)| have both turned into the same constructor-matching
 construct in the guard tree.
 
 In equation $(\dagger)$ of \Cref{fig:desugar} we generate an explicit
-bang guard $!x$ to reflect that fact that pattern matching against a data constructor
+bang guard $!x$ to reflect the fact that pattern matching against a data constructor
 requires evaluation.  However, Haskell's |newtype| declarations introduce data
 constructors that are \emph{not} strict, so their desugaring is just like $(\dagger)$ but
 with no $!x$ (see Appendix A).  From this point onwards, then, strictness is expressed \emph{only} through
@@ -1535,8 +1535,8 @@ Invariants \inv{1} and \inv{2} prevent $\Delta$ being self-contradictory,
 so that $\nabla$ (which denotes a set of values) is uninhabited.
 We use $\nabla = \false$ to represent an uninhabited refinement type.
 Invariants \inv{3} and \inv{4} require $\Delta$ to be in solved form,
-from which it is easy to ``read off' a value that inhabits it --- this
-reading-off step is performed by $\expand(\nabla)$ (\Cref{sec:expand}).
+from which it is easy to ``read off'' a value that inhabits it --- this
+reading-off step is performed by $\expand$ (\Cref{sec:expand}).
 
 The structure is directly analogous to the structure of the standard unification
 algorithm. In unification we start with a set of equalities between types
@@ -2124,10 +2124,10 @@ boring engineering.
 
 Another subtle point appears in rule $(\dagger)$ in \Cref{fig:desugar}: should
 we or should we not add a bang guard for pattern synonyms?  There is no way to
-know without breaking the abstraction offered by the syonym.  In effect, its
+know without breaking the abstraction offered by the synonym.  In effect, its
 strictness or otherwise is part of its client-visible semantics.  In our implementation,
 we have (thus far) compromised by assuming that all pattern synonyms are strict for the
-purposes of coverage checking.
+purposes of coverage checking \citep{gitlab:17357}.
 
 \subsection{\extension{COMPLETE} pragmas}
 \label{ssec:complete}
