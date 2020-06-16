@@ -2093,7 +2093,7 @@ n = case P of Q -> 1; P -> 2
 \end{code}
 \noindent
 If |P| and |Q| were data constructors, the first alternative of the
-|case| would be redundant, because |P| cannot match |Q|.  But pattern syonyms
+|case| would be redundant, because |P| cannot match |Q|.  But pattern synonyms
 are quite different: a value produced by |P| might match a pattern |Q|, as indeed
 is the case in this example.
 
