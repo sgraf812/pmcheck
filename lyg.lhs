@@ -1389,14 +1389,14 @@ emphasises clarity over efficiency.}.
 \]
 
 \[ \textbf{$\expand$xpand variables to $\Pat$ with $\nabla$} \]
-\[ \ruleform{ \expand(\nabla, \overline{x}) = \overline{p} } \]
+\[ \ruleform{ \expand(\nabla, x) = p, \quad \expand(\nabla, \overline{x}) = \overline{p} } \]
 \[
 \begin{array}{lcl}
 
-  \expand(\nabla, \epsilon) &=& \epsilon \\
-  \expand(\nreft{\Gamma}{\Delta}, x_1 ... x_n) &=& \begin{cases}
-    (K \; q_1 ... q_m) \, p_2 ... p_n & \parbox[t]{0.5\textwidth}{if $\rep{\Delta}{x_1} \termeq \deltaconapp{K}{a}{y} \in \Delta$\\ and $(q_1 ... q_m \, p_2 ... p_n) = \expand(\nreft{\Gamma}{\Delta}, y_1 ... y_m x_2 ... x_n)$} \\
-    \_ \; p_2 ... p_n & \text{where $(p_2 ... p_n) = \expand(\nreft{\Gamma}{\Delta}, x_2 ... x_n)$} \\
+  \expand(\nabla, \overline{x}) &=& \overline{\expand(\nabla, x)} \\
+  \expand(\nreft{\Gamma}{\Delta}, x) &=& \begin{cases}
+    K \; \expand(\nreft{\Gamma}{\Delta}, \overline{y}) & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
+    \_ & \text{otherwise} \\
   \end{cases} \\
 
 \end{array}
@@ -1576,13 +1576,15 @@ aggressively substitute them away.
 
 \subsection{Expanding a normalised refinement type to a pattern} \label{sec:expand}
 
-$\expand$xpanding a $\nabla$ to a pattern vector, by calling $\expand(\nabla)$ in \Cref{fig:gen},
-is syntactically heavy, but straightforward.
-When there is a solution like $\Delta(x) \termeq |Just y|$
-in $\Delta$ for the head $x$ of the variable vector of interest, expand $y$ in
-addition to the rest of the vector and wrap it in a |Just|. Invariant \inv{4}
-guarantees that there is at most one such solution and $\expand$ is
-well-defined.
+$\expand$xpanding a match variable $x$ under $\nabla$ to a pattern, by calling
+$\expand$ in \Cref{fig:gen}, is straightforward and overloaded to operate
+similarly on multiple match variables. When there is a solution like $\Delta(x)
+\termeq |Just y|$ in $\Delta$ for the match variable $x$ of interest,
+recursively expand $y$ and wrap it in a |Just|. Invariant \inv{4} guarantees
+that there is at most one such solution and $\expand$ is well-defined. When
+there is no solution for $x$, return $\_$. See \Cref{ssec:report} for how we
+improve on that in the implementation by taking negative
+information into account.
 
 \subsection{Normalising a refinement type} \label{sec:normalise}
 
@@ -1674,7 +1676,7 @@ well-defined.
 \label{fig:add}
 \end{figure}
 
-Normalisation, carried out by $\normalise$ in \Cref{fig:gen},
+$\normalise$ormalisation, carried out by $\normalise$ in \Cref{fig:gen},
 is largely a matter of repeatedly adding a literal $\varphi$ to a
 normalised type, thus $\nabla \addphi \varphi$.  This function
 is where all the work is done, in \Cref{fig:add}.
@@ -2405,6 +2407,7 @@ have an amortised $\mathcal{O}(n)$ instantiations for the whole checking
 process.
 
 \subsection{Reporting uncovered patterns}
+\label{ssec:report}
 
 The expansion function $\expand$ in \Cref{fig:gen} exists purely for presenting
 uncovered patterns to the user. It doesn't account for negative information,

@@ -16,6 +16,11 @@ main: lyg.lhs macros.tex
 	pdflatex $(REPL_FLAGS) lyg
 	pdflatex $(REPL_FLAGS) lyg
 
+# Fast, possibly incomplete rebuild. Mostly sufficient for quick rebuilds
+main_fast: lyg.lhs macros.tex
+	lhs2TeX --poly lyg.lhs >lyg.tex
+	pdflatex $(REPL_FLAGS) lyg
+
 # Just a standalone appendix.pdf
 appendix: lyg.lhs macros.tex appendix.lhs
 	lhs2TeX --poly appendix.lhs >appendix.tex
