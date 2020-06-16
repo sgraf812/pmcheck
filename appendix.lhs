@@ -75,7 +75,7 @@ without a \extension{COMPLETE} set.
   \justifies
     \inhabited{\nreft{\Gamma}{\Delta}}{x}
   \using
-    \inhabitedinst
+    \inhabitednt
   \endprooftree}
 \end{array}
 \]
@@ -101,7 +101,7 @@ without a \extension{COMPLETE} set.
 \end{figure}
 
 Newtypes have strange semantics. Here are three key examples that distinguish
-it from data types:
+them from data types:
 \begin{minipage}{\textwidth}
 \begin{minipage}[b]{0.33\textwidth}
 \centering
