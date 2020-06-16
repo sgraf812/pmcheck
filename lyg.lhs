@@ -2123,10 +2123,10 @@ them for the purposes of reporting warnings. Fixing that requires a bit of
 boring engineering.
 
 Another subtle point appears in rule $(\dagger)$ in \Cref{fig:desugar}: should
-we or should we not add a bang guard for pattern synonyms.  There is no way to
+we or should we not add a bang guard for pattern synonyms?  There is no way to
 know without breaking the abstraction offered by the syonym.  In effect, its
-strictness or otherwise is part of its client-visible semantics.  In our implementation
-we have (thus far) compromised, by assuming that all pattern synonyms are strict for the
+strictness or otherwise is part of its client-visible semantics.  In our implementation,
+we have (thus far) compromised by assuming that all pattern synonyms are strict for the
 purposes of coverage checking.
 
 \subsection{\extension{COMPLETE} pragmas}
