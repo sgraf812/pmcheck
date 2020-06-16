@@ -135,6 +135,10 @@
 % This is done by the `make appendix` target.
 %\appendixonly
 
+% Same thing for an extended version that includes the Appendix
+\def\extended{\maintrue{}\appendixtrue{}}
+%\extended
+
 \ifmain
 
 \begin{abstract}

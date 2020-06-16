@@ -8,6 +8,7 @@ REPL_FLAGS := -halt-on-error
 
 .PHONY: main
 
+# The main paper without appendix
 main: lyg.lhs macros.tex
 	lhs2TeX --poly lyg.lhs >lyg.tex
 	pdflatex $(REPL_FLAGS) lyg
@@ -15,10 +16,11 @@ main: lyg.lhs macros.tex
 	pdflatex $(REPL_FLAGS) lyg
 	pdflatex $(REPL_FLAGS) lyg
 
+# Just a standalone appendix.pdf
 appendix: lyg.lhs macros.tex appendix.lhs
 	lhs2TeX --poly appendix.lhs >appendix.tex
 	lhs2TeX --poly lyg.lhs | sed -e 's/^%\\appendixonly/\\appendixonly/g' >lyg.tex
-	pdflatex $(REPL_FLAGS) -jobname=appendix lyg.tex
+	pdflatex $(REPL_FLAGS) -jobname=appendix lyg
 
 diff:
 	pdflatex $(REPL_FLAGS) diff
@@ -26,13 +28,14 @@ diff:
 	pdflatex $(REPL_FLAGS) diff
 	pdflatex $(REPL_FLAGS) diff
 
+# Main paper including appendix
 extended:
-	lhs2TeX --poly appendix_ext.lhs >appendix_ext.tex
-	lhs2TeX --poly lyg_ext.lhs >lyg_ext.tex
-	pdflatex lyg_ext
+	lhs2TeX --poly appendix.lhs >appendix.tex
+	lhs2TeX --poly lyg.lhs | sed -e 's/^%\\extended/\\extended/g' >lyg.tex
+	pdflatex $(REPL_FLAGS) -jobname=lyg_ext lyg
 	bibtex   lyg_ext
-	pdflatex lyg_ext
-	pdflatex lyg_ext
+	pdflatex $(REPL_FLAGS) -jobname=lyg_ext lyg
+	pdflatex $(REPL_FLAGS) -jobname=lyg_ext lyg
 
 clean:
 	$(RM) *.dvi *.aux *.log *.bbl *.blg *.toc *.out *.fls *.haux *.fdb_latexmk *~
