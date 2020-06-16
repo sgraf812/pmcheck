@@ -931,7 +931,7 @@ advantages are:
 \ds(x, y) &=& \grdlet{y}{x} \\
 \ds(x, |_|) &=& \epsilon \\
 \ds(x, K \; pat_1\,...\,pat_n) &=& \grdbang{x}, \grdcon{K \; y_1\,...\,y_n}{x}, \ds(y_1, pat_1), ..., \ds(y_n, pat_n)
-   & y_i \, \text{fresh} \\
+   & y_i \, \text{fresh}\;(\dagger) \\
 \ds(x, y|@|pat) &=& \grdlet{y}{x}, \ds(y, pat) \\
 \ds(x, |!|pat) &=& \grdbang{x}, \ds(x, pat) \\
 \ds(x, expr \rightarrow pat) &=& \grdlet{|y|}{expr \; x}, \ds(y, pat)
@@ -983,7 +983,7 @@ $\vcenter{\hbox{\begin{forest}
   \end{forest}}}$
 for notational convenience.
 
-More formally, matching a guard tree may \emph{succeed} (with some bindings for
+More formally, matching a guard tree may \emph{succeed} (binding
 the variables bound in the tree), \emph{fail}, or \emph{diverge}.
 Referring to the syntax of guard trees in \Cref{fig:syn}, matching is
 defined as follows:
@@ -1039,6 +1039,14 @@ It desugars thus:
 Notice that the pattern guard |(Just x <- mx)| and the
 boolean guard |(x == y)| have both turned into the same constructor-matching
 construct in the guard tree.
+
+In equation $(\dagger)$ of \Cref{fig:desugar} we generate an explicit
+bang-guard $!x$ to reflect that fact that pattern matching against a data constructor
+requires evaluation.  However, Haskell's |newtype| declarations introduce data
+constructors that are \emph{not} strict, so their desugaring is just like $(\dagger)$ but
+with no $!x$ (see Appendix A).  From this point onwards, then, strictness is expressed \emph{only} through
+bang-guards $!x$, while constructor guards $\grdcon{|K a b|}{y}$ are not considered
+strict.
 
 In a way there is nothing very deep here, but it took us a surprisingly long
 time to come up with the language of guard trees.  We recommend it!
@@ -1506,43 +1514,65 @@ $\nreft{\Gamma}{\Delta}$. It is similar to a refinement type $\Theta =
 \item $\Delta$ is simply a conjunction of literals $\delta$; there are no disjunctions.
   Instead, disjunction reflects in the fact that $\normalise$ returns a \emph{set} of normalised refinement types.
 \end{itemize}
-Beyond these syntactic differences, we enforce the following semantic invariants on a $\nabla = \nreft{\Gamma}{\Delta}$:
+Beyond these syntactic differences, we enforce the following
+invariants on a $\nabla = \nreft{\Gamma}{\Delta}$:
 \begin{enumerate}
   \item[\inv{1}] \emph{Mutual compatibility}: No two constraints in $\Delta$
     should \emph{conflict} with each other, where $x \termeq \bot$ conflicts with
-    $x \ntermeq \bot$ and $x \termeq K \; \mathunderscore \; \mathunderscore$
-    conflicts with $x \ntermeq K$ for all $x$.
-  \item[\inv{2}] \emph{Triangular form}: A $x \termeq y$ constraint implies
-    absence of any other constraints mentioning |x| in its left-hand side.
-  \item[\inv{3}] \emph{Single solution}: There is at most one positive
-    constructor constraint $x \termeq \deltaconapp{K}{a}{y}$ for a given |x|.
-  \item[\inv{4}] \emph{Incompletely matched}: If $x{:}\tau \in \Gamma$ and $\tau$
+    $x \ntermeq \bot$, and $x \termeq K \; \mathunderscore \; \mathunderscore$
+    conflicts with $x \ntermeq K$, for all $x$.
+  \item[\inv{2}] \emph{Inhabitation}: If $x{:}\tau \in \Gamma$ and $\tau$
   reduces to a data type under type constraints in $\Delta$, there must be at
   least one constructor $K$ (or $\bot$) which $x$ can be instantiated to without
   contradicting \inv{1}; see \Cref{sec:inhabitation}.
+  \item[\inv{3}] \emph{Triangular form}: A $x \termeq y$ constraint implies
+    absence of any other constraints mentioning |x| in its left-hand side.
+  \item[\inv{4}] \emph{Single solution}: There is at most one positive
+    constructor constraint $x \termeq \deltaconapp{K}{a}{y}$ for a given |x|.
 \end{enumerate}
 \noindent
-It is often helpful to think of a $\Delta$ as a partial function from |x| to
-its \emph{solution}, informed by the single positive constraint $x \termeq
-\deltaconapp{K}{a}{y} \in \Delta$, if it exists. For example, $x \termeq
-|Nothing|$ can be understood as a function mapping |x| to |Nothing|. This
-reasoning is justified by \inv{3}. Under this view, $\Delta$ looks like a
-substitution. As we'll see in \Cref{sec:normalise}, this view is
-supported by a close correspondence with unification algorithms.
+Invariants \inv{1} and \inv{2} prevent $\Delta$ being self-contradictory,
+so that $\nabla$ (which denotes a set of values) is uninhabited.
+We use $\nabla = \false$ to represent an uninhabited refinement type.
+Invariants \inv{3} and \inv{4} require $\Delta$ to be in solved form,
+from which it is easy to ``read off' a value that inhabits it --- this
+reading-off step is performed by $\expand(\nabla)$ (\Cref{sec:expand}).
 
-\inv{2} is actually a condition on the represented substitution. Whenever we
-find out that $x \termeq y$, for example when matching a variable pattern |y|
-against a match variable |x|, we have to merge all the other constraints on |x|
-into |y|, and say that |y| is the representative of |x|'s equivalence class.
-This is so that every new constraint we record on |y| also affects |x| and vice
-versa. The process of finding the solution of |x| in $x \termeq y, y \termeq
-|Nothing|$ then entails \emph{walking} the substitution, because we have to look
-up constraints twice: The first lookup will find |x|'s representative |y|, the
-second lookup on |y| will then find the solution |Nothing|.
+The structure is directly analogous to the structure of the standard unification
+algorithm. In unification we start with a set of equalities between types
+(analogous to $\Theta$) and, by unification, normalise it to a substitution
+(analogous to $\nabla$).  That substition can itself be regarded as a set of
+equalities, but in a restricted form.  And indeed our normalisation algorithm
+(described in \Cref{sec:normalise}) is a form of generalised unification.
 
-We use $\Delta(x)$ to look up the representative of $x$ in $\Delta$ (see \Cref{fig:gen}).
-Therefore, we can assert that |x| has |Nothing| as a solution simply by writing $\Delta(x)
-\termeq |Nothing| \in \Delta$.
+Notice that we allow $\Delta$ to contain variable/variable equalities
+$x \termeq y$, providing a function $\Delta(x)$ (defined in
+\Cref{fig:gen}) that follows these indirections to find the
+``representative'' of $x$ in $\Delta$.  A perfectly viable alternative
+would be to omit such indirections from $\Delta$ and instead
+aggressively substitute them away.
+
+% It is often helpful to think of a $\Delta$ as a partial function from |x| to
+% its \emph{solution}, informed by the single positive constraint $x \termeq
+% \deltaconapp{K}{a}{y} \in \Delta$, if it exists. For example, $x \termeq
+% |Nothing|$ can be understood as a function mapping |x| to |Nothing|. This
+% reasoning is justified by \inv{4}. Under this view, $\Delta$ looks like a
+% substitution. As we'll see in \Cref{sec:normalise}, this view is
+% supported by a close correspondence with unification algorithms.
+%
+% \inv{3} is actually a condition on the represented substitution. Whenever we
+% find out that $x \termeq y$, for example when matching a variable pattern |y|
+% against a match variable |x|, we have to merge all the other constraints on |x|
+% into |y|, and say that |y| is the representative of |x|'s equivalence class.
+% This is so that every new constraint we record on |y| also affects |x| and vice
+% versa. The process of finding the solution of |x| in $x \termeq y, y \termeq
+% |Nothing|$ then entails \emph{walking} the substitution, because we have to look
+% up constraints twice: The first lookup will find |x|'s representative |y|, the
+% second lookup on |y| will then find the solution |Nothing|.
+%
+% We use $\Delta(x)$ to look up the representative of $x$ in $\Delta$ (see \Cref{fig:gen}).
+% Therefore, we can assert that |x| has |Nothing| as a solution simply by writing $\Delta(x)
+% \termeq |Nothing| \in \Delta$.
 
 \subsection{Expanding a normalised refinement type to a pattern} \label{sec:expand}
 
@@ -1550,7 +1580,7 @@ $\expand$xpanding a $\nabla$ to a pattern vector, by calling $\expand(\nabla)$ i
 is syntactically heavy, but straightforward.
 When there is a solution like $\Delta(x) \termeq |Just y|$
 in $\Delta$ for the head $x$ of the variable vector of interest, expand $y$ in
-addition to the rest of the vector and wrap it in a |Just|. Invariant \inv{3}
+addition to the rest of the vector and wrap it in a |Just|. Invariant \inv{4}
 guarantees that there is at most one such solution and $\expand$ is
 well-defined.
 
@@ -1671,7 +1701,7 @@ $\Delta(x) \termeq |Just u| \in \Delta$. Then $\!\adddelta\!$ operates on the
 transitively implied equality $|Just y| \termeq |Just u|$ by equating type and
 term variables with new constraints, \ie $|y| \termeq |u|$. The original
 constraint, although not conflicting, is not added to the normalised refinement
-type because of \inv{2}.
+type because of \inv{3}.
 
 If there is a solution involving a different constructor like $\Delta(x)
 \termeq |Nothing|$ or if there was a negative constructor constraint $\Delta(x)
@@ -1680,14 +1710,14 @@ existing solution. Otherwise, the constraint is compatible and is added to
 $\Delta$.
 
 Adding a negative constructor constraint $x \ntermeq Just$ is quite similar (equation (11)),
-except that we have to make sure that $x$ still satisfies \inv{4}, which is
+except that we have to make sure that $x$ still satisfies \inv{2}, which is
 checked by the $\inhabited{\nabla}{\Delta(x)}$ judgment (\cf \Cref{sec:test})
 in \Cref{fig:inh}. Handling positive and negative constraints involving $\bot$
 is analogous.
 
 Adding a type constraint $\gamma$ (equation (9)) entails calling out to the type checker to
 assert that the constraint is consistent with existing type constraints.
-Afterwards, we have to ensure \inv{4} is upheld for \emph{all} variables in the
+Afterwards, we have to ensure \inv{2} is upheld for \emph{all} variables in the
 domain of $\Gamma$, because the new type constraint could have rendered a type
 empty. To demonstrate why this is necessary, imagine we have $\nreft{x : a}{x
 \ntermeq \bot}$ and try to add $a \typeeq |Void|$. Although the type constraint
@@ -1699,7 +1729,7 @@ data type.
 Equation (14) of $\!\adddelta\!$ equates two variables ($x \termeq y$) by
 merging their equivalence classes. Consider the case where $x$ and $y$ aren't
 in the same equivalence class. Then $\Delta(y)$ is arbitrarily chosen to be the
-new representative of the merged equivalence class. To uphold \inv{2}, all
+new representative of the merged equivalence class. To uphold \inv{3}, all
 constraints mentioning $\Delta(x)$ have to be removed and renamed in terms of
 $\Delta(y)$ and then re-added to $\Delta$, one of which in turn might uncover a
 contradiction.
@@ -1830,9 +1860,9 @@ The process for adding a constraint to a normalised type above (which turned
 out to be a unification procedure in disguise) makes use of an
 \emph{inhabitation test} $\inhabited{\nabla}{x}$, depicted in \Cref{fig:inh}.
 This tests whether there are any values of $x$ that satisfy $\nabla$. If not,
-$\nabla$ does not uphold \inv{4}.
+$\nabla$ does not uphold \inv{2}.
 For example, the conjunction
-$x \ntermeq Just, x \ntermeq Nothing, x \ntermeq \bot$ does not satisfy \inv{4},
+$x \ntermeq Just, x \ntermeq Nothing, x \ntermeq \bot$ does not satisfy \inv{2},
 because no value of $x$ satisfies all those constraints.
 
 The \inhabitedbot judgment of $\inhabited{\nabla}{x}$ tries to instantiate $x$ to
@@ -1869,7 +1899,7 @@ that a variable is inhabited after $n$ such iterations (we have $n=100$ for
 list-like constructors and $n=1$ otherwise) and consider supplementing that
 with a simple termination analysis in the future.
 
-\subsubsection{A note on precision}
+\subsection{A note on precision}
 
 Using fuel to limit the number of inhabitation tests is one example
 where \lyg sacrifices a small amount of precision in its warnings. It is worth
@@ -1896,7 +1926,7 @@ three places where \lyg overapproximates:
     SMT-style reasoning (\Cref{ssec:comparison-with-structural}).
 \end{itemize}
 
-\section{Possible extensions} \label{sec:extensions}
+\section{Extensions} \label{sec:extensions}
 
 \lyg is well equipped to handle the fragment of Haskell it was designed to
 handle. But GHC (and other languages, for that matter) extends Haskell in
@@ -2052,30 +2082,23 @@ source syntax and IR syntax by adding the syntactic concept of a
 % be worth the trouble. Should we talk about that? It concerns the definition of
 % $\ds$, namely whether to add a $\grdbang{x}$ on the match var or not. Maybe a
 % footnote?}
-
+\noindent
 Assuming every definition encountered so far is changed to handle ConLikes $C$
-now instead of data constructors $K$, everything should work almost fine. Why
-then introduce the new syntactic variant in the first place? Consider
+instead of data constructors $K$, everything should work fine. So why
+introduce the new syntactic variant in the first place? Consider
 \begin{code}
 pattern P = ()
 pattern Q = ()
 n = case P of Q -> 1; P -> 2
 \end{code}
+\noindent
+If |P| and |Q| were data constructors, the first alternative of the
+|case| would be redundant, because |P| cannot match |Q|.  But pattern syonyms
+are quite different: a value produced by |P| might match a pattern |Q|, as indeed
+is the case in this example.
 
-Knowing that the definitions of |P| and |Q| completely overlap, we can see that
-the match on |Q| will cover all values that could reach |P|, so clearly |P| is
-redundant. A sound approximation to that would be not to warn at all. And
-that's reasonable, after all we established in \Cref{ssec:patsyn} that
-reasoning about pattern synonym definitions is undesirable.
-
-But equipped with long-distance information from the scrutinee expression, the
-checker would mark the \emph{first case alternative} as redundant, which
-clearly is unsound! Deleting the first alternative would change its semantics
-from returning 1 to returning 2. In general, we cannot assume that arbitrary
-pattern synonym definitions are disjoint, in stark contrast to data
-constructors.
-
-The solution is to tweak the clause of $\!\adddelta\!$ dealing with positive
+Our solution is a conservative one: we weaken the test that sends $\nabla$ to $\false$
+in the clause of $\!\adddelta\!$ dealing with positive
 ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
 \[
 \begin{array}{r@@{\,}c@@{\,}lcl}
@@ -2087,17 +2110,24 @@ ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
   \end{cases} \\
 \end{array}
 \]
-
-Where the suggestive notation $C \cap C' = \emptyset$ is only true if $C$ and
-$C'$ don't overlap, if both are data constructors, for example.
+\noindent
+where the suggestive notation $C \cap C' = \emptyset$ is only true iff $C$ and
+$C'$ are distinct data constructors.
 
 \sg{Omit this paragraph?}
 Note that the slight relaxation means that the constructed $\nabla$ might
-violate $\inv{3}$, specifically when $C \cap C' \not= \emptyset$. In practice
+violate $\inv{4}$, specifically when $C \cap C' \not= \emptyset$. In practice
 that condition only matters for the well-definedness of $\expand$, which in
 case of multiple solutions (\ie $x \termeq P, x\termeq Q$) has to commit to one
 them for the purposes of reporting warnings. Fixing that requires a bit of
 boring engineering.
+
+Another subtle point appears in rule $(\dagger)$ in \Cref{fig:desugar}: should
+we or should we not add a bang-guard for pattern synonyms.  There is no way to
+know without breaking the abstraction offered by the syonym.  In effect, its
+strictness or otherwise is part of its client-visible semantics.  In our implementation
+we have (thus far) compromised, by assuming that all pattern synonyms are strict for the
+purposes of coverage checking.
 
 \subsection{\extension{COMPLETE} pragmas}
 \label{ssec:complete}
