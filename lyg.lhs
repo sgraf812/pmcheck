@@ -125,11 +125,11 @@
 \ifdefined\MAIN
 
 \begin{abstract}
-One of a compiler's roles is to warn if a function defined by pattern matching
+A compiler should warn if a function defined by pattern matching
 does not cover its inputs---that is, if there are missing or redundant
 patterns. Generating such warnings accurately is difficult
-for modern languages due to the myriad of interacting language features
-when pattern matching. This is especially true in Haskell, a language with
+for modern languages due to the myriad of language features
+that interact with pattern matching. This is especially true in Haskell, a language with
 a complicated pattern language that is made even more complex by extensions
 offered by the Glasgow Haskell Compiler (GHC). Although GHC has spent a
 significant amount of effort towards improving its
@@ -216,8 +216,8 @@ raft of innovations that have become part of a modern programming language
 like Haskell, including: view patterns, pattern guards, pattern synonyms,
 overloaded literals, bang patterns, lazy patterns, as-patterns, strict data constructors,
 empty case expressions, and long-distance effects (\Cref{sec:extensions}).
-Particularly tricky are GADTs \cite{recdatac}, where the \emph{type} of a match can determine
-what \emph{values} can possibly appear; and local type-equality constraints brought into
+Particularly tricky are: \emph{GADTs} where the \emph{type} of a match can determine
+what \emph{values} can possibly appear \cite{recdatac}; and \emph{local type-equality constraints} brought into
 scope by pattern matching \cite{outsideinx}.
 
 % If coverage checking catches mistakes in pattern matches, then who checks for
@@ -271,7 +271,7 @@ performance pitfalls. We make the following contributions:
   We discuss how to optimize the performance of \lyg (\Cref{sec:impl}) and
   implement a proof of concept in GHC (\Cref{sec:eval}).
 \end{itemize}
-
+\noindent
 We discuss the wealth of related work in \Cref{sec:related}.
 
 % Contributions from our call:
@@ -342,7 +342,7 @@ The first GRHS has a \emph{boolean guard}, |(c1 == 'a')|, that succeeds
 if the expression in the guard returns |True|. The second GRHS has a \emph{pattern
 guard}, |('b' <- c1)|, that succeeds if the pattern in the guard
 successfully matches.
-The next line illustrates that a GRHS may have multiple guards,
+The next line illustrates that each GRHS may have multiple guards,
 and that guards include |let| bindings, such as |let c1' = c2|.
 The fourth GRHS uses |otherwise|, which is simply defined as |True|.
 
@@ -358,13 +358,13 @@ signum x  | x > 0   = 1
           | x == 0  = 0
           | x < 0   = -1
 \end{code}
-
+\noindent
 Intuitively, |signum| is exhaustive since the combination of |(>)|, |(==)|, and
-|(<)| covers all possible |Int|s. This is much harder for a machine to check,
-however, since that would require knowledge about the properties of |Int|
+|(<)| covers all possible |Int|s. This is hard for a machine to check,
+because doing so requires knowledge about the properties of |Int|
 inequalities. Clearly, coverage checking for guards is
 undecidable in general. However, while we cannot accurately check \emph{all} uses of guards,
-we can at least give decent warnings for some common use-cases.
+we can at least give decent warnings for some common cases.
 For instance, take the following functions:
 \begin{minipage}{\textwidth}
 \begin{minipage}{0.33\textwidth}
@@ -525,8 +525,8 @@ length (Cons _ xs) = 1 + length xs
 \end{code}
 \end{minipage}
 \end{minipage}
-
-The pattern synonym |Nil| matches everywhere the view pattern
+\noindent
+The pattern synonym |Nil| matches precisely when the view pattern
 |Text.null -> True| would match, and similarly for |Cons|.
 
 How should a coverage checker handle pattern synonyms? One idea is to simply ``look
@@ -580,9 +580,10 @@ flow to the second equation, so it is redundant and can be deleted.
 \subsubsection{Redundancy versus inaccessibility}
 \label{sssec:inaccessibility}
 
-When reporting unreachable cases, we must distinguish between \emph{redundant}
-and \emph{inaccessible} cases. Redundant cases can be removed from a function
-without changing its semantics, whereas inaccessible cases have semantic importance.
+When reporting unreachable equations, we must distinguish between \emph{redundant}
+and \emph{inaccessible} cases. A redundant equation can be removed from a function
+without changing its semantics, whereas an inaccessible equation cannot, even
+though its right-hand side is unreachable.
 The examples below illustrate this:
 
 \begin{minipage}{\textwidth}
@@ -605,15 +606,15 @@ u' _              = 3
 \end{code}
 \end{minipage}
 \end{minipage}
-
+\noindent
 Within |u|, the equations that return |1| and |3| could be deleted without
-changing the semantics of |u|, so they are classified as redundant. Within |u'|,
+changing the semantics of |u|, so they are classified as \emph{redundant}. Within |u'|,
 one can never reach the right-hand sides of the equations that return |1| and |2|,
 but they cannot be removed so easily. Using the definition above,
 $|u'|~\bot~|=|~\bot$, but if the first two equations were removed, then
 $|u'|~\bot~|= 3|$ because the argument is no longer forced by the |()|
 pattern. As a result, \lyg warns that the first two equations in |u'| are
-inaccessible, which suggests to the programmer that |u'| might benefit from a
+\emph{inaccessible}, which suggests to the programmer that |u'| might benefit from a
 refactor to avoid this (e.g., |u' () = 3|).
 
 Observe that |u| and |u'| have completely different warnings, but the
@@ -626,10 +627,11 @@ reported many bugs of this sort (\Cref{sec:ghc-issues}).
 
 \subsubsection{Bang patterns}
 
-Strict fields are one mechanism for adding extra strictness in ordinary Haskell, but
-GHC adds another in the form of \emph{bang patterns}. A bang pattern
-such as |!pat| indicates that matching a value $v$ against |pat| always evaluates $v$ to
-weak-head normal form (WHNF). Here is a variant of $v$, this time using the standard, lazy |Maybe| data type:
+Strict data-constructor fields are one mechanism for adding extra strictness in ordinary Haskell, but
+GHC adds another in the form of \emph{bang patterns}. When a value |v| is matched
+against a bang pattern |!pat|, first |v| is evaluated to weak-head normal form (WHNF),
+a step that might diverge, and then |v| is matched against |pat|.
+Here is a variant of $v$, this time using the standard, lazy |Maybe| data type:
 
 \begin{code}
 v' :: Maybe Void -> Int
@@ -673,7 +675,7 @@ g2 T2 T2 = 1
 \end{code}
 \end{minipage}
 \end{minipage}
-
+\noindent
 When |g1| matches against |T1|, the |b| in the type |T Int b| is known to be a |Bool|,
 which is why matching the second argument against |False| or |True| will typecheck.
 Phrased differently, matching against
@@ -779,6 +781,14 @@ Stardust \cite{dunfieldthesis}.
 \end{array}
 \]
 
+\[ \textbf{Clause tree syntax} \]
+\[
+\begin{array}{rcll}
+  t \in \Gdt &\Coloneqq& \gdtrhs{k} \mid \gdtseq{t_1}{t_2} \mid \gdtguard{g}{t}         \\
+  u \in \Ant &\Coloneqq& \antrhs{\Theta}{k} \mid \antseq{u_1}{u_2} \mid \antbang{\Theta}{u} \\
+\end{array}
+\]
+
 \[ \textbf{Refinement type syntax} \]
 \[
 \begin{array}{rcll}
@@ -786,14 +796,6 @@ Stardust \cite{dunfieldthesis}.
   \varphi &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Literals} \\
   \Phi &\Coloneqq& \varphi \mid \Phi \wedge \Phi \mid \Phi \vee \Phi & \text{Formula} \\
   \Theta &\Coloneqq& \reft{\Gamma}{\Phi} & \text{Refinement type} \\
-\end{array}
-\]
-
-\[ \textbf{Clause tree syntax} \]
-\[
-\begin{array}{rcll}
-  t \in \Gdt &\Coloneqq& \gdtrhs{n} \mid \gdtseq{t_1}{t_2} \mid \gdtguard{g}{t}         \\
-  u \in \Ant &\Coloneqq& \antrhs{\Theta}{n} \mid \antseq{u_1}{u_2} \mid \antbang{\Theta}{u} \\
 \end{array}
 \]
 
@@ -833,6 +835,10 @@ advantages are:
 
 \begin{itemize}
   \item
+    Achieving modularity by clearly separating the source syntax (\Cref{fig:srcsyn})
+    from the intermediate language (\Cref{fig:syn}).
+
+  \item
     Correctly accounting for strictness in identifying redundant and inaccessible
     code (\Cref{ssec:strict-fields}).
 
@@ -850,10 +856,6 @@ advantages are:
     sets properly (\Cref{ssec:residual-complete}).
 
   \item
-    Achieving modularity by clearly separating the source syntax (\Cref{fig:srcsyn})
-    from the intermediate language (\Cref{fig:syn}).
-
-  \item
     Fixing various bugs present in \gmtm, both in the paper \cite{gadtpm} and
     in GHC's implementation thereof (\Cref{sec:ghc-issues}).
 
@@ -864,9 +866,12 @@ advantages are:
 
 \begin{figure}
 
-\[ \ruleform{ \ds(defn) = \Gdt, \ds(clause) = \Gdt, \ds(grhs) = \Gdt } \]
-\[ \ruleform{ \ds(guard) = \overline{\Grd}, \ds(x, pat) = \overline{\Grd} } \]
+  \[ \ruleform{\begin{array}{c}
+      \ds(\mathit{defn}) = \Gdt,\quad \ds(clause) = \Gdt,\quad \ds(grhs) = \Gdt \\
+      k_{rhs} \; \text{is the index of the right hand side}\; rhs
+      \end{array}} \]
 \[
+\begin{array}{l}
 \begin{array}{lcl}
 
 \ds(clause_1\,...\,clause_n) &=&
@@ -877,7 +882,7 @@ advantages are:
     [ [{$\ds(clause_1)$}] [...] [{$\ds(clause_n)$}] ] ]
   \end{forest}} \\
 \\
-\ds(f \; pat_1\,...\,pat_n \; \mathtt{=} \; expr) &=&
+\ds(f \; pat_1\,...\,pat_n \; \mathtt{=} \; rhs) &=&
   \raisebox{3px}{\begin{forest}
     baseline,
     grdtree,
@@ -890,24 +895,31 @@ advantages are:
     grhs/.style={tier=rhs,edge={-}},
     [ [{$\ds(x_1, pat_1)\,...\,\ds(x_n, pat_n)$} [{$\ds(grhs_1)$}] [...] [{$\ds(grhs_m)$}] ] ]
   \end{forest}} \\
-\\
-\ds(\mathtt{\mid} \; guard_1\,...\,guard_n \; \mathtt{=} \; expr) &=&
+\ds(\mathtt{\mid} \; guard_1\,...\,guard_n \; \mathtt{=} \; rhs) &=&
   \raisebox{3px}{\begin{forest}
     baseline,
     grdtree,
-    [ [{$\ds(guard_1)\,...\,\ds(guard_n)$} [{$k$}] ] ]
+    [ [{$\ds(guard_1)\,...\,\ds(guard_n)$} [{$k_{rhs}$}] ] ]
   \end{forest}} \\
-\\
-\ds(pat \leftarrow expr) &=& \grdlet{x}{expr}, \ds(x, pat) \\
-\ds(expr) &=& \grdlet{y}{expr}, \ds(y, |True|) \\
+\end{array} \\ \\
+\multicolumn{1}{c}{\ruleform{ \ds(guard) = \overline{\Grd},\quad \ds(x, pat) = \overline{\Grd} }} \\[2mm]
+\begin{array}{lcl@@{\hspace{5mm}}l}
+\ds(pat \leftarrow expr) &=& \grdlet{x}{expr}, \ds(x, pat)
+   & x \, \text{fresh} \\
+\ds(expr) &=& \grdlet{y}{expr}, \ds(y, |True|)
+   & y \, \text{fresh} \\
 \ds(\mathtt{let} \; x \; \mathtt{=} \; expr) &=& \grdlet{x}{expr} \\
-\\
+\end{array} \\ \\
+\begin{array}{lcl@@{\hspace{5mm}}l}
 \ds(x, y) &=& \grdlet{y}{x} \\
 \ds(x, |_|) &=& \epsilon \\
-\ds(x, K \; pat_1\,...\,pat_n) &=& \grdbang{x}, \grdcon{K \; y_1\,...\,y_n}{x}, \ds(y_1, pat_1), ..., \ds(y_n, pat_n) \\
+\ds(x, K \; pat_1\,...\,pat_n) &=& \grdbang{x}, \grdcon{K \; y_1\,...\,y_n}{x}, \ds(y_1, pat_1), ..., \ds(y_n, pat_n)
+   & y_i \, \text{fresh} \\
 \ds(x, y|@|pat) &=& \grdlet{y}{x}, \ds(y, pat) \\
 \ds(x, |!|pat) &=& \grdbang{x}, \ds(x, pat) \\
-\ds(x, expr \rightarrow pat) &=& \grdlet{|y|}{expr \; x}, \ds(y, pat) \\
+\ds(x, expr \rightarrow pat) &=& \grdlet{|y|}{expr \; x}, \ds(y, pat)
+   & y \, \text{fresh}
+\end{array}
 \end{array}
 \]
 \caption{$\ds$esugaring from source language to $\Gdt$}
@@ -944,7 +956,7 @@ This desugars to the following guard tree (where the $x_i$ represent |f|'s argum
 \end{forest}
 \\
 The first line says ``evaluate $x_1$; then match $x_1$ against $Just~ t_1$;
-then evaluate $t_1$; then match $t_1$ against $(t_2,t_3)$; and so on''. If any
+then evaluate $t_1$; then match $t_1$ against $(t_2,t_3)$'' and so on. If any
 of those matches fail, we fall through into the second line. Note that we write
 $\gdtguard{g_1, ..., g_n}{t}$ instead of
 $\vcenter{\hbox{\begin{forest}
@@ -955,10 +967,12 @@ $\vcenter{\hbox{\begin{forest}
 for notational convenience.
 
 More formally, matching a guard tree may \emph{succeed} (with some bindings for
-the variables bound in the tree), \emph{fail}, or \emph{diverge}.  Matching is
+the variables bound in the tree), \emph{fail}, or \emph{diverge}.
+Referring to the syntax of guard trees in \Cref{fig:syn}, matching is
 defined as follows:
 \begin{itemize}
-\item Matching a guard tree $\gdtrhs{n}$ succeeds.
+\item Matching a guard tree $\gdtrhs{k}$ succeeds, and selects the $k$'th right
+  hand side of the pattern match group.
 \item Matching a guard tree $\gdtseq{t_1}{t_2}$ means matching against $t_1$;
   if that succeeds, the overall match succeeds; if not, match against $t_2$.
 \item Matching a guard tree $\gdtguard{\grdbang{x}}{t}$ evaluates $x$;
@@ -1129,13 +1143,12 @@ time to come up with the language of guard trees.  We recommend it!
 \label{fig:check}
 \end{figure}
 
-In the next step, we transform the guard tree into an \emph{annotated tree}, $\Ant$, and
+The next step in \Cref{fig:pipeline} is to transform the guard tree into an \emph{annotated tree}, $\Ant$, and
 an \emph{uncovered set}, $\Theta$.
-
 Taking the latter first, the uncovered set describes all the input
 values of the match that are not covered by the match.  We use the
 language of \emph{refinement types} to describe this set (see \Cref{fig:syn}).
-The refinement type $\Theta = \reft{x_1{:}\tau_1, \ldots, x_n{:}\tau_n}{\Phi}$
+A refinement type $\Theta = \reft{x_1{:}\tau_1, \ldots, x_n{:}\tau_n}{\Phi}$
 denotes the vector of values $x_1 \ldots x_n$ that satisfy the predicate $\Phi$.
 For example:
 $$
@@ -1147,12 +1160,12 @@ $$
 \end{array}
 $$
 The syntax of $\Phi$ is given in \Cref{fig:syn}. It consists of a collection
-of literals $\varphi$, combined with conjunction and disjunction.
+of \emph{literals} $\varphi$, combined with conjunction and disjunction.
 Unconventionally, however, a literal may bind one or more variables, and those
 bindings are in scope in conjunctions to the right. This can readily be formalised
 by giving a type system for $\Phi$, but we omit that here. \simon{It would be nice to add it.}
 The literal $\true$ means ``true'', as illustrated above; while
-$\false$ means ``false'', so that $\reft{\Gamma}{\false}$ denotes $\emptyset$.
+$\false$ means ``false'', so that $\reft{\Gamma}{\false}$ denotes the empty set $\emptyset$.
 
 The uncovered set function $\unc(\Theta, t)$, defined in \Cref{fig:check},
 computes a refinement type describing the values in $\Theta$ that are not
@@ -1167,10 +1180,10 @@ finds refinements describing values that \emph{are} matched by a guard tree, or
 that cause matching to diverge. It does so by producing an \emph{annotated
 tree} (hence $\ann$nnotate), whose syntax is given in \Cref{fig:syn}. An
 annotated tree has the same general structure as the guard tree from whence it
-came: in particular the top-to-bottom compositions ``;'' are in the same
-places.  But in an annotated tree, each \texttt{Rhs} leaf is annotated with a
-refinement type describing the input values that will lead to that right-hand
-side; and each $\antbang{}{\hspace{-0.6em}}$ node is annotated with a
+came: in particular the top-to-bottom compositions $\gdtseq{}{}$ are in the same
+places.  But in an annotated tree, each $\antrhs{\Theta}{k}$ leaf is annotated with a
+refinement type $\Theta$ describing the input values that will lead to that right-hand
+side; and each $\antbang{\Theta}{\hspace{-0.6em}}$ node is annotated with a
 refinement type that describes the input values on which matching will diverge.
 Once again, $\ann$ can be defined by a simple recursive descent over the guard
 tree (\Cref{fig:check}), but note that the second equation uses $\unc$ as an
@@ -1380,7 +1393,7 @@ emphasises clarity over efficiency.}.
 \label{fig:gen}
 \end{figure}
 
-The final step is to report errors.  First, let us focus on reporting
+The final step in \Cref{fig:pipeline} is to report errors.  First, let us focus on reporting
 missing equations.  Consider the following definition
 \begin{code}
   data T = A | B | C
@@ -1393,8 +1406,8 @@ $$
 \Theta_f = \reft{ x{:}|Maybe T| }
   { x \ntermeq \bot \wedge (x \ntermeq |Just| \vee (\ctcon{|Just y|}{x} \wedge |y| \ntermeq \bot \wedge (|y| \ntermeq |A| \vee (\ctcon{|A|}{|y|} \wedge \false)))) }
 $$
-
-But this is not very helpful to report to the user. It would be far preferable
+\noindent
+This is not very helpful to report to the user. It would be far preferable
 to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, something like this:
 \begin{Verbatim}
     Missing equations for function 'f':
@@ -1402,15 +1415,17 @@ to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, some
       f (Just B) = ...
       f (Just C) = ...
 \end{Verbatim}
-$\generate$enerating these inhabitants is done by $\generate(\Theta)$ in \Cref{fig:gen},
+$\generate$enerating these inhabitants is the main challenge.
+It is done by $\generate(\Theta)$ in \Cref{fig:gen},
 which we discuss next in \Cref{sec:generate}.
-But before doing so, notice that the very same function $\generate$ allows
-us to report accessible, inaccessible, and redundant GRHSs.  The function $\red$,
-also defined in \Cref{fig:gen} does exactly this, returning a
-triple of (accessible, inaccessible, $\red$edundant) GRHSs:
+But first notice that, by calling the very same function $\generate$,
+we can readily define the function $\red$, which reports a triple
+of (accessible, inaccessible, $\red$edundant) GRHSs,
+as needed in our overall pipeline (\Cref{fig:pipeline}).
+$\red$ is defined in \Cref{fig:gen}:
 \begin{itemize}
-\item Having reached a leaf $\antrhs{\Theta}{n}$, if the refinement type $\Theta$ is
-  uninhabited ($\generate(\Theta) = \emptyset$), then no input values can cause execution to reach this right-hand side,
+\item Having reached a leaf $\antrhs{\Theta}{k}$, if the refinement type $\Theta$ is
+  uninhabited ($\generate(\Theta) = \emptyset$), then no input values can cause execution to reach right-hand side $k$,
   and it is redundant.
 \item Having reached a node $\antbang{\Theta}{t}$, if $\Theta$ is inhabited there is a possibility of
   divergence. Now suppose that all the GRHSs in $t$ are redundant.  Then we should pick the first
@@ -1469,7 +1484,7 @@ We do this in two steps:
 \end{itemize}
 A normalised refinement type $\nabla$ is either empty ($\false$) or of the form
 $\nreft{\Gamma}{\Delta}$. It is similar to a refinement type $\Theta =
-\reft{\Gamma}{\Phi}$, but is in a much more restricted form:
+\reft{\Gamma}{\Phi}$, but it takes a much more restricted form (\Cref{fig:gen}):
 \begin{itemize}
 \item $\Delta$ is simply a conjunction of literals $\delta$; there are no disjunctions.
   Instead, disjunction reflects in the fact that $\construct$ returns a \emph{set} of normalised refinement types.
@@ -1617,8 +1632,9 @@ is largely a matter of repeatedly adding a literal $\varphi$ to a
 normalised type, thus $\nabla \addphi \varphi$.  This function
 is where all the work is done, in \Cref{fig:add}.
 %
-It does so by expressing a $\varphi$ in terms of once again simpler constraints
-$\delta$ and calling out to $\!\adddelta\!$. Specifically, in Equation (3)
+It does so by expressing a literal $\varphi$ in terms of simpler constraints
+$\delta$, and calling out to $\!\adddelta\!$ to add the simpler constraints to $\nabla$.
+Specifically, in Equation (3)
 a pattern guard extends the context and
 adds suitable type constraints and a positive constructor constraint
 arising from the binding. Equation (4) of $\!\addphi\!$ performs
