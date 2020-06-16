@@ -1361,21 +1361,21 @@ emphasises clarity over efficiency.}.
 \[ \ruleform{ \generate(\Theta) = \mathcal{P}(\overline{p}) } \]
 \[
 \begin{array}{c}
-   \generate(\reft{\Gamma}{\Phi}) = \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \construct(\nreft{\Gamma}{\varnothing}, \Phi) \right\}
+   \generate(\reft{\Gamma}{\Phi}) = \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \normalise(\nreft{\Gamma}{\varnothing}, \Phi) \right\}
 \end{array}
 \]
 
-\[ \textbf{$\construct$onstruct inhabited $\nabla$s from $\Phi$} \]
-\[ \ruleform{ \construct(\nabla, \Phi) = \mathcal{P}(\nabla) } \]
+\[ \textbf{$\normalise$ormalise $\Phi$ into $\nabla$s} \]
+\[ \ruleform{ \normalise(\nabla, \Phi) = \mathcal{P}(\nabla) } \]
 \[
 \begin{array}{lcl}
 
-  \construct(\nabla, \varphi) &=& \begin{cases}
+  \normalise(\nabla, \varphi) &=& \begin{cases}
     \left\{ \nreft{\Gamma'}{\Delta'} \right\} & \text{where $\nreft{\Gamma'}{\Delta'} = \nabla \addphi \varphi$} \\
     \emptyset & \text{otherwise} \\
   \end{cases} \\
-  \construct(\nabla, \Phi_1 \wedge \Phi_2) &=& \bigcup \left\{ \construct(\nabla', \Phi_2) \mid \nabla' \in \construct(\nabla, \Phi_1) \right\} \\
-  \construct(\nabla, \Phi_1 \vee \Phi_2) &=& \construct(\nabla, \Phi_1) \cup \construct(\nabla, \Phi_2)
+  \normalise(\nabla, \Phi_1 \wedge \Phi_2) &=& \bigcup \left\{ \normalise(\nabla', \Phi_2) \mid \nabla' \in \normalise(\nabla, \Phi_1) \right\} \\
+  \normalise(\nabla, \Phi_1 \vee \Phi_2) &=& \normalise(\nabla, \Phi_1) \cup \normalise(\nabla, \Phi_2)
 
 \end{array}
 \]
@@ -1495,7 +1495,7 @@ that give the shape of values that inhabit $\Theta$.
 We do this in two steps:
 \begin{itemize}
 \item Flatten $\Theta$ into a set of \emph{normalised refinement types} $\nabla$,
-  by the call $\construct(\nreft{\Gamma}{\varnothing}, \Phi)$; see \Cref{sec:normalise}.
+  by the call $\normalise(\nreft{\Gamma}{\varnothing}, \Phi)$; see \Cref{sec:normalise}.
 \item For each such $\nabla$, expand $\Gamma$ into a list of patterns, by the call
   $\expand(\nabla, \mathsf{dom}(\Gamma))$; see \Cref{sec:expand}.
 \end{itemize}
@@ -1504,7 +1504,7 @@ $\nreft{\Gamma}{\Delta}$. It is similar to a refinement type $\Theta =
 \reft{\Gamma}{\Phi}$, but it takes a much more restricted form (\Cref{fig:gen}):
 \begin{itemize}
 \item $\Delta$ is simply a conjunction of literals $\delta$; there are no disjunctions.
-  Instead, disjunction reflects in the fact that $\construct$ returns a \emph{set} of normalised refinement types.
+  Instead, disjunction reflects in the fact that $\normalise$ returns a \emph{set} of normalised refinement types.
 \end{itemize}
 Beyond these syntactic differences, we enforce the following semantic invariants on a $\nabla = \nreft{\Gamma}{\Delta}$:
 \begin{enumerate}
@@ -1644,7 +1644,7 @@ well-defined.
 \label{fig:add}
 \end{figure}
 
-Normalisation, carried out by $\construct$ in \Cref{fig:gen},
+Normalisation, carried out by $\normalise$ in \Cref{fig:gen},
 is largely a matter of repeatedly adding a literal $\varphi$ to a
 normalised type, thus $\nabla \addphi \varphi$.  This function
 is where all the work is done, in \Cref{fig:add}.
@@ -2225,7 +2225,7 @@ predicate in the worst case and for the time to prove it empty!
 What we really want is to summarise a $\Theta$ into a more compact canonical
 form before doing these kinds of \emph{splits}. But that's exactly what
 $\nabla$ is! Therefore, in our implementation we don't pass around
-and annotate refinement types, but the result of calling $\construct$ on them
+and annotate refinement types, but the result of calling $\normalise$ on them
 directly.
 
 You can see the resulting definition in \Cref{fig:fastcheck}. The readability
