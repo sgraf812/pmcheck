@@ -297,7 +297,7 @@ We discuss the wealth of related work in \Cref{sec:related}.
 %   \begin{itemize}
 %     \item Strictness, including bang patterns, data structures with strict fields.
 % \item 	COMPLETE pragmas
-% \item	Newtype pattern matching
+% \item	newtype pattern matching
 % \item	..anything else?
 % \item	Less syntactic; robust to mixing pattern guards and syntax pattern matching and view patterns
 % \end{itemize}
