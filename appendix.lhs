@@ -108,52 +108,52 @@ them from data types:
 \centering
 \begin{code}
 newtype N a = N a
-f :: N Void -> Bool -> Int
-f _      True   = 1
-f (N _)  True   = 2
-f !_     True   = 3
-\end{code}
-\end{minipage}%
-\begin{minipage}[b]{0.33\textwidth}
-\centering
-\begin{code}
-g1 :: N () -> Bool -> Int
-g1 !!(N _)   True  = 1
-g1   (N !_)  True  = 2
-g1       _   _     = 3
+g1 :: N Void -> Bool -> Int
+g1 _      True   = 1
+g1 (N _)  True   = 2
+g1 !_     True   = 3
 \end{code}
 \end{minipage}%
 \begin{minipage}[b]{0.33\textwidth}
 \centering
 \begin{code}
 g2 :: N () -> Bool -> Int
-g2   (N !_)  True  = 1
-g2 !!(N _)   True  = 2
+g2 !!(N _)   True  = 1
+g2   (N !_)  True  = 2
 g2       _   _     = 3
+\end{code}
+\end{minipage}%
+\begin{minipage}[b]{0.33\textwidth}
+\centering
+\begin{code}
+g3 :: N () -> Bool -> Int
+g3   (N !_)  True  = 1
+g3 !!(N _)   True  = 2
+g3       _   _     = 3
 \end{code}
 \end{minipage}
 \end{minipage}
 
-The definition of |f| is subtle. Contrary to the situation with data
+The definition of |g1| is subtle. Contrary to the situation with data
 constructors, the second GRHS is \emph{redundant}: The pattern match on the
 newtype constructor is a no-op. Conversely, the bang pattern in the third GRHS
 forces not only the newtype constructor, but also its wrapped thing. That could
-lead to divergence for a call site like |f bot False|, so the third GRHS is
+lead to divergence for a call site like |g1 bot False|, so the third GRHS is
 \emph{inaccessible} (because every value it could cover was already covered by
 the first GRHS), but not redundant. A perhaps surprising consequence is that
-the definition of |f| is exhaustive, because after |N Void| was deprived of its
+the definition of |g1| is exhaustive, because after |N Void| was deprived of its
 sole inhabitant $\bot \equiv N\,\bot$ by the third GRHS, there is nothing left
 to match on.
 
 \Cref{fig:newtypes} outlines a solution (based on that for pattern synonyms for
-brevity) that handles |f| correctly. The idea is to treat newtype pattern
+brevity) that handles |g1| correctly. The idea is to treat newtype pattern
 matches lazily (so compared to data constructor matches, $\ds$ omits the
 $\grdbang{x}$). The other significant change is to the $\inhabited{}{}$
 judgment form, where we introduce a new rule \inhabitednt that is specific to
 newtypes, which can no longer be proven inhabited by either \inhabitedinst or
 \inhabitedbot.
 
-But |g1| crushes this simple hack. We would mark its second GRHS as
+But |g2| crushes this simple hack. We would mark its second GRHS as
 inaccessible when it is clearly redundant, because the $x \ntermeq \bot$
 constraint on the match variable |x| wasn't propagated to the wrapped |()|.
 The inner bang pattern has nothing to evaluate.
@@ -164,7 +164,7 @@ changes to $\adddelta$.}
 We counter that with another refinement: We just add $|x| \termeq N y$ and $|y|
 \ntermeq \bot$ constraints whenever we add $|x| \ntermeq \bot$ constraints when
 we know that |x| is a newtype with constructor |N| (similarly for $|x| \termeq
-\bot$). Both |g1| and |g2| will be handled correctly.
+\bot$). Both |g2| and |g3| will be handled correctly.
 
 \sg{Needless to say, we won't propagate $\bot$ constraints when we only find
 out (by additional type info) that something is a newtype \emph{after} adding
