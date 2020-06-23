@@ -114,7 +114,9 @@ using the ``data constructor'' |MkNT|, either as in a term or in a pattern.
 To a first approximation, then, programmers interact with a newtype
 as if it was a data type with a single constructor with a single field.
 But their pattern-matching semantics is different!
-Here are three key examples that distinguish newtypes from data types:
+Here are three key examples that distinguish newtypes from data types.
+Functions |g1|,|g2|,|g3| match on a \emph{newtype} |N|, while functions
+|h1|,|h2|,|h3| match on a \emph{data type} |D|:
 
 \begin{minipage}{\textwidth}
 \begin{minipage}[b]{0.33\textwidth}
@@ -123,8 +125,8 @@ Here are three key examples that distinguish newtypes from data types:
 newtype N a = MkN a
 g1 :: N Void -> Bool -> Int
 g1 _        True   = 1
-g1 (MkN _)  True   = 2
-g1 !_       True   = 3
+g1 (MkN _)  True   = 2  -- R
+g1 !_       True   = 3  -- I
 \end{code}
 \end{minipage}%
 \begin{minipage}[b]{0.33\textwidth}
@@ -132,7 +134,7 @@ g1 !_       True   = 3
 \begin{code}
 g2 :: N () -> Bool -> Int
 g2 !!(MkN _)   True  = 1
-g2   (MkN !_)  True  = 2
+g2   (MkN !_)  True  = 2  -- R
 g2         _   _     = 3
 \end{code}
 \end{minipage}%
@@ -141,18 +143,18 @@ g2         _   _     = 3
 \begin{code}
 g3 :: N () -> Bool -> Int
 g3   (MkN !_)  True  = 1
-g3 !!(MkN _)   True  = 2
+g3 !!(MkN _)   True  = 2  -- R
 g3       _     _     = 3
 \end{code}
 \end{minipage}
 \begin{minipage}[b]{0.33\textwidth}
 \centering
 \begin{code}
-newtype D a = MkD a
+data D a = MkD a
 h1 :: D Void -> Bool -> Int
 h1 _        True   = 1
-h1 (MkD _)  True   = 2
-h1 !_       True   = 3
+h1 (MkD _)  True   = 2  -- I
+h1 !_       True   = 3  -- R
 \end{code}
 \end{minipage}%
 \begin{minipage}[b]{0.33\textwidth}
@@ -160,7 +162,7 @@ h1 !_       True   = 3
 \begin{code}
 h2 :: D () -> Bool -> Int
 h2 !!(MkD _)   True  = 1
-h2   (MkD !_)  True  = 2
+h2   (MkD !_)  True  = 2  -- I
 h2         _   _     = 3
 \end{code}
 \end{minipage}%
@@ -169,22 +171,26 @@ h2         _   _     = 3
 \begin{code}
 h3 :: D () -> Bool -> Int
 h3   (MkD !_)  True  = 1
-h3 !!(MkD _)   True  = 2
+h3 !!(MkD _)   True  = 2  -- R
 h3       _     _     = 3
 \end{code}
 \end{minipage}
 \end{minipage}
-
-The definition of |g1| is subtle. Contrary to the situation with data
-constructors, the second GRHS is \emph{redundant}: The pattern match on the
-newtype constructor is a no-op. Conversely, the bang pattern in the third GRHS
-forces not only the newtype constructor, but also its wrapped thing. That could
-lead to divergence for a call site like |g1 bot False|, so the third GRHS is
-\emph{inaccessible} (because every value it could cover was already covered by
-the first GRHS), but not redundant. A perhaps surprising consequence is that
+\noindent
+If the first equation of |h1| fails to match (because the second argument is |False|),
+the second equation may diverge when matching against |(MkD _)|,
+or may fail (because of the |False|), so the equation is inaccessible (marked I).
+The third equation is redundant (marked R).
+But for a newtype, the second equation of |g1| will not evaluate the argument
+when matching against |(MkN _)|, and hence is redundant (R).
+The third equation will evaluate the first argument, wihch is surely bottom,
+so matching will diverge and the equation is inaccessible (I).
+A perhaps surprising consequence is that
 the definition of |g1| is exhaustive, because after |N Void| was deprived of its
 sole inhabitant $\bot \equiv MkN\,\bot$ by the third GRHS, there is nothing left
 to match on.
+
+Similar subtle reasoning applies to |g2|/|h2| and |g3|/|h3|.
 
 \Cref{fig:newtypes} outlines a solution (based on that for pattern synonyms for
 brevity) that handles |g1| correctly. The idea is to treat newtype pattern
