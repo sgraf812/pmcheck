@@ -100,36 +100,77 @@ without a \extension{COMPLETE} set.
 \label{fig:newtypes}
 \end{figure}
 
-Newtypes have strange semantics. Here are three key examples that distinguish
-them from data types:
+In Haskell, a newtype declares a new type that is completely
+isomorphic to, but distinct from, an existing type. For example
+\begin{code}
+newtype NT a = MkNT [a]
+
+dup :: NT a -> NT a
+dup (MkNT xs) = MkNT (xs ++ xs)
+\end{code}
+Here the type |NT a| is isomorphic to |[a]|.  We convert to and fro
+using the ``data constructor'' |MkNT|, either as in a term or in a pattern.
+
+To a first approximation, then, programmers interact with a newtype
+as if it was a data type with a single constructor with a single field.
+But their pattern-matching semantics is different!
+Here are three key examples that distinguish newtypes from data types:
 
 \begin{minipage}{\textwidth}
 \begin{minipage}[b]{0.33\textwidth}
 \centering
 \begin{code}
-newtype N a = N a
+newtype N a = MkN a
 g1 :: N Void -> Bool -> Int
-g1 _      True   = 1
-g1 (N _)  True   = 2
-g1 !_     True   = 3
+g1 _        True   = 1
+g1 (MkN _)  True   = 2
+g1 !_       True   = 3
 \end{code}
 \end{minipage}%
 \begin{minipage}[b]{0.33\textwidth}
 \centering
 \begin{code}
 g2 :: N () -> Bool -> Int
-g2 !!(N _)   True  = 1
-g2   (N !_)  True  = 2
-g2       _   _     = 3
+g2 !!(MkN _)   True  = 1
+g2   (MkN !_)  True  = 2
+g2         _   _     = 3
 \end{code}
 \end{minipage}%
 \begin{minipage}[b]{0.33\textwidth}
 \centering
 \begin{code}
 g3 :: N () -> Bool -> Int
-g3   (N !_)  True  = 1
-g3 !!(N _)   True  = 2
-g3       _   _     = 3
+g3   (MkN !_)  True  = 1
+g3 !!(MkN _)   True  = 2
+g3       _     _     = 3
+\end{code}
+\end{minipage}
+\begin{minipage}[b]{0.33\textwidth}
+\centering
+\begin{code}
+newtype D a = MkD a
+h1 :: D Void -> Bool -> Int
+h1 _        True   = 1
+h1 (MkD _)  True   = 2
+h1 !_       True   = 3
+\end{code}
+\end{minipage}%
+\begin{minipage}[b]{0.33\textwidth}
+\centering
+\begin{code}
+h2 :: D () -> Bool -> Int
+h2 !!(MkD _)   True  = 1
+h2   (MkD !_)  True  = 2
+h2         _   _     = 3
+\end{code}
+\end{minipage}%
+\begin{minipage}[b]{0.33\textwidth}
+\centering
+\begin{code}
+h3 :: D () -> Bool -> Int
+h3   (MkD !_)  True  = 1
+h3 !!(MkD _)   True  = 2
+h3       _     _     = 3
 \end{code}
 \end{minipage}
 \end{minipage}
@@ -142,7 +183,7 @@ lead to divergence for a call site like |g1 bot False|, so the third GRHS is
 \emph{inaccessible} (because every value it could cover was already covered by
 the first GRHS), but not redundant. A perhaps surprising consequence is that
 the definition of |g1| is exhaustive, because after |N Void| was deprived of its
-sole inhabitant $\bot \equiv N\,\bot$ by the third GRHS, there is nothing left
+sole inhabitant $\bot \equiv MkN\,\bot$ by the third GRHS, there is nothing left
 to match on.
 
 \Cref{fig:newtypes} outlines a solution (based on that for pattern synonyms for
@@ -161,14 +202,14 @@ The inner bang pattern has nothing to evaluate.
 \sg{We could save about 1/4 of a page by stopping here and omitting the
 changes to $\adddelta$.}
 
-We counter that with another refinement: We just add $|x| \termeq N y$ and $|y|
+We counter that with another refinement: We just add $|x| \termeq MkN y$ and $|y|
 \ntermeq \bot$ constraints whenever we add $|x| \ntermeq \bot$ constraints when
-we know that |x| is a newtype with constructor |N| (similarly for $|x| \termeq
+we know that |x| is a newtype with constructor |MkN| (similarly for $|x| \termeq
 \bot$). Both |g2| and |g3| will be handled correctly.
 
 \sg{Needless to say, we won't propagate $\bot$ constraints when we only find
 out (by additional type info) that something is a newtype \emph{after} adding
-the constraints (think |SMaybe a| and we later find that $a \typeeq |N Void|$),
+the constraints (think |SMaybe a| and we later find that $a \typeeq |MkN Void|$),
 but let's call it a day.}
 
 An alternative, less hacky solution would be treating newtype wrappers as
