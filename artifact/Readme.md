@@ -569,13 +569,37 @@ Here are some assorted notes on each of the programs in this directory:
   7 | g _
     | ^^^...
   ```
+
+  Note that GHC 8.8.3 will also produce a warning quickly:
+
+  ```
+  # /opt/ghc/8.8.3/bin/ghc Ex5_2.hs
+  [1 of 1] Compiling Ex5_2            ( Ex5_2.hs, Ex5_2.o )
+
+  Ex5_2.hs:7:1: warning: [-Wincomplete-patterns]
+      Pattern match(es) are non-exhaustive
+      In an equation for ‘g’: Patterns not matched: _
+    |
+  7 | g _
+    | ^^^...
+  ```
+
+  However, this is for a different reason. GHC 8.8.3's implementation of GMTM
+  behaves _very_ conservatively with guards. It will essentially discard
+  the guards in `g` and conservatively report `g` as non-exhaustive.
 * `Ex5_3.hs`: This contains `f`, an exhaustive function that matches on all
   1000 constructors (`A1` through `A1000`) of a data type `T`. Moreover, `A1`
-  and a pattern synonym `P` are put into a `COMPLETE` set. A naïve attempt at
-  coverage checking `f` would result in quadratic compile times, but LYG
-  instead caches residual `COMPLETE` sets, resulting in amortised linear times.
-  As a result, you can safely compile this file without blowing up your
+  and a pattern synonym `P` are put into a `COMPLETE` set. Attempting to
+  check `f` using LYG without the caching described in Section 5.3 would result
+  in quadratic compile times. Our implementation of LYG caches residual
+  `COMPLETE` sets, however, which results in amortised linear times.
+  As a result, you can safely compile this file with LYG without blowing up your
   computer.
+
+  It is worth noting that GHC 8.8.3 (GMTM) can also compile this file quickly,
+  but for different reasons. GMTM will eagerly split on all possible
+  constructors of `T` the moment it encounters `A1`, which makes the
+  optimization described in Section 5.3 unnecessary.
 * `Ex5_4.hs`: This contains `f`, a non-exhaustive function. A naïve expansion
   function (see Section 3.5 and 5.4) that only acts on positive information
   would only report `_` as the missing pattern for `f`. Hence our
@@ -816,6 +840,11 @@ src/Data/YAML/Event.hs:412:24: error: [-Woverlapping-patterns, -Werror=overlappi
     |                        ^^^^^
 ```
 
+(A note on terminology: the warning above describes this match as "redundant",
+while the paper describes this match as "unreachable". These are both correct;
+per Section 2.3.1 of the paper, "unreachable" is a term that encompasses both
+redundancy and inaccessibility.)
+
 You can also verify that this library does not emit this warning under GHC 8.8.3
 by doing the following:
 
@@ -945,7 +974,7 @@ Notes:
 * The syntax used in `type void = |;;` was introduced fairly recently into
   OCaml, debuting in version 4.07.0.
 
-# `perf-tets`
+# `perf-tests`
 
 ```
 # cd /root/perf-tests/
