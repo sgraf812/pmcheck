@@ -1901,7 +1901,8 @@ which leads to constraints $y \termeq |MkT z|, z \ntermeq \bot$, and so on for
 In practice, we implement a fuel-based approach that conservatively assumes
 that a variable is inhabited after $n$ such iterations (we have $n=100$ for
 list-like constructors and $n=1$ otherwise) and consider supplementing that
-with a simple termination analysis in the future.
+with a simple termination analysis to detect emptiness of data types like |T|
+in the future.
 
 \subsection{A note on precision}
 
