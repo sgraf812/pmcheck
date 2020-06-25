@@ -994,10 +994,12 @@ defined as follows:
   if that succeeds, the overall match succeeds; if not, match against $t_2$.
 \item Matching a guard tree $\gdtguard{\grdbang{x}}{t}$ evaluates $x$;
   if that diverges the match diverges; if not match $t$.
-\item Matching a guard tree $\gdtguard{\grdcon{|K|~ y_1 \ldots y_n}{x}}{t}$
-  matches $x$ against constructor |K|. If the match succeeds, bind $y_1 \ldots
-  y_n$ to the components, and match $t$; if the constructor match fails, then the
-  entire match fails.
+\item Matching a guard tree
+  $\gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y}}{x}}{t}$ matches $x$ against
+  constructor |K|. If the match succeeds, bind $\overline{a}$ to the type
+  components, $\overline{\gamma}$ to the constraint components and
+  $\overline{y}$ to the term components, then match $t$. If the constructor
+  match fails, then the entire match fails.
 \item Matching a guard tree $\gdtguard{\grdlet{x}{e}}{t}$ binds $x$
   (lazily) to $e$, and matches $t$.
 \end{itemize}
