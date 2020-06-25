@@ -1528,7 +1528,7 @@ invariants on a $\nabla = \nreft{\Gamma}{\Delta}$:
   least one constructor $K$ (or $\bot$) which $x$ can be instantiated to without
   contradicting \inv{1}; see \Cref{sec:inhabitation}.
   \item[\inv{3}] \emph{Triangular form}: A $x \termeq y$ constraint implies
-    absence of any other constraints mentioning |x| in its left-hand side.
+    absence of any other constraint mentioning |x| in its left-hand side.
   \item[\inv{4}] \emph{Single solution}: There is at most one positive
     constructor constraint $x \termeq \deltaconapp{K}{a}{y}$ for a given |x|.
 \end{enumerate}
@@ -1645,7 +1645,7 @@ information into account.
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq y &=&
     \begin{cases}
       \nreft{\Gamma}{\Delta} & \text{if $x' = y'$} \\
-      \nreft{\Gamma}{((\Delta\!\setminus\!x'), x'\!\termeq\!y')} \adddelta (\restrict{\Delta}{x'}[y' / x']
+      \nreft{\Gamma}{((\Delta\!\setminus\!x'), x'\!\termeq\!y')} \adddelta (\restrict{\Delta}{x'}[y' / x'])
         & \text{otherwise} \\
     \end{cases} & (14)\\
   &&&&\text{where}~x' = \rep{\Delta}{x} \; \text{and} \; y' = \rep{\Delta}{y}
