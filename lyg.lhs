@@ -1623,10 +1623,10 @@ information into account.
     \false & \text{otherwise} \\
   \end{cases} & (9)\\
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
+    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K'}{b}{z} \in \Delta$ and $K \not= K'$} \\
+    \false & \text{if $\rep{\Delta}{x} \ntermeq K \in \Delta$} \\
     \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
-    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K'}{b}{z} \in \Delta$ } \\
-    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \text{if $\rep{\Delta}{x} \ntermeq K \not\in \Delta$} \\
-    \false & \text{otherwise} \\
+    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \text{otherwise} \\
   \end{cases} & (10) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
@@ -2081,12 +2081,6 @@ source syntax and IR syntax by adding the syntactic concept of a
 \end{array}
 \]
 
-% \sg{For coverage checking purposes, we assume that pattern synonym matches
-% are strict, just like data constructor matches. This is not generally true, but
-% \ticket{17357} has a discussion of why being conservative is too disruptive to
-% be worth the trouble. Should we talk about that? It concerns the definition of
-% $\ds$, namely whether to add a $\grdbang{x}$ on the match var or not. Maybe a
-% footnote?}
 \noindent
 Assuming every definition encountered so far is changed to handle ConLikes $C$
 instead of data constructors $K$, everything should work fine. So why
@@ -2103,16 +2097,16 @@ are quite different: a value produced by |P| might match a pattern |Q|, as indee
 is the case in this example.
 
 Our solution is a conservative one: we weaken the test that sends $\nabla$ to $\false$
-in the clause of $\!\adddelta\!$ dealing with positive
+of Equation (10) in the definition of $\!\adddelta\!$ dealing with positive
 ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
 \[
 \begin{array}{r@@{\,}c@@{\,}lcl}
-\nreft{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{C}{a}{y} &=& \begin{cases}
+  \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{C}{a}{y} &=& \begin{cases}
+    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C'}{b}{z} \in \Delta$ and \highlight{C \cap C' = \emptyset}} \\
+    \false & \text{if $\rep{\Delta}{x} \ntermeq C \in \Delta$} \\
     \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C}{b}{z} \in \Delta$ } \\
-    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C'}{b}{z} \in \Delta$ \highlight{\text{and $C \cap C' = \emptyset$}}} \\
-    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{C}{a}{y})} & \text{if $\rep{\Delta}{x} \ntermeq C \not\in \Delta$ and $\overline{\inhabited{\nreft{\Gamma}{\Delta}}{\Delta(y)}}$} \\
-    \false & \text{otherwise} \\
-  \end{cases} \\
+    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{C}{a}{y})} & \text{otherwise} \\
+  \end{cases}
 \end{array}
 \]
 \noindent
