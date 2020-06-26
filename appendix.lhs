@@ -161,10 +161,9 @@ Analogous subtle reasoning justifies the difference in warnings for |g2| and
 
 \begin{itemize}
 
-  \item A newtype pattern matche $N \; pat_1\,...\,pat_n$ is lazy: it does not
-  force evaluation.
-  So, compared to data constructor matches, the desugaring function
-  $\ds$ omits the $\grdbang{x}$.
+  \item A newtype pattern match $N \; pat_1\,...\,pat_n$ is lazy: it does not
+  force evaluation. So, compared to data constructor matches, the desugaring
+  function $\ds$ omits the $\grdbang{x}$.
 
   \item Similar in spirit to $\rep{\Delta}{x}$, which chases variable equality
   constraints $x \termeq y$, we now also occasionally need to look through
