@@ -1619,7 +1619,7 @@ information into account.
 
   \false &\adddelta& \delta &=& \false & (8)\\
   \nreft{\Gamma}{\Delta} &\adddelta& \gamma &=& \begin{cases}
-    \nreft{\Gamma}{(\Delta,\gamma)} & \parbox[t]{6cm}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\nreft{\Gamma}{(\Delta,\gamma)}}{\rep{\Delta}{x}}$} \\
+    \nreft{\Gamma}{(\Delta,\gamma)} & \parbox[t]{6cm}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\nreft{\Gamma}{(\Delta,\gamma)}}{x}$} \\
     \false & \text{otherwise} \\
   \end{cases} & (9)\\
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
@@ -1630,7 +1630,7 @@ information into account.
   \end{cases} & (10) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
-    \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{\rep{\Delta}{x}}$} \\
+    \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{x}$} \\
     \nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{otherwise} \\
   \end{cases} & (11) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
@@ -1639,7 +1639,7 @@ information into account.
   \end{cases} & (12) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \termeq \bot \in \Delta$} \\
-    \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{\rep{\Delta}{x}}$} \\
+    \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{x}$} \\
     \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
   \end{cases} & (13) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq y &=&
