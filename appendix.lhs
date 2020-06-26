@@ -8,7 +8,7 @@ The source syntax in \Cref{fig:newtypes} deliberately left out literal
 patterns $l$. Literals are very similar to nullary data constructors, with one
 caveat: They don't come with a builtin \texttt{COMPLETE} set. Before Section
 4.5, that would have meant quite a bit of hand waving and complication to the
-$\inhabited{}{}$ judgment. Now, literals can be handled like disjunct pattern
+$\inhabited{}{}$ judgment. Now, literals can be handled like disjoint pattern
 synonyms (\ie $l_1 \cap l_2 = \emptyset$ for any two literals $l_1, l_2$)
 without a \texttt{COMPLETE} set!
 
@@ -21,7 +21,7 @@ n = case (0 :: ()) of 1 -> 1; 0 -> 2
 \end{code}
 
 \noindent
-Considering overloaded literals to be disjunct would mean marking the first
+Considering overloaded literals to be disjoint would mean marking the first
 alternative as redundant, which is unsound. Hence we regard overloaded literals
 as possibly overlapping, so they behave exactly like nullary pattern synonyms
 without a \extension{COMPLETE} set.
