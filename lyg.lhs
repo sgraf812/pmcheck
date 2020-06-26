@@ -1685,21 +1685,24 @@ is where all the work is done, in \Cref{fig:add}.
 %
 It does so by expressing a literal $\varphi$ in terms of simpler constraints
 $\delta$, and calling out to $\!\adddelta\!$ to add the simpler constraints to $\nabla$.
-Specifically, in Equation (3)
-a pattern guard extends the context and
-adds suitable type constraints and a positive constructor constraint
-arising from the binding. Equation (4) of $\!\addphi\!$ performs
-some limited, but important reasoning about let bindings: it flattens
-possibly nested constructor applications, such as $\ctlet{|x|}{|Just True|}$.
-Note that equation (6) simply discards let bindings that cannot be expressed
-in $\nabla$; we'll see an extension in \Cref{ssec:extviewpat} that avoids
-this information loss.
+$\normalise$, $\addphi$ and $\adddelta$ all work on the principle that if the
+incoming $\nabla$ satisfies the Invariants \inv{1} to \inv{4} from
+\Cref{sec:generate}, then either the resulting $\nabla$ is $\false$ or it
+satisfies \inv{1} to \inv{4}.
+
+In Equation (3), a pattern guard extends the context and adds suitable type
+constraints and a positive constructor constraint arising from the binding.
+Equation (4) of $\!\addphi\!$ performs some limited, but important reasoning
+about let bindings: it flattens possibly nested constructor applications, such
+as $\ctlet{|x|}{|Just True|}$. Note that Equation (6) simply discards let
+bindings that cannot be expressed in $\nabla$; we'll see an extension in
+\Cref{ssec:extviewpat} that avoids this information loss.
 % The last case of $\!\addphi\!$
 % turns the syntactically and semantically identical subset of $\varphi$ into
 % $\delta$ and adds that constraint via $\!\adddelta\!$.
 
 That brings us to the prime unification procedure, $\!\adddelta\!$.
-When adding $x \termeq |Just y|$, equation (10), the unification procedure will first look for
+When adding $x \termeq |Just y|$, Equation (10), the unification procedure will first look for
 a solution for $x$ with \emph{that same constructor}. Let's say there is
 $\Delta(x) \termeq |Just u| \in \Delta$. Then $\!\adddelta\!$ operates on the
 transitively implied equality $|Just y| \termeq |Just u|$ by equating type and
@@ -1713,13 +1716,13 @@ If there is a solution involving a different constructor like $\Delta(x)
 existing solution. Otherwise, the constraint is compatible and is added to
 $\Delta$.
 
-Adding a negative constructor constraint $x \ntermeq Just$ is quite similar (equation (11)),
+Adding a negative constructor constraint $x \ntermeq Just$ is quite similar (Equation (11)),
 except that we have to make sure that $x$ still satisfies \inv{2}, which is
 checked by the $\inhabited{\nabla}{\Delta(x)}$ judgment (\cf \Cref{sec:test})
 in \Cref{fig:inh}. Handling positive and negative constraints involving $\bot$
 is analogous.
 
-Adding a type constraint $\gamma$ (equation (9)) entails calling out to the type checker to
+Adding a type constraint $\gamma$ (Equation (9)) entails calling out to the type checker to
 assert that the constraint is consistent with existing type constraints.
 Afterwards, we have to ensure \inv{2} is upheld for \emph{all} variables in the
 domain of $\Gamma$, because the new type constraint could have rendered a type
