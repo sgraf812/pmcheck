@@ -47,7 +47,7 @@ without a \extension{COMPLETE} set.
 \[
 \begin{array}{lcl}
   \repnt{\Delta}{x} &=& \begin{cases}
-    \repnt{\Delta}{y} & x \termeq y \in \Delta \text{ or } \highlight{x \termeq |N|\;\overline{a}\;y \in \Delta} \\
+    \repnt{\Delta}{y} & x \termeq y \in \Delta \text{ or } x \termeq |N|\;\overline{a}\;y \in \Delta \\
     x & \text{otherwise} \\
   \end{cases} \\
 \end{array}
@@ -154,16 +154,16 @@ A perhaps surprising consequence is that the definition of |g1| is exhaustive,
 because after |N Void| was deprived of its sole inhabitant $\bot \equiv
 MkN\,\bot$ by the third GRHS, there is nothing left to match on, similarly for
 |h1|.
-
 Analogous subtle reasoning justifies the difference in warnings for |g2| and
 |h2|.
 
-\Cref{fig:newtypes} outlines a solution that handles both |g1| and |g2| correctly:
+\Cref{fig:newtypes} outlines a solution that handles all these cases correctly:
 
 \begin{itemize}
 
-  \item Newtype pattern matches $N \; pat_1\,...\,pat_n$ are considered lazy
-  matches. So, compared to data constructor matches, the desugaring function
+  \item A newtype pattern matche $N \; pat_1\,...\,pat_n$ is lazy: it does not
+  force evaluation.
+  So, compared to data constructor matches, the desugaring function
   $\ds$ omits the $\grdbang{x}$.
 
   \item Similar in spirit to $\rep{\Delta}{x}$, which chases variable equality
@@ -172,7 +172,7 @@ Analogous subtle reasoning justifies the difference in warnings for |g2| and
   $\repnt{\Delta}{x}$.
 
   \item The most important usage of $\repnt{\Delta}{x}$ is in the changed
-  Equations (12) and (13) of $\adddelta$, where we now associate and look up
+  Equations (12) and (13) of $\adddelta$, where we now check
   $\bot$ constraints modulo $\repnt{\Delta}{x}$.
 
   \item Equation (10) (previously handling $x \termeq \deltaconapp{K}{a}{y}$)
@@ -202,11 +202,11 @@ well-defined function like $\rep{\Delta}{x}$:
 
 \end{enumerate}
 \noindent
-We want $\Delta$ to uphold the semantic Equation $\bot \equiv N \bot$. In
+We want $\Delta$ to uphold the semantic equation $\bot \equiv N \bot$. In
 particular, whenever we have $x \termeq \ntconapp{N}{a}{y}$, we want $x \termeq
 \bot$ iff $y \termeq \bot$ (similar for $x \ntermeq \bot$). Equations (10b),
-(12) and (12) facilitate just that, only modulo $\repnt{\Delta}{x}$.
-The new invariant \inv{5} relates positive newtype constructor equalities to
+(12) and (13) facilitate just that, modulo $\repnt{\Delta}{x}$.
+Finally, a new invariant \inv{5} relates positive newtype constructor equalities to
 $\bot$ constraints:
 
 \begin{enumerate}
@@ -218,7 +218,7 @@ $\bot$ constraints:
 
 \end{enumerate}
 \noindent
-An alternative design would take inspiration in the coercion semantics
+An alternative design might take inspiration in the coercion semantics
 of GHC Core, a typed intermediate language of GHC based on System F, and
 compose coercions attached to $\termeq$. However, that would entail deep
 changes to syntax as well as to the definition of $\expand$ to recover the
