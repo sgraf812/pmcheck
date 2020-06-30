@@ -8,34 +8,26 @@
 %% For single-blind review submission, w/ CCS and ACM Reference
 %\documentclass[acmsmall,review]{acmart}\settopmatter{printfolios=true}
 %% For final camera-ready submission, w/ required CCS and ACM Reference
-%\documentclass[acmsmall]{acmart}\settopmatter{}
+\documentclass[acmsmall]{acmart}\settopmatter{}
 
 %\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
-\documentclass[acmsmall,review]{acmart}\settopmatter{}
 
 %include custom.fmt
 
 %% Journal information
 %% Supplied to authors by publisher for camera-ready submission;
 %% use defaults for review submission.
-\acmJournal{PACMPL}
-\acmVolume{1}
-\acmNumber{ICFP} % CONF = POPL or ICFP or OOPSLA
-\acmArticle{1}
+\setcopyright{acmlicensed}
+\acmPrice{}
+\acmDOI{10.1145/3408989}
 \acmYear{2020}
-\acmMonth{1}
-\acmDOI{} % \acmDOI{10.1145/nnnnnnn.nnnnnnn}
-\startPage{1}
-
-%% Copyright information
-%% Supplied to authors (based on authors' rights management selection;
-%% see authors.acm.org) by publisher for camera-ready submission;
-%% use 'none' for review submission.
-\setcopyright{none}
-%\setcopyright{acmcopyright}
-%\setcopyright{acmlicensed}
-%\setcopyright{rightsretained}
-%\copyrightyear{2018}           %% If different from \acmYear
+\copyrightyear{2020}
+\acmSubmissionID{icfp20main-p57-p}
+\acmJournal{PACMPL}
+\acmVolume{4}
+\acmNumber{ICFP}
+\acmArticle{107}
+\acmMonth{8}
 
 %% Bibliography style
 \bibliographystyle{ACM-Reference-Format}
@@ -170,27 +162,45 @@ checker, both in accuracy and performance.
 %% Generate at 'http://dl.acm.org/ccs/ccs.cfm'.
 \begin{CCSXML}
 <ccs2012>
-<concept>
-<concept_id>10011007.10011006.10011041</concept_id>
-<concept_desc>Software and its engineering~Compilers</concept_desc>
-<concept_significance>500</concept_significance>
-</concept>
-<concept>
-<concept_id>10011007.10011006.10011008.10011009.10011012</concept_id>
-<concept_desc>Software and its engineering~Functional languages</concept_desc>
-<concept_significance>300</concept_significance>
-</concept>
-<concept>
-<concept_id>10011007.10011006.10011008.10011024.10011035</concept_id>
-<concept_desc>Software and its engineering~Procedures, functions and subroutines</concept_desc>
-<concept_significance>300</concept_significance>
-</concept>
-</ccs2012>
+   <concept>
+       <concept_id>10011007.10011006.10011041</concept_id>
+       <concept_desc>Software and its engineering~Compilers</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10011007.10011006.10011073</concept_id>
+       <concept_desc>Software and its engineering~Software maintenance tools</concept_desc>
+       <concept_significance>300</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10011007.10011006.10011008.10011024.10011035</concept_id>
+       <concept_desc>Software and its engineering~Procedures, functions and subroutines</concept_desc>
+       <concept_significance>100</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10011007.10011006.10011008.10011024.10011032</concept_id>
+       <concept_desc>Software and its engineering~Constraints</concept_desc>
+       <concept_significance>300</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10011007.10011006.10011008.10011009.10011012</concept_id>
+       <concept_desc>Software and its engineering~Functional languages</concept_desc>
+       <concept_significance>300</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10011007.10011006.10011008.10011009.10011021</concept_id>
+       <concept_desc>Software and its engineering~Multiparadigm languages</concept_desc>
+       <concept_significance>300</concept_significance>
+       </concept>
+ </ccs2012>
 \end{CCSXML}
 
 \ccsdesc[500]{Software and its engineering~Compilers}
+\ccsdesc[300]{Software and its engineering~Software maintenance tools}
+\ccsdesc[100]{Software and its engineering~Procedures, functions and subroutines}
+\ccsdesc[300]{Software and its engineering~Constraints}
 \ccsdesc[300]{Software and its engineering~Functional languages}
-\ccsdesc[300]{Software and its engineering~Procedures, functions and subroutines}
+\ccsdesc[300]{Software and its engineering~Multiparadigm languages}
 %% End of generated code
 
 
