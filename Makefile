@@ -46,8 +46,9 @@ extended:
 	pdflatex $(REPL_FLAGS) -jobname=lyg_ext lyg
 
 # For camera-ready submission
-zipball:
-	git archive --format zip --output lyg.zip ICFP2020CameraReady
+zipball: main
+	git archive --format zip --output lyg.zip HEAD
+	zip -ur lyg.zip lyg.tex
 
 clean:
 	$(RM) *.dvi *.aux *.log *.bbl *.blg *.toc *.out *.fls *.haux *.fdb_latexmk *~ lyg.zip
