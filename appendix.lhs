@@ -6,13 +6,13 @@
 
 The source syntax in \Cref{fig:newtypes} deliberately left out literal
 patterns $l$. Literals are very similar to nullary data constructors, with one
-caveat: They don't come with a builtin \texttt{COMPLETE} set. Before Section
+caveat: they don't come with a builtin \texttt{COMPLETE} set. Before Section
 4.5, that would have meant quite a bit of hand waving and complication to the
 $\inhabited{}{}$ judgment. Now, literals can be handled like disjoint pattern
 synonyms (\ie $l_1 \cap l_2 = \emptyset$ for any two literals $l_1, l_2$)
 without a \texttt{COMPLETE} set!
 
-We can even handle overloaded literals, but will find ourselves in a similar
+We can even handle overloaded literals, but we will find ourselves in a similar
 situation as with pattern synonyms:
 \begin{code}
 instance Num () where
@@ -84,7 +84,7 @@ without a \extension{COMPLETE} set.
 \end{figure}
 
 In Haskell, a newtype declares a new type that is completely
-isomorphic to, but distinct from, an existing type. For example
+isomorphic to, but distinct from, an existing type. For example:
 \begin{code}
 newtype NT a = MkNT [a]
 
@@ -94,9 +94,9 @@ dup (MkNT xs) = MkNT (xs ++ xs)
 Here the type |NT a| is isomorphic to |[a]|.  We convert to and fro
 using the ``data constructor'' |MkNT|, either as in a term or in a pattern.
 
-To a first approximation, then, programmers interact with a newtype
+To a first approximation, programmers interact with a newtype
 as if it was a data type with a single constructor with a single field.
-But their pattern-matching semantics is different!
+But the pattern-matching semantics of newtypes are different!
 Here are three key examples that distinguish newtypes from data types.
 Functions |g1|, |g2|, |g3| match on a \emph{newtype} |N|, while functions
 |h1|, |h2|, |h3| match on a \emph{data type} |D|:
@@ -143,17 +143,17 @@ h2         _   _     = 3
 \end{minipage}
 \noindent
 If the first equation of |h1| fails to match (because the second argument is |False|),
-the second equation may diverge when matching against |(MkD _)|,
+the second equation may diverge when matching against |(MkD _)|
 or may fail (because of the |False|), so the equation is inaccessible.
 The third equation is redundant.
 But for a newtype, the second equation of |g1| will not evaluate the argument
-when matching against |(MkN _)|, and hence is redundant.
+when matching against |(MkN _)| and hence is redundant.
 The third equation will evaluate the first argument, which is surely bottom,
 so matching will diverge and the equation is inaccessible.
 A perhaps surprising consequence is that the definition of |g1| is exhaustive,
 because after |N Void| was deprived of its sole inhabitant $\bot \equiv
-MkN\,\bot$ by the third GRHS, there is nothing left to match on, similarly for
-|h1|.
+MkN\,\bot$ by the third GRHS, there is nothing left to match on (similarly for
+|h1|).
 Analogous subtle reasoning justifies the difference in warnings for |g2| and
 |h2|.
 
@@ -203,7 +203,7 @@ well-defined function like $\rep{\Delta}{x}$:
 \noindent
 We want $\Delta$ to uphold the semantic equation $\bot \equiv N \bot$. In
 particular, whenever we have $x \termeq \ntconapp{N}{a}{y}$, we want $x \termeq
-\bot$ iff $y \termeq \bot$ (similar for $x \ntermeq \bot$). Equations (10b),
+\bot$ iff $y \termeq \bot$ (similarly for $x \ntermeq \bot$). Equations (10b),
 (12) and (13) facilitate just that, modulo $\repnt{\Delta}{x}$.
 Finally, a new invariant \inv{5} relates positive newtype constructor equalities to
 $\bot$ constraints:
@@ -226,13 +226,13 @@ newtype constructor patterns visible in source syntax.
 \subsection{Strictness and totality}
 
 Instead of extending the source language, let's discuss ripping out a language
-feature, for a change! So far, we have focused on Haskell as the source
-language, which is lazy by default. Although after desugaring  the difference
-in evaluation strategy of the source language becomes irrelevant, it raises the
+feature for a change! So far, we have focused on Haskell as the source
+language, which is lazy by default. Although the difference in evaluation
+strategy of the source language becomes irrelevant after desugaring, it raises the
 question of how much our approach could be simplified if we targeted a source
 language that was strict by default, such as OCaml or Idris (or even Rust).
 
-First off, both languages offer language support for laziness and lazy pattern
+First off, both OCaml and Idris offer language support for laziness and lazy pattern
 matches, so the question rather becomes whether the gained simplification is
 actually worth risking unusable or even unsound warning messages when making
 use of laziness. If the answer is ``No'', then there isn't anything to
