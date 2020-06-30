@@ -3,6 +3,7 @@
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
+*.cut
 *.lof
 *.log
 *.lot
