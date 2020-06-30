@@ -50,7 +50,7 @@ zipball:
 	git archive --format zip --output lyg.zip camera-ready
 
 clean:
-	$(RM) *.dvi *.aux *.log *.bbl *.blg *.toc *.out *.fls *.haux *.fdb_latexmk *~
+	$(RM) *.dvi *.aux *.log *.bbl *.blg *.toc *.out *.fls *.haux *.fdb_latexmk *~ lyg.zip
 
 distclean: clean
 	$(RM) appendix.tex
