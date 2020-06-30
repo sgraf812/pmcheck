@@ -8,7 +8,7 @@
 %% For single-blind review submission, w/ CCS and ACM Reference
 %\documentclass[acmsmall,review]{acmart}\settopmatter{printfolios=true}
 %% For final camera-ready submission, w/ required CCS and ACM Reference
-\documentclass[acmsmall]{acmart}\settopmatter{}
+\documentclass[acmsmall,screen]{acmart}\settopmatter{}
 
 %\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
 
@@ -158,8 +158,6 @@ demonstrate places where it performs better than GHC's current coverage
 checker, both in accuracy and performance.
 \end{abstract}
 
-\maketitle
-
 %% 2012 ACM Computing Classification System (CSS) concepts
 %% Generate at 'http://dl.acm.org/ccs/ccs.cfm'.
 \begin{CCSXML}
@@ -209,6 +207,8 @@ checker, both in accuracy and performance.
 %% Keywords
 %% comma separated list
 \keywords{Haskell, pattern matching, guards, strictness}  %% \keywords are mandatory in final camera-ready submission
+
+\maketitle
 
 \section{Introduction}
 
