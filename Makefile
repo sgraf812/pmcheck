@@ -26,6 +26,9 @@ appendix: lyg.lhs macros.tex appendix.lhs
 	lhs2TeX --poly appendix.lhs >appendix.tex
 	lhs2TeX --poly lyg.lhs | sed -e 's/^%\\appendixonly/\\appendixonly/g' >lyg.tex
 	pdflatex $(REPL_FLAGS) -jobname=appendix lyg
+	bibtex   lyg
+	pdflatex $(REPL_FLAGS) -jobname=appendix lyg
+	pdflatex $(REPL_FLAGS) -jobname=appendix lyg
 
 diff:
 	pdflatex $(REPL_FLAGS) diff
