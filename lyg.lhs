@@ -320,7 +320,7 @@ We discuss the wealth of related work in \Cref{sec:related}.
 % \end{itemize}
 
 
-\section{The problem we want to solve} \label{sec:problem}
+\section{The Problem We Want to Solve} \label{sec:problem}
 
 What makes coverage checking so difficult in a language like Haskell? At first
 glance, implementing a coverage checking algorithm might appear simple: just
@@ -426,7 +426,7 @@ are exhaustive, and indeed, \lyg does so.
 % \lyg can check in more detail in \ryan{Cite relevant section}\sg{I think
 % that's mostly in Related Work? Not sure we give a detailed account anywhere}.
 
-\subsection{Programmable patterns}
+\subsection{Programmable Patterns}
 
 Expressions in guards are not the only source of undecidability that the
 coverage checker must cope with. GHC extends the pattern language in other ways
@@ -475,7 +475,7 @@ We consider two such extensions here: view patterns and pattern synonyms.
 % |Double|. In general, however, coverage checking patterns with overloaded
 % literals is undecidable.
 
-\subsubsection{View patterns}
+\subsubsection{View Patterns}
 \label{sssec:viewpat}
 
 View patterns allow arbitrary computation to be performed while pattern
@@ -526,7 +526,7 @@ safeLast (reverse -> [])       = Nothing
 safeLast (reverse -> (x : _))  = Just x
 \end{code}
 
-\subsubsection{Pattern synonyms}
+\subsubsection{Pattern Synonyms}
 \label{ssec:patsyn}
 
 Pattern synonyms~\cite{patsyns} allow abstraction over patterns themselves.
@@ -604,7 +604,7 @@ flow to the second equation, so it is redundant and can be deleted.
 % Although \citet{gadtpm} incorporates strictness constraints into their algorithm,
 % it does not consider constraints that arise from strict fields.
 
-\subsubsection{Redundancy versus inaccessibility}
+\subsubsection{Redundancy Versus Inaccessibility}
 \label{sssec:inaccessibility}
 
 When reporting unreachable equations, we must distinguish between \emph{redundant}
@@ -652,7 +652,7 @@ is a non-local problem.
 Inaccessibility may seem like a tricky corner case, but GHC's users have
 reported many bugs of this sort (\Cref{sec:ghc-issues}).
 
-\subsubsection{Bang patterns}
+\subsubsection{Bang Patterns}
 
 Strict data-constructor fields are one mechanism for adding extra strictness in ordinary Haskell, but
 GHC adds another in the form of \emph{bang patterns}. When a value |v| is matched
@@ -672,7 +672,7 @@ Therefore, none of the three inhabitants will result in the right-hand side of
 the second equation being reached. Note that the second equation is inaccessible, but not redundant
 (\Cref{sssec:inaccessibility}).
 
-\subsection{Type-equality constraints}
+\subsection{Type-Equality Constraints}
 
 Besides strictness, another way for pattern matches to be rendered unreachable
 is by way of \emph{equality constraints}. A popular method for introducing
@@ -771,7 +771,7 @@ Stardust \cite{dunfieldthesis}.
 \end{figure}
 
 
-\section{Lower Your Guards: a new coverage checker}
+\section{Lower Your Guards: A New Coverage Checker}
 \label{sec:overview}
 
 \begin{figure}
@@ -889,7 +889,7 @@ advantages are:
 \end{itemize}
 
 
-\subsection{Desugaring to guard trees} \label{sec:desugar}
+\subsection{Desugaring to Guard Trees} \label{sec:desugar}
 
 \begin{figure}
 
@@ -1143,7 +1143,7 @@ time to come up with the language of guard trees.  We recommend it!
 % is expressed by sequence ($\gdtseq{}{}$). The leaves in a guard tree each
 % correspond to a GRHS.
 
-\subsection{Checking guard trees} \label{sec:check}
+\subsection{Checking Guard Trees} \label{sec:check}
 
 \begin{figure}
 \[ \textbf{Operations on $\Theta$} \]
@@ -1344,7 +1344,7 @@ emphasises clarity over efficiency.}.
 % Thus the checking algorithm can't decide which GRHSs are redundant (\vs just
 % inaccessible) when it reaches a particular GRHS.
 
-\subsection{Reporting errors} \label{sec:inhabitants}
+\subsection{Reporting Errors} \label{sec:inhabitants}
 
 
 \begin{figure}
@@ -1503,7 +1503,7 @@ because that would make the call |u' bot| return 3 rather
 than diverging.  Rather, we want to report the first GRHSs as
 inaccessible, leaving all the others as redundant.
 
-\subsection{Generating inhabitants of a refinement type} \label{sec:generate}
+\subsection{Generating Inhabitants of a Refinement Type} \label{sec:generate}
 
 Thus far, all our functions have been very simple, syntax-directed
 transformations, but they all ultimately depend on the single function
@@ -1586,7 +1586,7 @@ aggressively substitute them away.
 % Therefore, we can assert that |x| has |Nothing| as a solution simply by writing $\Delta(x)
 % \termeq |Nothing| \in \Delta$.
 
-\subsection{Expanding a normalised refinement type to a pattern} \label{sec:expand}
+\subsection{Expanding a Normalised Refinement Type to a Pattern} \label{sec:expand}
 
 $\expand$xpanding a match variable $x$ under $\nabla$ to a pattern, by calling
 $\expand$ in \Cref{fig:gen}, is straightforward and overloaded to operate
@@ -1598,7 +1598,7 @@ there is no solution for $x$, return $\_$. See \Cref{ssec:report} for how we
 improve on that in the implementation by taking negative
 information into account.
 
-\subsection{Normalising a refinement type} \label{sec:normalise}
+\subsection{Normalising a Refinement Type} \label{sec:normalise}
 
 \begin{figure}
 \centering
@@ -1794,7 +1794,7 @@ contradiction.
 % has no data constructors with which to instantiate |y|. Hence it is important
 % to test guard-bound variables for inhabitants, too.
 
-\subsection{Testing for inhabitation} \label{sec:test} \label{sec:inhabitation}
+\subsection{Testing for Inhabitation} \label{sec:test} \label{sec:inhabitation}
 
 \begin{figure}
 \centering
@@ -1917,7 +1917,7 @@ list-like constructors and $n=1$ otherwise) and consider supplementing that
 with a simple termination analysis to detect uninhabited data types like |T|
 in the future.
 
-\subsection{A note on precision}
+\subsection{A Note on Precision}
 
 Using fuel to limit the number of inhabitation tests is one example
 where \lyg sacrifices a small amount of precision in its warnings. It is worth
@@ -1952,7 +1952,7 @@ non-trivial ways. This section exemplifies easy accommodation of new language
 features and measures to increase precision of the checking process,
 demonstrating the modularity and extensibility of our approach.
 
-\subsection{Long-distance information}
+\subsection{Long-Distance Information}
 \label{ssec:ldi}
 
 Coverage checking should also work for |case| expressions and nested function
@@ -1976,7 +1976,7 @@ $\reft{x:|Bool|}{\true}$. We already need $\Theta_2$ to determine whether the
 second GRHS of |f| is accessible, so long-distance information comes almost for
 free.
 
-\subsection{Empty case}
+\subsection{Empty Case}
 
 As can be seen in \Cref{fig:srcsyn}, Haskell function definitions need to have
 at least one clause. That leads to an awkward situation when pattern matching
@@ -2022,7 +2022,7 @@ values is refined with a $x \ntermeq \bot$ constraint \emph{before} traversing
 the guard tree, thus checking starts starts with
 $\unc(\reft{\Gamma}{x \ntermeq \bot}, \gdtempty)$.
 
-\subsection{View patterns}
+\subsection{View Patterns}
 \label{ssec:extviewpat}
 
 Our source syntax had support for view patterns to start with (\cf
@@ -2074,7 +2074,7 @@ implementation, we use a trie to index expressions rapidly and sacrifice
 reasoning modulo $\Delta$ in doing so. Plugging in an SMT solver to decide
 $\equiv_{\Delta}$ would be more precise, but certainly less efficient.
 
-\subsection{Pattern synonyms}
+\subsection{Pattern Synonyms}
 \label{ssec:extpatsyn}
 
 To accommodate checking of pattern synonyms $P$, we first have to extend the
@@ -2141,7 +2141,7 @@ strictness or otherwise is part of its client-visible semantics.  In our impleme
 we have (thus far) compromised by assuming that all pattern synonyms are strict for the
 purposes of coverage checking \citep{gitlab:17357}.
 
-\subsection{\extension{COMPLETE} pragmas}
+\subsection{\extension{COMPLETE} Pragmas}
 \label{ssec:complete}
 
 In a sense, every algebraic data type defines its own builtin
@@ -2193,7 +2193,7 @@ judgment has become simpler and and more general at the same time! Note that
 checking against multiple \extension{COMPLETE} sets so frequently is
 computationally intractable. We will worry about that in \Cref{sec:impl}.
 
-\subsection{Other extensions}
+\subsection{Other Extensions}
 
 We consider further extensions, including overloaded literals, newtypes,
 and a strict-by-default (or total) language semantics, in Appendix A.
@@ -2276,7 +2276,7 @@ individually is non-empty, \ie not $\false$. This invariant is maintained by
 adding $\varphi$ constraints through $\addphiv$, which filters out any $\nabla$
 that would become empty.
 
-\subsection{Throttling for graceful degradation} \label{ssec:throttling}
+\subsection{Throttling for Graceful Degradation} \label{ssec:throttling}
 
 Even with the tweaks from \Cref{ssec:interleaving}, checking certain pattern
 matches remains NP-hard \citep{adaptivepm}. Naturally, there will be cases
@@ -2366,7 +2366,7 @@ test suite.
 % overlaps \emph{as if} it was the third equation, because we keep on forgetting
 % what was matched beyond that.
 
-\subsection{Maintaining residual \extension{COMPLETE} sets}
+\subsection{Maintaining Residual \extension{COMPLETE} Sets}
 \label{ssec:residual-complete}
 
 Our implementation tries hard to make the inhabitation test as efficient as
@@ -2416,7 +2416,7 @@ the same constructor twice (except after adding new type constraints), thus we
 have an amortised $\mathcal{O}(n)$ instantiations for the whole checking
 process.
 
-\subsection{Reporting uncovered patterns}
+\subsection{Reporting Uncovered Patterns}
 \label{ssec:report}
 
 The expansion function $\expand$ in \Cref{fig:gen} exists purely for presenting
@@ -2487,7 +2487,7 @@ use cases like \texttt{HsYAML}'s. The unreachable code in \texttt{Cabal} and
 \texttt{network} is of a similar caliber and would also benefit from
 |considerAccessible|.
 
-\subsection{Performance tests}
+\subsection{Performance Tests}
 
 {\floatstyle{plain}
 \restylefloat{figure}
@@ -2541,7 +2541,7 @@ coverage checking is dwarfed by the time the rest of the desugarer takes. A
 very desirable property for a static analysis that is irrelevant to the
 compilation process!
 
-\subsection{GHC issues} \label{sec:ghc-issues}
+\subsection{GHC Issues} \label{sec:ghc-issues}
 
 Implementing \lyg in GHC has fixed over 30 bug reports related
 to coverage checking. These include:
@@ -2577,7 +2577,7 @@ to coverage checking. These include:
 
 \end{itemize}
 
-\section{Related work} \label{sec:related}
+\section{Related Work} \label{sec:related}
 
 \subsection{Comparison with GADTs Meet Their Match}
 \label{ssec:gmtm}
@@ -2631,9 +2631,9 @@ easily be extended, as \lyg's treatment of view patterns
 improved to accomplish the same thing, it is unlikely to be as
 straightforward of a process as extending $\addphi$.
 
-\subsection{Comparison with similar coverage checkers}
+\subsection{Comparison with Similar Coverage Checkers}
 
-\subsubsection{Structural and semantic pattern matching analysis in Haskell}
+\subsubsection{Structural and Semantic Pattern Matching Analysis in Haskell}
 \label{ssec:comparison-with-structural}
 
 \citet{kalvoda2019structural} implement a variation of \gmtm that leverages an
@@ -2649,7 +2649,7 @@ extend $\addphi$ with SMT-like reasoning about booleans and linear integer arith
 % $x \not< e, x \ntermeq e, x \not> e$ (and $x \ntermeq \bot$) that $x$ is not
 % inhabited, quite similar to a \extension{COMPLETE} set.}
 
-\subsubsection{Warnings for pattern matching}
+\subsubsection{Warnings for Pattern Matching}
 \label{ssec:maranget}
 
 \citet{maranget:warnings} presents a coverage checking algorithm for OCaml that
@@ -2662,7 +2662,7 @@ redundant ones; thus clauses flagged as useless (such as the first two clauses
 of |u'| in \Cref{sssec:inaccessibility}) generally can't be deleted without
 changing (lazy) program semantics.
 
-\subsubsection{Case trees in dependently typed languages}
+\subsubsection{Case Trees in Dependently Typed Languages}
 
 \emph{Case tree}s \citep{augustsson-case-trees} are a standard way of compiling
 pattern matches to efficient code. Much like \lyg's guard trees, case trees
@@ -2714,7 +2714,7 @@ As a result, attempting to use |fibPartial| in a proof will fail to verify
 unless the user can prove that |fibPartial| is only ever invoked with the
 arguments |0| or |1|.
 
-\subsection{Other representations of constraints}
+\subsection{Other Representations of Constraints}
 
 \subsubsection{Leveraging existing constraint solvers}
 
@@ -2749,7 +2749,7 @@ more intuitive to think about coverage checking as refining a vector of values a
 it falls from one match to the next. In our opinion, that intuition is more
 easily expressed with refinement types than predicates alone.
 
-\subsection{Positive and negative information}
+\subsection{Positive and Negative Information}
 \label{ssec:negative-information}
 
 \lyg's use of positive and negative constructor constraints is inspired by
@@ -2821,7 +2821,7 @@ the second GRHS into another 1000 alternatives over the second match variable.
 Negative constraints allow \lyg to compress the 999 value vectors falling through
 into a single one indicating that the match variable can no longer be |A1|.
 
-\subsection{Strict fields in inhabitation testing}
+\subsection{Strict Fields in Inhabitation Testing}
 \label{ssec:strict-fields}
 
 The $\mathsf{Inst}$ function in \Cref{fig:inh} takes strict fields into account
