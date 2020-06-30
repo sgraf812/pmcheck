@@ -15,8 +15,10 @@
 %include custom.fmt
 
 %% Journal information
-%% Supplied to authors by publisher for camera-ready submission;
-%% use defaults for review submission.
+%% The following is specific to ICFP '20 and the paper
+%% 'Lower Your Guards'
+%% by Sebastian Graf, Simon Peyton Jones, and Ryan G. Scott.
+%%
 \setcopyright{acmlicensed}
 \acmPrice{}
 \acmDOI{10.1145/3408989}
@@ -2912,11 +2914,14 @@ distills rich pattern matching into simple guard trees. Guard trees are
 amenable to analyses that are not easily expressible in coverage checkers
 that work over structural pattern matches. This allows \lyg to report more
 accurate warnings while also avoiding performance issues when checking
-complex programs. Moreover, \lyg is extensible: the guard and tree constructs
-are both simple and expressive. That makes for a slightly excessive number of
-translation steps, but at the same time offers many \emph{seams}
-\citep{legacycode} to hook into. We anticipate that this extensibility will
-streamline the process of checking new forms of patterns in the future.
+complex programs.
+
+\begin{acks}
+We would like to thank the anonymous ICFP reviewers for their feedback, as well
+as anyone else who provided feedback on earlier drafts:
+Henning Dieterichs, Martin Hecker, Sylvain Henry, Philipp Kr\"uger, Luc
+Maranget and Sebastian Ullrich.
+\end{acks}
 
 \bibliography{references}
 
