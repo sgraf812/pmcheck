@@ -246,5 +246,8 @@ TSWLatexianTemp*
 appendix.tex
 lyg.tex
 
+# Tarball of the repo
+*.zip
+
 # Source tarball for artifact
 artifact05-source*.tgz

@@ -45,6 +45,10 @@ extended:
 	pdflatex $(REPL_FLAGS) -jobname=lyg_ext lyg
 	pdflatex $(REPL_FLAGS) -jobname=lyg_ext lyg
 
+# For camera-ready submission
+zipball:
+	git archive --format zip --output lyg.zip camera-ready
+
 clean:
 	$(RM) *.dvi *.aux *.log *.bbl *.blg *.toc *.out *.fls *.haux *.fdb_latexmk *~
 
