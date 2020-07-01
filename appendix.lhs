@@ -223,7 +223,7 @@ compose coercions attached to $\termeq$. However, that would entail deep
 changes to syntax as well as to the definition of $\expand$ to recover the
 newtype constructor patterns visible in source syntax.
 
-\subsection{Strictness and totality}
+\subsection{Strictness and Totality}
 
 Instead of extending the source language, let's discuss ripping out a language
 feature for a change! So far, we have focused on Haskell as the source
