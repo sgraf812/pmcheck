@@ -1614,8 +1614,8 @@ information into account.
   \nreft{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y{:}\tau}}{x} &=&
     \nreft{\Gamma,\overline{a},\overline{y{:}\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta \overline{y' \ntermeq \bot} \adddelta x \termeq \deltaconapp{K}{a}{y} & (3) \\
   &&&& \quad \text{where $\overline{y'} \subseteq \overline{y}$ bind strict fields} \\
-  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \nreft{\Gamma,x{:}\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y{:}\tau'}{e}} & (4) \\
-  &&&& \quad \text{where $\overline{a}\,\overline{y} \freein \Gamma$, $\overline{e{:}\tau'}$} \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \nreft{\Gamma,x{:}\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \ntermeq \bot \adddelta x \termeq \deltaconapp{K}{a}{y} & (4) \\
+  &&&& \quad \addphi \overline{\ctlet{y{:}\tau'}{e}} \qquad \text{where $\overline{a}\,\overline{y} \freein \Gamma$, $\overline{e{:}\tau'}$} \\
   \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{y} &=& \nreft{\Gamma,x{:}\tau}{\Delta} \adddelta x \termeq y & (5) \\
   \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{e} &=& \nreft{\Gamma,x{:}\tau}{\Delta} & (6) \\
   % TODO: Somehow make the coercion from delta to phi less ambiguous
@@ -1706,8 +1706,9 @@ In Equation (3), a pattern guard extends the context and adds suitable type
 constraints and a positive constructor constraint arising from the binding.
 Equation (4) of $\!\addphi\!$ performs some limited, but important reasoning
 about let bindings: it flattens possibly nested constructor applications, such
-as $\ctlet{|x|}{|Just True|}$. Note that Equation (6) simply discards let
-bindings that cannot be expressed in $\nabla$; we'll see an extension in
+as $\ctlet{|x|}{|Just True|}$, and asserts that such constructor applications
+can't be $\bot$. Note that Equation (6) simply discards let bindings that
+cannot be expressed in $\nabla$; we'll see an extension in
 \Cref{ssec:extviewpat} that avoids this information loss.
 % The last case of $\!\addphi\!$
 % turns the syntactically and semantically identical subset of $\varphi$ into
