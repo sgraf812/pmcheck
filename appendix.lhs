@@ -55,6 +55,14 @@ without a \extension{COMPLETE} set.
 
 \[
 \begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}ll}
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \ldots \text{as before} \ldots & (4a) \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\ntconapp{N}{\sigma}{e}} &=& \nreft{\Gamma,x{:}\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \ntconapp{N}{a}{y} \addphi \ctlet{y{:}\tau'}{e} & (4b) \\
+  &&&& \quad \text{where $\overline{a}\,y \freein \Gamma$, $e{:}\tau'$} \\
+\end{array}
+\]
+
+\[
+\begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}ll}
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq  \deltaconapp{K}{a}{y} &=& \ldots \text{as before} \ldots & (10a) \\
   \nreft{\Gamma}{\Delta} &\adddelta& \highlight{x \termeq \ntconapp{N}{a}{y}} &=&
     \begin{cases}
@@ -163,7 +171,9 @@ Analogous subtle reasoning justifies the difference in warnings for |g2| and
 
   \item A newtype pattern match $N \; pat_1\,...\,pat_n$ is lazy: it does not
   force evaluation. So, compared to data constructor matches, the desugaring
-  function $\ds$ omits the $\grdbang{x}$.
+  function $\ds$ omits the $\grdbang{x}$. Additionally, Equation (4) of
+  $\addphi$, responsible for reasoning about |let| bindings, has a special case
+  for newtypes that omits the $x \ntermeq \bot$ constraint.
 
   \item Similar in spirit to $\rep{\Delta}{x}$, which chases variable equality
   constraints $x \termeq y$, we now also occasionally need to look through
