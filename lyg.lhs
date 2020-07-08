@@ -2177,8 +2177,8 @@ that none of them is completely covered:
 \]
 \[
 \begin{array}{c}
-  \cons(\nreft{\Gamma}{\Delta}, \tau) = \begin{cases}
-    \highlight{\overline{C_1,...,C_{n_i}}^i} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ \highlight{\text{type constructor with \extension{COMPLETE} sets $\overline{C_1,...,C_{n_i}}^i$}} \\ (after normalisation according to the type constraints in $\Delta$)} \\
+  \cons(\nreft{\Gamma}{\Delta},\tau) = \begin{cases}
+    \highlight{\overline{C_1,...,C_{n_i}}^i} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$; \, \highlight{$T$ \text{ type constructor with \extension{COMPLETE} sets $\overline{C_1,...,C_{n_i}}^i$}} \\ (after normalisation according to the type constraints in $\Delta$)} \\
     \highlight{\epsilon} & \text{otherwise} \\
   \end{cases}
 \end{array}
