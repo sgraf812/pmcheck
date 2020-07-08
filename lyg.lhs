@@ -19,7 +19,7 @@
 %% 'Lower Your Guards'
 %% by Sebastian Graf, Simon Peyton Jones, and Ryan G. Scott.
 %%
-\setcopyright{acmlicensed}
+\setcopyright{rightsretained}
 \acmPrice{}
 \acmDOI{10.1145/3408989}
 \acmYear{2020}
