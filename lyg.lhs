@@ -606,7 +606,7 @@ flow to the second equation, so it is redundant and can be deleted.
 % Although \citet{gadtpm} incorporates strictness constraints into their algorithm,
 % it does not consider constraints that arise from strict fields.
 
-\subsubsection{Redundancy Versus Inaccessibility}
+\subsubsection{Redundancy versus Inaccessibility}
 \label{sssec:inaccessibility}
 
 When reporting unreachable equations, we must distinguish between \emph{redundant}
@@ -2590,7 +2590,7 @@ handles many of the subtleties of GADTs, guards, and laziness mentioned in
 \Cref{sec:problem}. Despite this, the \gmtm algorithm still gives incorrect
 warnings in many cases.
 
-\subsubsection{\gmtm does not consider laziness in its full glory}
+\subsubsection{\gmtm Does Not Consider Laziness in its Full Glory}
 
 The formalism in \citet{gadtpm} incorporates strictness constraints, but
 these constraints can only arise from matching against data constructors.
@@ -2600,7 +2600,7 @@ would incorrectly warn that |v| (\Cref{ssec:strictness}) is missing a case for
 |SJust|, even though such a case is unreachable. \lyg, on the other hand,
 more thoroughly tracks strictness when desugaring Haskell programs.
 
-\subsubsection{\gmtm's treatment of guards is shallow}
+\subsubsection{\gmtm's Treatment of Guards Is Shallow}
 
 \gmtm can only reason about guards through an abstract term oracle. Although
 the algorithm is parametric over the choice of oracle, in practice the
@@ -2688,7 +2688,7 @@ constraints. GHC's constraint solver already has limited support for term-level
 reasoning as part of its \texttt{DataKinds} language extension
 \citep{hspromoted}, so the groundwork is present.
 
-\subsubsection{Refinement type--based totality checking in Liquid Haskell}
+\subsubsection{Refinement Type--Based Totality Checking in Liquid Haskell}
 
 In addition to \lyg, Liquid Haskell uses refinement types to perform a limited form of
 exhaustivity checking \cite{liquidhaskell,refinement-reflection}.
@@ -2719,7 +2719,7 @@ arguments |0| or |1|.
 
 \subsection{Other Representations of Constraints}
 
-\subsubsection{Leveraging existing constraint solvers}
+\subsubsection{Leveraging Existing Constraint Solvers}
 
 \lyg represents $\Phi$ constraints using logical predicates that are
 tailor-made for \lyg's purposes. One could instead imagine encoding $\Phi$
@@ -2736,7 +2736,7 @@ might incur significant constant factors. Moreover, elaborating from
 one logic to another could inhibit programmers from forming a mental model of
 how coverage checking works.
 
-\subsubsection{Refinement types versus predicates}
+\subsubsection{Refinement Types versus Predicates}
 
 Refinement types $\Theta$ and predicates $\Phi$ are very similar. The main
 difference between the two is that refinement types carry a typing context
