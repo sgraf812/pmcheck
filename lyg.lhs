@@ -69,9 +69,9 @@
 
 \input{macros}
 
-\clubpenalty = 10000
-\widowpenalty = 10000
-\displaywidowpenalty = 10000
+\clubpenalty = 1000000
+\widowpenalty = 1000000
+\displaywidowpenalty = 1000000
 
 % Tables should have the caption above
 \floatstyle{plaintop}
@@ -2460,7 +2460,9 @@ Of the 361 libraries in \texttt{head.hackage}, seven of them revealed coverage
 issues that only \lyg warned about. Two of the libraries, \texttt{pandoc} and
 \texttt{pandoc-types}, have cases that
 were flagged as redundant due to \lyg's improved treatment of guards and
-term equalities. One library, \texttt{geniplate-mirror}, has a case that was
+term equalities.
+\\
+One library, \texttt{geniplate-mirror}, has a case that was
 redundant by way of long-distance information. Another library,
 \texttt{generic-data}, has a case that is redundant due to bang patterns.
 
@@ -2626,6 +2628,8 @@ easily be extended, as \lyg's treatment of view patterns
 (\Cref{ssec:extviewpat}) demonstrates. While \gmtm's term oracle could be
 improved to accomplish the same thing, it is unlikely to be as
 straightforward of a process as extending $\addphi$.
+
+\pagebreak
 
 \subsection{Comparison with Similar Coverage Checkers}
 
@@ -2906,14 +2910,11 @@ knowledge into wider use.
 In this paper, we describe Lower Your Guards, a coverage checking algorithm that
 distills rich pattern matching into simple guard trees. Guard trees are
 amenable to analyses that are not easily expressible in coverage checkers
-that work over structural pattern matches. This allows \lyg to report more
-accurate warnings while also avoiding performance issues when checking
-complex programs.
+that work over structural pattern matches.
 
 \begin{acks}
 We would like to thank the anonymous ICFP reviewers for their feedback, as well
-as anyone else who provided feedback on earlier drafts:
-Henning Dieterichs, Martin Hecker, Sylvain Henry, Philipp Kr\"uger, Luc
+as Henning Dieterichs, Martin Hecker, Sylvain Henry, Philipp Kr\"uger, Luc
 Maranget and Sebastian Ullrich.
 \end{acks}
 
