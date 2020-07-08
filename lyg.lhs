@@ -355,11 +355,10 @@ demonstrates various capabilities of guards:
 
 \begin{code}
 guardDemo :: Char -> Char -> Int
-guardDemo c1 c2
-  | c1 == 'a'                            = 0
-  | 'b' <- c1                            = 1
-  | let c1' = c1, 'c' <- c1', c2 == 'd'  = 2
-  | otherwise                            = 3
+guardDemo c1 c2  | c1 == 'a'                            = 0
+                 | 'b' <- c1                            = 1
+                 | let c1' = c1, 'c' <- c1', c2 == 'd'  = 2
+                 | otherwise                            = 3
 \end{code}
 \noindent
 This function has four \emph{guarded right-hand sides} or GRHSs for short.
@@ -391,6 +390,7 @@ inequalities. Clearly, coverage checking for guards is
 undecidable in general. However, while we cannot accurately check \emph{all} uses of guards,
 we can at least give decent warnings for some common cases.
 For instance, take the following functions:
+
 \begin{minipage}{\textwidth}
 \begin{minipage}{0.33\textwidth}
 \centering
