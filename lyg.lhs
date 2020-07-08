@@ -63,15 +63,11 @@
 \usepackage{xspace}
 
 \usepackage{float}
-\floatstyle{boxed}
-\restylefloat{figure}
 
 \usepackage{hyperref}
 \usepackage{cleveref}
 
 \input{macros}
-
-\usepackage[labelfont=bf]{caption}
 
 \clubpenalty = 10000
 \widowpenalty = 10000
@@ -2492,10 +2488,10 @@ use cases like \texttt{HsYAML}'s. The unreachable code in \texttt{Cabal} and
 
 \subsection{Performance Tests}
 
-{\floatstyle{plain}
-\restylefloat{figure}
-\begin{figure}
+\begin{table}
 
+\caption{The relative compile-time performance of GHC 8.8.3 (which implements \gmtm) and HEAD
+         (which implements \lyg) on test cases designed to stress-test coverage checking.}
 \begin{tabular}{c || r r r || r r r ||}
 \cline{2-7}
 \textbf{}                                  & \multicolumn{3}{c||}{\textbf{Time (milliseconds)}} & \multicolumn{3}{c||}{\textbf{Megabytes allocated}} \\ \cline{2-7}
@@ -2513,11 +2509,8 @@ use cases like \texttt{HsYAML}'s. The unreachable code in \texttt{Cabal} and
 \multicolumn{1}{||c||}{\texttt{PmSeriesV}} &   131 & 4.54 & -96.5\% &    139 & 9.53 & -93.2\% \\ \hline
 \end{tabular}
 
-\caption{The relative compile-time performance of GHC 8.8.3 (which implements \gmtm) and HEAD
-         (which implements \lyg) on test cases designed to stress-test coverage checking.}
 \label{fig:perf}
-\end{figure}
-}
+\end{table}
 
 To compare the efficiency of \gmtm and \lyg quantitatively, we
 collected a series of test cases from GHC's test suite that are designed to test
