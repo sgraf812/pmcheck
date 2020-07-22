@@ -787,17 +787,13 @@ Stardust \cite{dunfieldthesis}.
   k,n,m       \in &\mathbb{N}&    & \\
   K           \in &\Con &         & \\
   x,y,a,b     \in &\Var &         & \\
-  \tau,\sigma \in &\Type&         & \\
-  e \in           &\Expr&\Coloneqq& x \\
-                  &     &\mid     & \genconapp{K}{\tau}{\gamma}{e} \\
-                  &     &\mid     & ... \\
+  \tau,\sigma \in &\Type&\Coloneqq& a \mid ... \\
+  e \in           &\Expr&\Coloneqq& x \mid  \genconapp{K}{\tau}{\gamma}{e} \mid ... \\
 \end{array} &
 \begin{array}{rlcl}
   \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
 
-  p \in           &\Pat &\Coloneqq& \_ \\
-                  &     &\mid     & K \; \overline{p} \\
-                  &     &\mid     & ... \\
+  p \in           &\Pat &\Coloneqq& \_ \mid K \; \overline{p} \mid ... \\
 
   g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
                   &     &\mid     & \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \\
@@ -1190,8 +1186,8 @@ $$
 \begin{array}{rcl}
   \reft{ x{:}|Bool|}{ \true } & \text{denotes} & \{ \bot, |True|, |False| \} \\
   \reft{ x{:}|Bool|}{ x \ntermeq \bot } & \text{denotes} & \{ |True|, |False| \} \\
-  \reft{ x{:}|Bool|}{ \ctcon{|True|}{x} } & \text{denotes} & \{ |True| \} \\
-  \reft{ mx{:}|Maybe Bool|}{ \ctcon{|Just x|}{mx}, x \ntermeq \bot } & \text{denotes} & \{ |Just True|, |Just False| \} \\
+  \reft{ x{:}|Bool|}{ x \ntermeq \bot \wedge \ctcon{|True|}{x} } & \text{denotes} & \{ |True| \} \\
+  \reft{ mx{:}|Maybe Bool|}{ mx \ntermeq \bot \wedge \ctcon{|Just x|}{mx} \wedge x \ntermeq \bot } & \text{denotes} & \{ |Just True|, |Just False| \} \\
 \end{array}
 $$
 The syntax of $\Phi$ is given in \Cref{fig:syn}. It consists of a collection
