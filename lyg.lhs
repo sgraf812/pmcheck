@@ -783,19 +783,15 @@ Stardust \cite{dunfieldthesis}.
 \[ \textbf{Guard syntax} \]
 \[
 \begin{array}{cc}
-\begin{array}{rlcl}
+\begin{array}{rr@@{\,}c@@{\,}l}
   k,n,m       \in &\mathbb{N}&    & \\
   K           \in &\Con &         & \\
   x,y,a,b     \in &\Var &         & \\
   \tau,\sigma \in &\Type&\Coloneqq& a \mid ... \\
   e \in           &\Expr&\Coloneqq& x \mid  \genconapp{K}{\tau}{\gamma}{e} \mid ... \\
 \end{array} &
-\begin{array}{rlcl}
-  \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
-
-  p \in           &\Pat &\Coloneqq& \_ \mid K \; \overline{p} \mid ... \\
-
-  g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
+\begin{array}{rr@@{\,}c@@{\,}l}
+  g \in           &g &\Coloneqq& \grdlet{x:\tau}{e} \\
                   &     &\mid     & \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \\
                   &     &\mid     & \grdbang{x} \\
 \end{array}
@@ -804,8 +800,8 @@ Stardust \cite{dunfieldthesis}.
 
 \[ \textbf{Clause tree syntax} \]
 \[
-\begin{array}{rcll}
-  t \in \Gdt &\Coloneqq& \gdtrhs{k} \mid \gdtseq{t_1}{t_2} \mid \gdtguard{g}{t}         \\
+\begin{array}{r@@{\,}c@@{\,}ll}
+  t &\Coloneqq& \gdtrhs{k} \mid \gdtseq{t_1}{t_2} \mid \gdtguard{g}{t}         \\
   u \in \Ant &\Coloneqq& \antrhs{\Theta}{k} \mid \antseq{u_1}{u_2} \mid \antbang{\Theta}{u} \\
 \end{array}
 \]
@@ -976,6 +972,52 @@ This desugars to the following guard tree (where the $x_i$ represent |f|'s argum
     [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_3}{|g x_2|}, \grdbang{t_3}, \grdcon{|True|}{t_3}$} [2]]]
 \end{forest}
 \\
+
+\begin{forest}
+  grdtree,
+  [
+    [{$\grdbang{x}, \grdcon{|Nothing|}{x}$} [1]]
+    [{$\grdbang{x}, \grdcon{|Just t|}{x}, \grdbang{t}, \grdcon{|True|}{t}$} [2]]]
+\end{forest}
+\\
+
+\begin{forest}
+  grdtree,
+  [
+    [{$\grdbang{x}, \grdcon{|Just t|}{x}, \grdbang{t}, \grdcon{|True|}{t}$} [1]]]
+\end{forest}
+\\
+
+
+\[
+    \Theta = \reft{x:|Maybe Int|}{x \ntermeq \bot \wedge x \ntermeq |Nothing| \wedge \grdcon{|Just t|}{x} \wedge \grdbang{t} \wedge t \ntermeq |True|}
+\]
+
+\[
+    \{|Just False| \}
+\]
+
+\[
+    \unc \; \ann \; \ds \; \generate
+\]
+
+\[
+    \reft{x:|Maybe Bool|}{\true}
+\]
+
+\[
+    \reft{x:|Maybe Bool|}{(x \ntermeq \bot \wedge x \ntermeq |Just|) \vee (x \ntermeq \bot \wedge \grdcon{|Just t|}{x} \wedge t \ntermeq \bot \wedge t \ntermeq |True|) }
+\]
+
+
+\[
+    \{ ??? \}
+\]
+
+\[
+    \{|Just True|, |Just False| \}
+\]
+
 The first line says ``evaluate $x_1$; then match $x_1$ against $Just~ t_1$;
 then evaluate $t_1$; then match $t_1$ against $(t_2,t_3)$'' and so on. If any
 of those matches fail, we fall through into the second line. Note that we write
