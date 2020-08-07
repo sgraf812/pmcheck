@@ -1018,6 +1018,18 @@ This desugars to the following guard tree (where the $x_i$ represent |f|'s argum
     \{|Just True|, |Just False| \}
 \]
 
+\begin{forest}
+  grdtree,
+  [
+    [{$\grdbang{x}, \grdcon{|Just t|}{x}$} [1]]
+    [{$\grdbang{x}, \grdcon{|Nothing|}{x}$} [2]]]
+\end{forest}
+\\
+
+\[
+    \reft{x:|Maybe Bool|}{x \ntermeq \bot \wedge x \ntermeq |Just| \wedge x \ntermeq |Nothing|}
+\]
+
 The first line says ``evaluate $x_1$; then match $x_1$ against $Just~ t_1$;
 then evaluate $t_1$; then match $t_1$ against $(t_2,t_3)$'' and so on. If any
 of those matches fail, we fall through into the second line. Note that we write
@@ -1226,9 +1238,10 @@ denotes the vector of values $x_1 \ldots x_n$ that satisfy the predicate $\Phi$.
 For example:
 $$
 \begin{array}{rcl}
+  \reft{ x{:}|Bool|}{ \false } & \text{denotes} & \emptyset \\
   \reft{ x{:}|Bool|}{ \true } & \text{denotes} & \{ \bot, |True|, |False| \} \\
   \reft{ x{:}|Bool|}{ x \ntermeq \bot } & \text{denotes} & \{ |True|, |False| \} \\
-  \reft{ x{:}|Bool|}{ x \ntermeq \bot \wedge \ctcon{|True|}{x} } & \text{denotes} & \{ |True| \} \\
+  \reft{ x{:}|Bool|}{ x \ntermeq \bot \wedge x \ntermeq |False| } & \text{denotes} & \{ |True| \} \\
   \reft{ mx{:}|Maybe Bool|}{ mx \ntermeq \bot \wedge \ctcon{|Just x|}{mx} \wedge x \ntermeq \bot } & \text{denotes} & \{ |Just True|, |Just False| \} \\
 \end{array}
 $$
