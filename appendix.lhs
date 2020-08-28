@@ -73,7 +73,8 @@ without a \extension{COMPLETE} set.
         & \text{otherwise} \\
     \end{cases} & (10b)\\
     &&&&\text{where}~x' = \rep{\Delta}{x} \; \text{and} \; y' = \rep{\Delta}{y} \\
-  \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq |C| &=& \ldots \text{similar to before with |C| instead of |K|} \ldots & (11) \\
+  \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq |K| &=& \ldots \text{as before} \ldots & (11a) \\
+  \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq |N| &=& \false & (11b) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
     \false & \text{if $\highlight{\repnt{\Delta}{x}} \ntermeq \bot \in \Delta$} \\
     \nreft{\Gamma}{(\Delta,\highlight{\repnt{\Delta}{x}}\termeq \bot)} & \text{otherwise} \\
@@ -185,17 +186,22 @@ Analogous subtle reasoning justifies the difference in warnings for |g2| and
   $\bot$ constraints modulo $\repnt{\Delta}{x}$.
 
   \item Equation (10) (previously handling $x \termeq \deltaconapp{K}{a}{y}$)
-  has been split into Equation $(10a)$ that handles positive data constructor
-  constraints, as before, and $(10b)$, which handles positive newtype
-  constructor constraints.
+  and Equation (11) (previously handling $x \ntermeq K$) have been split to
+  account for newtype constructors.
 
   \item The first two cases of the new Equation $(10b)$ handle any existing
-  positive or negative constructor constraints in $\Delta$, as with Equation
-  (10). The remaining two cases are reminiscent of Equation (14) ($x \termeq
-  y$). Provided there are neither positive nor negative newtype constructor
-  constraints involving $x$, any remaining $\bot$ constraints are moved from
-  $\rep{\Delta}{x}$ to the new representative $\repnt{\Delta'}{x}$, which will
-  be $\repnt{\Delta'}{y}$ in the returned $\Delta'$.
+  positive or negative newtype constructor constraints in $\Delta$, as with
+  Equation (10). The remaining two cases are reminiscent of Equation (14) ($x
+  \termeq y$). Provided there are neither positive nor negative newtype
+  constructor constraints involving $x$, any remaining $\bot$ constraints are
+  moved from $\rep{\Delta}{x}$ to the new representative $\repnt{\Delta'}{x}$,
+  which will be $\repnt{\Delta'}{y}$ in the returned $\Delta'$.
+
+  \item The new Equation $(11b)$ handles negative newtype constructor
+  constraints by immediately rejecting. The reason it doesn't consider $\bot$
+  as an inhabitant is that for $\bot$ to be an inhabitant, it must be an
+  inhabitant of the newtype's field. For that, we must have $x \termeq |K y|$
+  for some |y|, which contradicts with the very constraint we want to add!
 
 \end{itemize}
 \noindent
