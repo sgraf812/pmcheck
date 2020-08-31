@@ -66,7 +66,6 @@ without a \extension{COMPLETE} set.
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq  \deltaconapp{K}{a}{y} &=& \ldots \text{as before} \ldots & (10a) \\
   \nreft{\Gamma}{\Delta} &\adddelta& \highlight{x \termeq \ntconapp{N}{a}{y}} &=&
     \begin{cases}
-      \false & \text{if $x' \ntermeq N \in \Delta$} \\
       \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta y \termeq z & \text{if $x' \termeq \ntconapp{N}{b}{z} \in \Delta$} \\
       \nreft{\Gamma}{\Delta} & \text{if $x' = \repnt{\Delta}{y'}$} \\
       \nreft{\Gamma}{((\Delta\!\setminus\!x'), x'\!\termeq\!\ntconapp{N}{a}{y'})} \adddelta (\restrict{\Delta}{x'}\![y'\!/\!x'])
@@ -189,13 +188,15 @@ Analogous subtle reasoning justifies the difference in warnings for |g2| and
   and Equation (11) (previously handling $x \ntermeq K$) have been split to
   account for newtype constructors.
 
-  \item The first two cases of the new Equation $(10b)$ handle any existing
-  positive or negative newtype constructor constraints in $\Delta$, as with
-  Equation (10). The remaining two cases are reminiscent of Equation (14) ($x
-  \termeq y$). Provided there are neither positive nor negative newtype
-  constructor constraints involving $x$, any remaining $\bot$ constraints are
-  moved from $\rep{\Delta}{x}$ to the new representative $\repnt{\Delta'}{x}$,
-  which will be $\repnt{\Delta'}{y}$ in the returned $\Delta'$.
+  \item The first case of the new Equation $(10b)$ handles any existing
+  positive newtype constructor constraints in $\Delta$, as with Equation (10).
+  Take note that negative newtype constructor constraints may never occur in
+  $\Delta$ because of Equation $(11b)$, as explained in the next paragraph. The
+  remaining two cases are reminiscent of Equation (14) ($x \termeq y$).
+  Provided there are neither positive nor negative newtype constructor
+  constraints involving $x$, any remaining $\bot$ constraints are moved from
+  $\rep{\Delta}{x}$ to the new representative $\repnt{\Delta'}{x}$, which will
+  be $\repnt{\Delta'}{y}$ in the returned $\Delta'$.
 
   \item The new Equation $(11b)$ handles negative newtype constructor
   constraints by immediately rejecting. The reason it doesn't consider $\bot$
