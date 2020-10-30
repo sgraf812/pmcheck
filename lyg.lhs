@@ -755,7 +755,7 @@ Stardust \cite{dunfieldthesis}.
 \end{array} &
 \begin{array}{rcl}
   \mathit{defn}   &\Coloneqq& \overline{clause} \\
-  clause &\Coloneqq&  f \; \overline{pat} \; \overline{match} \\
+  clause &\Coloneqq&  f \; \overline{pat} \; match \\
   pat    &\Coloneqq& x \mid |_| \mid K \; \overline{pat} \mid x|@|pat \mid |!|pat \mid expr \rightarrow pat \\
   match  &\Coloneqq& \mathtt{=} \; expr \mid \overline{grhs} \\
   grhs   &\Coloneqq& \mathtt{\mid} \; \overline{guard} \; \mathtt{=} \; expr \\
