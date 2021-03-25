@@ -240,7 +240,7 @@ compose coercions attached to $\termeq$. However, that would entail deep
 changes to syntax as well as to the definition of $\expand$ to recover the
 newtype constructor patterns visible in source syntax.
 
-\subsection{Strictness and Totality}
+\subsection{Strictness, Divergence and Other Side-Effects}
 
 Instead of extending the source language, let's discuss ripping out a language
 feature for a change! So far, we have focused on Haskell as the source
@@ -249,19 +249,59 @@ strategy of the source language becomes irrelevant after desugaring, it raises t
 question of how much our approach could be simplified if we targeted a source
 language that was strict by default, such as OCaml or Idris (or even Rust).
 
-First off, both OCaml and Idris offer language support for laziness and lazy pattern
-matches, so the question rather becomes whether the gained simplification is
-actually worth risking unusable or even unsound warning messages when making
-use of laziness. If the answer is ``No'', then there isn't anything to
-simplify, just relatively more $x \ntermeq \bot$ constraints to handle.
+On first thought, it is tempting to simply drop all parts related to laziness
+from the formalism, such as $\grdbang{x}$ from $\Grd$ and
+$\antbang{}{\hspace{-0.6em}}$ from $\Ant$. Actually, $\Ant$ and $\red$ could
+vanish altogether and $\ann$ could just collect the redundant GRHS directly!
+Since there wouldn't be any bang guards, there is no reason to have $x
+\termeq \bot$ and $x \ntermeq \bot$ constraints either. Most importantly, the
+\inhabitedbot judgment form has to go, because $\bot$ does not inhabit any types
+anymore.
 
-Otherwise, in a completely eager language we could simply drop $\grdbang{x}$
-from $\Grd$ and $\antbang{}{\hspace{-0.6em}}$ from $\Ant$. Actually, $\Ant$ and
-$\red$ could go altogether and $\ann$ could just collect the redundant GRHS
-directly! Since there wouldn't be any bang guards, there is no reason to have
-$x \termeq \bot$ and $x \ntermeq \bot$ constraints either. Most importantly,
-the \inhabitedbot judgment form has to go, because $\bot$ does not inhabit any
-types anymore.
+And compiler writers for total languages such as Idris or Agda would live
+happily after: Talking about $x \ntermeq \bot$ constraints made no sense there
+to begin with. Not so with OCaml or Rust, which are strict, non-total languages
+and allow arbitrary side-effects in expressions. Here's an example in OCaml:
 
-Note that in a total language such as Agda, reasoning about $x \termeq \bot$
-makes no sense to begin with! All the same simplifications apply.
+\begin{code}
+let rec f p x =
+  match x with
+    []                         -> []
+  | hd::_ when p hd && x = []  -> [hd]
+  | _::tl                      -> f p tl;;
+\end{code}
+
+Is the second clause redundant? It depends on whether |p| performs a
+side-effect, such as throwing an exception, diverging, or even releasing a
+mutex. We may not say without knowing the definition of |p|, so the second
+clause has an inaccessible RHS but is not redundant.
+It's a similar situation as in a lazy language, although the fact that
+side-effects only matter in the guard of a match clause (where we can put
+arbitrary expressions) makes the issue much less prominent.
+
+We could come up with a desugaring function for OCaml that desugars the pattern
+match above to the following guard tree:
+
+\begin{forest}
+  grdtree,
+  [
+    [{$\grdcon{|[]|}{x}$} [1]]
+    [{$\grdcon{|hd::tl|}{x}, \grdlet{t}{|p hd|}, \grdbang{t}, \grdcon{true}{t}, \grdcon{|[]|}{x}$} [2]]
+    [{$\grdcon{|hd::tl|}{x}$} [3]]]
+\end{forest}
+
+Compared to Haskell, note the lack of a bang guard on the match variable |x|.
+Instead, there's now a bang guard on |t|, the new temporary that stands for
+|p hd|. The bang guard will keep alive the second clause of the guard tree and
+our algorithm would not classify the second clause as redundant, although it
+will be flagged as inaccessible. Since the RHS of a |let| guard, such as
+|p hd|, might have arbitrary side-effects, equational reasoning is lost and we
+may no longer identify $|p hs| \termeq |t|$ as in \Cref{ssec:extviewpat}.
+
+Zooming out a bit more, desugaring of Haskell pattern matches using bang guards
+$\grdbang{|x|}$ can be understood as an \emph{effect handler} for \emph{one
+specific effect}, namely divergence. We have shown in this work that divergence
+is an ambient side-effect of a non-total, lazy language that is worth worrying
+about and gave a formalism that handles that specific effect with respect to
+pattern-match coverage checking. We believe that a very similar formalism could
+scale to arbitrary side-effects such as releasing a mutex.
