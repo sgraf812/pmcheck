@@ -12,6 +12,7 @@
 
 %\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
 
+\let\Bbbk\undefined % https://github.com/kosmikus/lhs2tex/issues/82
 %include custom.fmt
 
 %% Journal information
@@ -42,7 +43,6 @@
 \usepackage{todonotes}
 \usepackage{fancyvrb}  % for indentation in Verbatim
 \usepackage{wasysym}   % for \checked
-\usepackage{amssymb}   % for beautiful empty set
 
 \usepackage{prooftree} % For derivation trees
 \usepackage{stackengine} % For linebraks in derivation tree premises
@@ -792,8 +792,6 @@ Stardust \cite{dunfieldthesis}.
 \end{array} &
 \begin{array}{rlcl}
   \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
-
-  p \in           &\Pat &\Coloneqq& \_ \mid K \; \overline{p} \mid ... \\
 
   g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
                   &     &\mid     & \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \\
