@@ -739,6 +739,16 @@ Stardust \cite{dunfieldthesis}.
 % \lyg continues this tradition---see
 % \ryan{What section?}\sg{It's a little implicit at the moment, because it just works. Not sure what to reference here.} for \lyg's take on GADTs.
 
+
+\section{Lower Your Guards: A New Coverage Checker}
+\label{sec:overview}
+
+\begin{figure}
+\includegraphics{pipeline.pdf}
+\caption{Bird's eye view of pattern match checking}
+\label{fig:pipeline}
+\end{figure}
+
 \begin{figure}
 \centering
 \[
@@ -766,16 +776,6 @@ Stardust \cite{dunfieldthesis}.
 
 \caption{Source syntax: A desugared Haskell}
 \label{fig:srcsyn}
-\end{figure}
-
-
-\section{Lower Your Guards: A New Coverage Checker}
-\label{sec:overview}
-
-\begin{figure}
-\includegraphics{pipeline.pdf}
-\caption{Bird's eye view of pattern match checking}
-\label{fig:pipeline}
 \end{figure}
 
 \begin{figure}
@@ -970,11 +970,11 @@ This desugars to the following guard tree (where the $x_i$ represent |f|'s argum
 \begin{forest}
   grdtree,
   [
-    [{$\grdbang{x_1}, \grdcon{|Just t_1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{xs}{t_2}, \grdlet{ys}{x_2}, \grdbang{ys}, \grdcon{|Nothing|}{ys}$} [1]]
-    [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_3}{|g x_2|}, \grdbang{t_3}, \grdcon{|True|}{t_3}$} [2]]]
+    [{$\grdbang{x_1}, \grdcon{|Just t1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{xs}{t_2}, \grdlet{ys}{x_2}, \grdbang{ys}, \grdcon{|Nothing|}{ys}$} [1]]
+    [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_4}{|g x2|}, \grdbang{t_4}, \grdcon{|True|}{t_4}$} [2]]]
 \end{forest}
 \\
-The first line says ``evaluate $x_1$; then match $x_1$ against $Just~ t_1$;
+The first line says ``evaluate $x_1$; then match $x_1$ against |Just t1|;
 then evaluate $t_1$; then match $t_1$ against $(t_2,t_3)$'' and so on. If any
 of those matches fail, we fall through into the second line. Note that we write
 $\gdtguard{g_1, ..., g_n}{t}$ instead of
@@ -1012,6 +1012,8 @@ It also generates an abundance of fresh
 temporary variables; in practice, the implementation of $\ds$ can be smarter
 than this by looking at the pattern (which might be a variable match or
 as-pattern) when choosing a name for a temporary variable.
+In that case, it is important that every binder in the source language has
+a unique name.
 
 % It is assumed that the top-level match variables
 % $x_1$ through $x_n$ in the $clause$ cases have special, fixed names. All other

@@ -9,4 +9,6 @@
 %format !_ = "\;!\_"
 %format |> = "\triangleright"
 %format bot = "\bot"
-
+%format x1
+%format x2
+%format t1
