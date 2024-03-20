@@ -1723,7 +1723,7 @@ If there is a solution involving a different constructor like $\Delta(x)
 existing solution. Otherwise, the constraint is compatible and is added to
 $\Delta$.
 
-Adding a negative constructor constraint $x \ntermeq Just$ is quite similar (Equation (11)),
+Adding a negative constructor constraint $x \ntermeq |Just|$ is quite similar (Equation (11)),
 except that we have to make sure that $x$ still satisfies \inv{2}, which is
 checked by the $\inhabited{\nabla}{\Delta(x)}$ judgment (\cf \Cref{sec:test})
 in \Cref{fig:inh}. Handling positive and negative constraints involving $\bot$
@@ -1876,7 +1876,7 @@ out to be a unification procedure in disguise) makes use of an
 This tests whether there are any values of $x$ that satisfy $\nabla$. If not,
 $\nabla$ does not uphold \inv{2}.
 For example, the conjunction
-$x \ntermeq Just, x \ntermeq Nothing, x \ntermeq \bot$ does not satisfy \inv{2},
+$x \ntermeq |Just|, x \ntermeq |Nothing|, x \ntermeq \bot$ does not satisfy \inv{2},
 because no value of $x$ satisfies all those constraints.
 
 The \inhabitedbot judgment of $\inhabited{\nabla}{x}$ tries to instantiate $x$ to
