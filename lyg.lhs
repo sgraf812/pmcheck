@@ -1609,7 +1609,7 @@ information into account.
     \nreft{\Gamma,\overline{a},\overline{y{:}\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta \overline{y' \ntermeq \bot} \adddelta x \termeq \deltaconapp{K}{a}{y} & (3) \\
   &&&& \quad \text{where $\overline{y'} \subseteq \overline{y}$ bind strict fields} \\
   \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \nreft{\Gamma,x{:}\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \ntermeq \bot \adddelta x \termeq \deltaconapp{K}{a}{y} & (4) \\
-  &&&& \quad \addphi \overline{\ctlet{y{:}\tau'}{e}} \qquad \text{where $\overline{a}\,\overline{y}$ fresh \wrt $\Gamma$, $\overline{e{:}\tau'}$} \\
+  &&&& \quad \addphi \overline{\ctlet{y{:}\tau'}{e}} \qquad \text{where $\overline{a}\,\overline{y}$ fresh, $\overline{e{:}\tau'}$} \\
   \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{y} &=& \nreft{\Gamma,x{:}\tau}{\Delta} \adddelta x \termeq y & (5) \\
   \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{e} &=& \nreft{\Gamma,x{:}\tau}{\Delta} & (6) \\
   % TODO: Somehow make the coercion from delta to phi less ambiguous
@@ -1861,7 +1861,7 @@ contradiction.
       \adddelta x \termeq \deltaconapp{K}{a}{y}
       \adddelta \overline{y' \ntermeq \bot} \\
   \qquad \qquad
-    \text{where $K : \forall \overline{a}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{a}\,\overline{y}$ fresh \wrt $\Gamma$, $x:\tau_x \in \Gamma$, $\overline{y'} \subseteq \overline{y}$ bind strict fields} \\
+    \text{where $K : \forall \overline{a}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{a}\,\overline{y}$ fresh, $x:\tau_x \in \Gamma$, $\overline{y'} \subseteq \overline{y}$ bind strict fields} \\
 
 \end{array}
 \]
