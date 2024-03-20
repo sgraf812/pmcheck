@@ -592,7 +592,7 @@ v SNothing   = 0
 v (SJust _)  = 1   -- Redundant!
 \end{code}
 The ``!'' in the definition of |SJust| makes the constructor strict,
-so $(|SJust|~ \bot) = \bot$.
+so $(|SJust bot|) = \bot$.
 Curiously, this makes the second equation of $v$ redundant!
 Since $\bot$ is the only inhabitant of type |Void|, the only inhabitants of
 |SMaybe Void| are |SNothing| and $\bot$.  The former will match on the first equation;
@@ -663,9 +663,9 @@ v' :: Maybe Void -> Int
 v' Nothing = 0
 v' (Just !_) = 1    -- Not redundant, but GRHS is inaccessible
 \end{code}
-The inhabitants of the type |Maybe Void| are $\bot$, |Nothing|, and $(|Just|~\bot)$.
+The inhabitants of the type |Maybe Void| are $\bot$, |Nothing|, and $(|Just bot|)$.
 The input $\bot$ makes the first equation diverge; |Nothing| matches on the first equation;
-and $(|Just|~\bot)$ makes the second equation diverge because of the bang pattern.
+and $(|Just bot|)$ makes the second equation diverge because of the bang pattern.
 Therefore, none of the three inhabitants will result in the right-hand side of
 the second equation being reached. Note that the second equation is inaccessible, but not redundant
 (\Cref{sssec:inaccessibility}).
@@ -1037,10 +1037,10 @@ It desugars thus:
 \begin{forest}
   grdtree
   [
-    [{$\grdbang{mx},\, \grdcon{\mathtt{Nothing}}{mx},\, \grdbang{my},\, \grdcon{\mathtt{Nothing}}{my}$} [1]]
-    [{$\grdbang{my},\, \grdcon{\mathtt{Just}\;y}{my}$}
-     [{$ \grdbang{mx},\, \grdcon{\mathtt{Just}\;x}{mx},\, \grdlet{t}{|x == y|},\, \grdbang{t},\, \grdcon{\mathtt{True}}{t}$} [2]]
-      [{$\grdbang{otherwise},\, \grdcon{\mathtt{True}}{otherwise}$} [3]]]]
+    [{$\grdbang{mx},\, \grdcon{|Nothing|}{mx},\, \grdbang{my},\, \grdcon{|Nothing|}{my}$} [1]]
+    [{$\grdbang{my},\, \grdcon{|Just y|}{my}$}
+     [{$ \grdbang{mx},\, \grdcon{|Just x|}{mx},\, \grdlet{t}{|x == y|},\, \grdbang{t},\, \grdcon{|True|}{t}$} [2]]
+      [{$\grdbang{otherwise},\, \grdcon{|True|}{otherwise}$} [3]]]]
 \end{forest}
 
 \noindent
@@ -1112,10 +1112,10 @@ time to come up with the language of guard trees.  We recommend it!
 % \begin{forest}
 %   grdtree
 %   [
-%     [{$\grdbang{mx},\, \grdcon{\mathtt{Nothing}}{mx},\, \grdbang{my},\, \grdcon{\mathtt{Nothing}}{my}$} [1]]
-%     [{$\grdbang{mx},\, \grdcon{\mathtt{Just}\;x}{mx},\, \grdbang{my},\, \grdcon{\mathtt{Just}\;y}{my}$}
-%       [{$\grdlet{t}{|x == y|},\, \grdbang{t},\, \grdcon{\mathtt{True}}{t}$} [2]]
-%       [{$\grdbang{otherwise},\, \grdcon{\mathtt{True}}{otherwise}$} [3]]]]
+%     [{$\grdbang{mx},\, \grdcon{|Nothing|}{mx},\, \grdbang{my},\, \grdcon{|Nothing|}{my}$} [1]]
+%     [{$\grdbang{mx},\, \grdcon{|Just x|}{mx},\, \grdbang{my},\, \grdcon{|Just y|}{my}$}
+%       [{$\grdlet{t}{|x == y|},\, \grdbang{t},\, \grdcon{|True|}{t}$} [2]]
+%       [{$\grdbang{otherwise},\, \grdcon{|True|}{otherwise}$} [3]]]]
 % \end{forest}
 %
 % This representation is much more explicit than the original program. For
@@ -1243,8 +1243,8 @@ emphasises clarity over efficiency.}.
 % predicate $\Phi$ is semantically equivalent to:
 % \[
 % \begin{array}{cl}
-%          & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Nothing} \vee (\ctcon{\mathtt{Nothing}}{mx} \wedge my \ntermeq \bot \wedge my \ntermeq \mathtt{Nothing}))) \\
-%   \wedge & (mx \ntermeq \bot \wedge (mx \ntermeq \mathtt{Just} \vee (\ctcon{\mathtt{Just}\;x}{mx} \wedge my \ntermeq \bot \wedge (my \ntermeq \mathtt{Just})))) \\
+%          & (mx \ntermeq \bot \wedge (mx \ntermeq |Nothing| \vee (\ctcon{|Nothing|}{mx} \wedge my \ntermeq \bot \wedge my \ntermeq |Nothing|))) \\
+%   \wedge & (mx \ntermeq \bot \wedge (mx \ntermeq |Just| \vee (\ctcon{|Just x|}{mx} \wedge my \ntermeq \bot \wedge (my \ntermeq |Just|)))) \\
 % \end{array}
 % \]
 %
@@ -1268,9 +1268,9 @@ emphasises clarity over efficiency.}.
 %
 % A GRHS is deemed accessible (\checked{}) whenever there is a non-empty set of
 % values reaching it. For the first GRHS, the set that reaches it looks
-% like $\{ (mx, my) \mid mx \ntermeq \bot, \grdcon{\mathtt{Nothing}}{mx}, my
-% \ntermeq \bot, \grdcon{\mathtt{Nothing}}{my} \}$, which is inhabited by
-% $(\mathtt{Nothing}, \mathtt{Nothing})$. Similarly, we can find inhabitants for
+% like $\{ (mx, my) \mid mx \ntermeq \bot, \grdcon{|Nothing|}{mx}, my
+% \ntermeq \bot, \grdcon{|Nothing|}{my} \}$, which is inhabited by
+% $(|Nothing|, |Nothing|)$. Similarly, we can find inhabitants for
 % the other two clauses.
 %
 % A \lightning{} denotes possible divergence in one of the bang guards and
@@ -1785,7 +1785,7 @@ contradiction.
 % variables? It is because of empty data types and strict fields. For example,
 % |v| from \Cref{ssec:strictness} does not have any uncovered patterns. And our
 % approach should see that by looking at its uncovered set $\reft{x : |Maybe
-% Void|}{x \ntermeq \bot \wedge x \ntermeq \mathtt{Nothing}}$. Specifically, the
+% Void|}{x \ntermeq \bot \wedge x \ntermeq |Nothing|}$. Specifically, the
 % candidate |SJust y| (for fresh |y|) for |x| should be rejected, because there
 % is no inhabitant for |y|! $\bot$ is ruled out by the strict field and |Void|
 % has no data constructors with which to instantiate |y|. Hence it is important
@@ -2428,7 +2428,7 @@ Our implementation does better and shows that this is just a presentational
 matter. It splits $\nabla_b$ on all possible constructors of |Bool|, immediately
 rejecting the refinement $\nabla_b \adddelta x \termeq |True|$ due to $x \ntermeq
 |True| \in \nabla_b$. What remains is the refinement $\nabla_b \adddelta x
-\termeq False = \nreft{x:|Bool|}{x \ntermeq \bot, x \ntermeq |True|, x \termeq
+\termeq |False| = \nreft{x:|Bool|}{x \ntermeq \bot, x \ntermeq |True|, x \termeq
 |False|}$, which has the desired positive information for which $\expand$ will
 happily report |False| as the uncovered pattern.
 

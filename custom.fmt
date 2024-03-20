@@ -1,7 +1,12 @@
+\let\Bbbk\relax
 %include polycode.fmt
 
+%subst conid a = "\conid{" a "}"
+%subst varid a = "\varid{" a "}"
+%subst keyword a = "\keyword{" a "}"
+
 % suppress some built-in formatting of lhs2TeX:
-%format not = "\id{not}"
+%format not = "\varid{not}"
 %format == = "\mathop{==}"
 %format /= = "\mathop{{/}{=}}"
 %format && = "\mathop{\&\&}"
