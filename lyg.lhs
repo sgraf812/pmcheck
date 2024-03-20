@@ -1461,7 +1461,7 @@ $\red$ is defined in \Cref{fig:gen}:
 \item Having reached a node $\antbang{\Theta}{t}$, if $\Theta$ is inhabited there is a possibility of
   divergence. Now suppose that all the GRHSs in $t$ are redundant.  Then we should pick the first
   of them and mark it as inaccessible.
-\item The case for $\red(t;u)$ is trivial: just combine the classifications of $t$ and $u$.
+\item The case for $\antseq{t}{u}$ follows by congruence: just combine the classifications of $t$ and $u$.
 \end{itemize}
 To illustrate the second case consider |u'| from \Cref{sssec:inaccessibility} and its annotated tree:
 
@@ -1476,7 +1476,7 @@ To illustrate the second case consider |u'| from \Cref{sssec:inaccessibility} an
 \end{minipage}%
 \begin{minipage}{0.05\textwidth}
 \centering
-\[ \leadsto \]
+$\leadsto$
 \end{minipage}%
 \begin{minipage}{0.2\textwidth}
 \centering
