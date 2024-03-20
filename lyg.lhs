@@ -1629,9 +1629,9 @@ information into account.
     \false & \text{otherwise} \\
   \end{cases} & (9)\\
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
+    \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
     \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K'}{b}{z} \in \Delta$ and $K \not= K'$} \\
     \false & \text{if $\rep{\Delta}{x} \ntermeq K \in \Delta$} \\
-    \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
     \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \text{otherwise} \\
   \end{cases} & (10) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
