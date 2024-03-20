@@ -793,6 +793,8 @@ Stardust \cite{dunfieldthesis}.
 \begin{array}{rlcl}
   \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
 
+  p \in           &\Pat &\Coloneqq& \_ \mid K \; \overline{p} \mid ... \\ % used in 3.4 when we generate inhabiting patterns
+
   g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
                   &     &\mid     & \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \\
                   &     &\mid     & \grdbang{x} \\
