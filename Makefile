@@ -1,7 +1,7 @@
 # .SUFFIXES: .tex .pdf
 # .PHONY: all clean distclean FORCE
 
-all: main
+all: lyg.pdf
 
 # -halt-on-error: Halts on first error, rather than prompting the user
 REPL_FLAGS := -halt-on-error
@@ -9,7 +9,7 @@ REPL_FLAGS := -halt-on-error
 .PHONY: main
 
 # The main paper without appendix
-main: lyg.lhs custom.fmt macros.tex
+lyg.pdf: lyg.lhs custom.fmt macros.tex
 	lhs2TeX --poly lyg.lhs >lyg.tex
 	pdflatex $(REPL_FLAGS) -draftmode lyg
 	bibtex   lyg
@@ -17,33 +17,9 @@ main: lyg.lhs custom.fmt macros.tex
 	pdflatex $(REPL_FLAGS) lyg
 
 # Fast, possibly incomplete rebuild. Mostly sufficient for quick rebuilds
-main_fast: lyg.lhs custom.fmt macros.tex
+fast: lyg.lhs custom.fmt macros.tex
 	lhs2TeX --poly lyg.lhs >lyg.tex
 	pdflatex $(REPL_FLAGS) lyg
-
-# Just a standalone appendix.pdf
-appendix: lyg.lhs custom.fmt macros.tex appendix.lhs
-	lhs2TeX --poly appendix.lhs >appendix.tex
-	lhs2TeX --poly lyg.lhs | sed -e 's/^%\\appendixonly/\\appendixonly/g' >lyg.tex
-	pdflatex $(REPL_FLAGS) -draftmode -jobname=appendix lyg
-	bibtex   lyg
-	pdflatex $(REPL_FLAGS) -draftmode -jobname=appendix lyg
-	pdflatex $(REPL_FLAGS) -jobname=appendix lyg
-
-diff:
-	pdflatex $(REPL_FLAGS) -draftmode diff
-	bibtex   diff
-	pdflatex $(REPL_FLAGS) -draftmode diff
-	pdflatex $(REPL_FLAGS) diff
-
-# Main paper including appendix
-extended:
-	lhs2TeX --poly appendix.lhs >appendix.tex
-	lhs2TeX --poly lyg.lhs | sed -e 's/^%\\extended/\\extended/g' >lyg.tex
-	pdflatex $(REPL_FLAGS) -draftmode -jobname=lyg_ext lyg
-	bibtex   lyg_ext
-	pdflatex $(REPL_FLAGS) -draftmode -jobname=lyg_ext lyg
-	pdflatex $(REPL_FLAGS) -draftmode -jobname=lyg_ext lyg
 
 # For camera-ready submission
 zipball: main appendix
