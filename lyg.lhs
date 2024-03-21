@@ -517,7 +517,7 @@ length (Text.uncons -> Just (_, xs))  = 1 + length xs
 Again, it would be unreasonable to expect a coverage checking algorithm to
 prove that |length| is exhaustive, but one might hope for a coverage checking algorithm that handles
 some common usage patterns.  For example, \lyg{} indeed \emph{is} able to
-prove that |safeLast| function is exhaustive:
+prove that the |safeLast| function is exhaustive:
 \begin{code}
 safeLast :: [a] -> Maybe a
 safeLast (reverse -> [])       = Nothing
