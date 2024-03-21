@@ -571,8 +571,20 @@ v SNothing   = 0
 v (SJust _)  = 1   -- Redundant!
 \end{code}
 The ``!'' in the definition of |SJust| makes the constructor strict,
-so $(|SJust bot|) = \bot$.
-Curiously, this makes the second equation of $v$ redundant!
+which means that in contrast to lazy |Just|, evaluating |(SJust (error "boom"))|
+will evaluate |(error "boom")| eagerly, just like in a strict language such as
+OCaml, thus |(SJust (error "boom"))| is equivalent to |(error "boom")| under
+beta reduction.
+
+The role of |error "boom"| is generic here; we could have used other expressions
+that throw an exception, such as |undefined|, or loop indefinitely, such as
+the definition |loop = loop|.
+We loosely refer to these kinds of expressions as \emph{diverging}, and denote
+them semantically with $\bot$, as is common in denotational semantics,
+and get semantic equalities such as $(|SJust bot|) = \bot$.
+
+Curiously, the strict field semantics of |SJust| makes the second equation of
+$v$ redundant!
 Since $\bot$ is the only inhabitant of type |Void|, the only inhabitants of
 |SMaybe Void| are |SNothing| and $\bot$.  The former will match on the first equation;
 the latter will make the first equation diverge.  In neither case will execution
@@ -1935,7 +1947,7 @@ Coverage checking should also work for |case| expressions and nested function
 definitions, like
 \begin{code}
 f True  = 1
-f x     = ... (case x of{ False -> 2; True -> 3 }) ...
+f x     = ... ^^ (case x of{ False -> 2; True -> 3 }) ...
 \end{code}
 
 \noindent
