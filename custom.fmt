@@ -1,4 +1,3 @@
-\let\Bbbk\relax
 %include polycode.fmt
 
 %subst conid a = "\conid{" a "}"
@@ -7,9 +6,9 @@
 
 % suppress some built-in formatting of lhs2TeX:
 %format not = "\varid{not}"
-%format == = "\mathop{==}"
-%format /= = "\mathop{{/}{=}}"
-%format && = "\mathop{\&\&}"
+%format == = "\mathbin{==}"
+%format /= = "\mathbin{{/}{=}}"
+%format && = "\mathbin{\&\&}"
 %format !! = "\;!"
 %format !_ = "\;!\_"
 %format |> = "\triangleright"
