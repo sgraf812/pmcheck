@@ -2518,6 +2518,163 @@ specific effect}, namely divergence. In this work, we have given this side-effec
 a first-class treatment in our formalism in order to get accurate coverage
 warnings in a lazy language.
 
+\subsection{Or-patterns}
+
+\begin{figure}
+\[
+\begin{array}{c}
+  pat   \Coloneqq ... \mid \highlight{pat_1 \mathtt{;} pat_2} \\
+\end{array}
+\]
+\[
+\begin{array}{rcll}
+  t \in \Gdt &\Coloneqq& ... \mid \highlight{\gdtguard{d}{t}}         \\
+  d \in \GdDag &\Coloneqq& \dagone{g} \mid \dagpar{d_1}{d_2} \mid \dagseq{d_1}{d_2} \\
+\end{array}
+\]
+\[
+  \ds(x, pat_1 \mathtt{;} pat_2) = \grdcon{N \; y_1\,...\,y_n}{x}, \ds(y_1, pat_1), ..., \ds(y_n, pat_n)
+\]
+
+\[
+\begin{array}{lcl}
+  \repnt{\Delta}{x} &=& \begin{cases}
+    \repnt{\Delta}{y} & x \termeq y \in \Delta \text{ or } x \termeq |N|\;\overline{a}\;y \in \Delta \\
+    x & \text{otherwise} \\
+  \end{cases} \\
+\end{array}
+\]
+
+\[
+\begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}ll}
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \ldots \text{as before} \ldots & (4a) \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\ntconapp{N}{\sigma}{e}} &=& \nreft{\Gamma,x{:}\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \ntconapp{N}{a}{y} \addphi \ctlet{y{:}\tau'}{e} & (4b) \\
+  &&&& \quad \text{where $\overline{a}\,y \freein \Gamma$, $e{:}\tau'$} \\
+\end{array}
+\]
+
+\[
+\begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}ll}
+  \nreft{\Gamma}{\Delta} &\adddelta& x \termeq  \deltaconapp{K}{a}{y} &=& \ldots \text{as before} \ldots & (10a) \\
+  \nreft{\Gamma}{\Delta} &\adddelta& \highlight{x \termeq \ntconapp{N}{a}{y}} &=&
+    \begin{cases}
+      \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta y \termeq z & \text{if $x' \termeq \ntconapp{N}{b}{z} \in \Delta$} \\
+      \nreft{\Gamma}{\Delta} & \text{if $x' = \repnt{\Delta}{y'}$} \\
+      \nreft{\Gamma}{((\Delta\!\setminus\!x'), x'\!\termeq\!\ntconapp{N}{a}{y'})} \adddelta (\restrict{\Delta}{x'}\![y'\!/\!x'])
+        & \text{otherwise} \\
+    \end{cases} & (10b)\\
+    &&&&\text{where}~x' = \rep{\Delta}{x} \; \text{and} \; y' = \rep{\Delta}{y} \\
+  \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq |K| &=& \ldots \text{as before} \ldots & (11a) \\
+  \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq |N| &=& \false & (11b) \\
+  \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
+    \false & \text{if $\highlight{\repnt{\Delta}{x}} \ntermeq \bot \in \Delta$} \\
+    \nreft{\Gamma}{(\Delta,\highlight{\repnt{\Delta}{x}}\termeq \bot)} & \text{otherwise} \\
+  \end{cases} & (12) \\
+  \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
+    \false & \text{if $\highlight{\repnt{\Delta}{x}} \termeq \bot \in \Delta$} \\
+    \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\highlight{\repnt{\Delta}{x}}\ntermeq\bot)}}{x}$} \\
+    \nreft{\Gamma}{(\Delta,\highlight{\repnt{\Delta}{x}} \ntermeq \bot)} & \text{otherwise} \\
+  \end{cases} & (13) \\
+
+\end{array}
+\]
+
+\caption{Extending coverage checking to handle Or-patterns}
+\label{fig:orpats}
+\end{figure}
+
+Since this work appeared at ICFP in 2020, GHC 9.12 accumulated a new extension
+to the pattern language: \emph{Or-patterns}%
+\footnote{\url{https://github.com/ghc-proposals/ghc-proposals/blob/master/proposals/0522-or-patterns.rst}}.
+Or-patterns are an established language feature in OCaml and Python as well, and can be used as follows:
+
+\begin{code}
+data LogLevel = Debug | Info | Error
+notifyAdmin :: LogLevel -> Bool
+notifyAdmin Error          = True
+notifyAdmin (Debug; Info)  = False
+\end{code}
+
+\noindent
+Here, the second clause matches when either |Debug| or |Info| matches the
+parameter.
+When the programmer later adds a new |LogLevel| |Warning|, \lyg should report
+the match in |notifyAdmin| as inexhaustive.
+Compared to using a wildcard match for the second clause that would silently
+define |notifyAdmin Warning = False|, the coverage warning prompts the
+programmer to make a conscious decision about which value should be returned.
+
+Or-patterns were an interesting real-world benchmark to see how well \lyg
+scales to new language features.
+Previously in \Cref{fig:desugar}, if one part of a pattern failed to match, the
+whole pattern would fail.
+As a result, the desugaring function $\ds$ could map a pattern into a
+(conjunctive) list of $\Grd$s.
+However, with Or-patterns, we need a way to encode first-match semantics as in
+$\gdtseq{|t1|}{|t2|}$ as well.
+One way to do so would be to desugar patterns into guard trees as well.
+That would be akin to \emph{exploding} each Or-pattern into two clauses, copying
+the guard tree of the tail of the clause each time.
+One can show that this leads to exponential code blowup for repeated use of
+Or-patterns, hence we propose a different solution: Guard \emph{DAGs}
+(directed-acyclic graphs).
+
+The structure of guard DAGs, $\GdDag$, is defined in \Cref{fig:orpats}.
+Now consider the function
+
+\begin{code}
+f :: Ordering -> Ordering -> Int
+f (LT; EQ)  (EQ; GT)  = 1
+f _         _         = 2
+\end{code}
+
+\noindent
+The presumed desugaring to guard trees looks as follows:
+
+\begin{forest}
+  grdtree,
+  [
+    [{$\dagseq{\dagpar{\dagseq{\dagone{\grdbang{x_1}}}{\dagone{\grdcon{|LT|}{x_1}}}}
+                      {\dagseq{\dagone{\grdbang{x_1}}}{\dagone{\grdcon{|EQ|}{x_1}}}}}
+              {\dagpar{\dagseq{\dagone{\grdbang{x_1}}}{\dagone{\grdcon{|EQ|}{x_1}}}}
+                      {\dagseq{\dagone{\grdbang{x_1}}}{\dagone{\grdcon{|GT|}{x_1}}}}}$} [1]]
+    [{$\grdcon{|True|}{|otherwise|}$} [2]]]
+\end{forest}
+\\
+
+Matching is defined as follows:
+\begin{itemize}
+  \item Matching $\dagone{g}$ means matching a single guard $g \in \Grd$, just like $\gdtguard{g}{}$ did previously.
+    However, $\gdtguard{d}{}$ stores a guard DAG $d$ instead of a single guard $g$ now.
+  \item Matching a parallel composition $\dagpar{d_1}{d_2}$ means matching against $d_1$;
+    if that succeeds, the overall match succeeds; if not, match against $d_2$.
+  \item Matching a sequential composition $\dagseq{d_1}{d_2}$ means matching against $d_1$;
+    if that succeeds, match against $d_2$.
+    If either match fails, the whole match fails.
+\end{itemize}
+
+%\[
+%\begin{array}{ccc}
+%&
+%\leadsto &
+%\fbox{\begin{code}
+%f :: Ordering -> Ordering -> Int
+%f LT  EQ  = 1; f LT  GT  = 1
+%f EQ  EQ  = 1; f EQ  GT  = 1
+%f _   _   = 2
+%\end{code}}
+%\end{array}
+%\]
+
+and thus would easily lead to exponential blow-up in the size of generated guard
+trees.
+
+\noindent
+
+
+doing
+would never ``backtrack''because they introduce
+The results are recorded in \Cref{fig:orpats}.
 
 \section{Implementation}
 \label{sec:impl}
