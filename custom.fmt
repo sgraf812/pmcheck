@@ -8,6 +8,7 @@
 %format ^^ = "\;"
 
 % suppress some built-in formatting of lhs2TeX:
+%format pattern = "\keyword{pattern}"
 %format undefined = "\varid{undefined}"
 %format not = "\varid{not}"
 %format == = "\mathbin{==}"
@@ -17,6 +18,15 @@
 %format !_ = "\;!\_"
 %format |> = "\triangleright"
 %format bot = "\bot"
+
+% subscripts
 %format x1
 %format x2
+%format x3
+%format y1
+%format y2
+%format y3
 %format t1
+%format t2
+%format t3
+%format t4

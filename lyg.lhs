@@ -1075,8 +1075,9 @@ In equation $(\dagger)$ of \Cref{fig:desugar} we generate an explicit
 bang guard $!x$ to reflect the fact that pattern matching against a data constructor
 requires evaluation.  However, Haskell's |newtype| declarations introduce data
 constructors that are \emph{not} strict, so their desugaring is just like $(\dagger)$ but
-with no $!x$ (see Appendix A).  From this point onwards, then, strictness is expressed \emph{only} through
-bang guards $!x$, while constructor guards $\grdcon{|K a b|}{y}$ are not considered
+with no $!x$ (\Cref{ssec:newtypes}).
+From this point onwards, then, strictness is expressed \emph{only} through bang
+guards $!x$, while constructor guards $\grdcon{|K a b|}{y}$ are not considered
 strict.
 
 In a way there is nothing very deep here, but it took us a surprisingly long
@@ -2002,7 +2003,7 @@ As can be seen in \Cref{fig:srcsyn}, Haskell function definitions need to have
 at least one clause. That leads to an awkward situation when pattern matching
 on empty data types, like |Void|:
 
-\begin{minipage}{0.2\textwidth}
+\begin{minipage}{0.4\textwidth}
 \begin{code}
 absurd1 _   = undefined
 absurd2 !_  = undefined
@@ -2055,13 +2056,13 @@ guard tree:
 \begin{forest}
   grdtree,
   [
-    [{$\grdlet{|y_1|}{|reverse x_1|}, \grdbang{|y_1|}, \grdcon{|Nothing|}{|y_1|}$} [1]]
-    [{$\grdlet{|y_2|}{|reverse x_1|}, \grdbang{|y_2|}, \grdcon{|Just t_1|}{|y_2|}, \grdbang{|t_1|}, \grdcon{|(t_2, t_3)|}{|t_1|}$} [2]]]
+    [{$\grdlet{|y1|}{|reverse x1|}, \grdbang{|y1|}, \grdcon{|Nothing|}{|y1|}$} [1]]
+    [{$\grdlet{|y2|}{|reverse x1|}, \grdbang{|y2|}, \grdcon{|Just t1|}{|y2|}, \grdbang{|t1|}, \grdcon{|(t2, t3)|}{|t1|}$} [2]]]
 \end{forest}
 
-As far as \lyg is concerned, the matches on both |y_1| and |y_2| are
+As far as \lyg is concerned, the matches on both |y1| and |y2| are
 non-exhaustive. But that's actually too conservative: Both bind the same value!
-By making the connection between |y_1| and |y_2|, the checker could infer that
+By making the connection between |y1| and |y2|, the checker could infer that
 the match was exhaustive.
 
 This can be fixed by maintaining equivalence classes of semantically equivalent
@@ -2090,9 +2091,9 @@ handle the new constraint in $\adddelta$, as follows:
 Where $\equiv_{\Delta}$ is (an approximation to) semantic equivalence modulo
 substitution under $\Delta$. A clever data structure is needed to answer
 queries of the form $e \termeq \mathunderscore \in \Delta$, efficiently. In our
-implementation, we use a trie to index expressions rapidly and sacrifice
-reasoning modulo $\Delta$ in doing so. Plugging in an SMT solver to decide
-$\equiv_{\Delta}$ would be more precise, but certainly less efficient.
+implementation, we use a trie to index expressions rapidly~\citep{triemaps} and
+sacrifice reasoning modulo $\Delta$ in doing so. Plugging in an SMT solver to
+decide $\equiv_{\Delta}$ would be more precise, but certainly less efficient.
 
 \subsection{Pattern Synonyms}
 \label{ssec:extpatsyn}
@@ -2135,9 +2136,9 @@ ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
 \[
 \begin{array}{r@@{\,}c@@{\,}lcl}
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{C}{a}{y} &=& \begin{cases}
+    \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C}{b}{z} \in \Delta$ } \\
     \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C'}{b}{z} \in \Delta$ and \highlight{C \cap C' = \emptyset}} \\
     \false & \text{if $\rep{\Delta}{x} \ntermeq C \in \Delta$} \\
-    \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C}{b}{z} \in \Delta$ } \\
     \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{C}{a}{y})} & \text{otherwise} \\
   \end{cases}
 \end{array}
@@ -2146,12 +2147,11 @@ ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
 where the suggestive notation $C \cap C' = \emptyset$ is only true iff $C$ and
 $C'$ are distinct data constructors.
 
-\sg{Omit this paragraph?}
 Note that the slight relaxation means that the constructed $\nabla$ might
 violate $\inv{4}$, specifically when $C \cap C' \not= \emptyset$. In practice
 that condition only matters for the well-definedness of $\expand$, which in
 case of multiple solutions (\ie $x \termeq P, x\termeq Q$) has to commit to one
-them for the purposes of reporting warnings. Fixing that requires a bit of
+of them for the purposes of reporting warnings. Fixing that requires a bit of
 boring engineering.
 
 Another subtle point appears in rule $(\dagger)$ in \Cref{fig:desugar}: should
@@ -2171,7 +2171,7 @@ coverage checker already manages a single \extension{COMPLETE} set.
 We have \inhabitedinst from \Cref{fig:inh} currently making sure that this
 \extension{COMPLETE} set is in fact inhabited. We also have \inhabitednocpl
 that handles the case when we can't find \emph{any} \extension{COMPLETE} set
-for the given type (think |x : Int -> Int|). The obvious way to generalise this
+for the given type (think |x :: Int -> Int|). The obvious way to generalise this
 is by looking up all \extension{COMPLETE} sets attached to a type and check
 that none of them is completely covered:
 \[
@@ -2209,9 +2209,10 @@ $\cons$ was changed to return a list of all available \extension{COMPLETE} sets,
 and \inhabitedinst tries to find an inhabiting ConLike in each one of them in
 turn. Note that \inhabitednocpl is gone, because it coincides with
 \inhabitedinst for the case where the list returned by $\cons$ was empty. The
-judgment has become simpler and and more general at the same time! Note that
-checking against multiple \extension{COMPLETE} sets so frequently is
-computationally intractable. We will worry about that in \Cref{sec:impl}.
+judgment has become simpler and and more general at the same time!
+A worry is that checking against multiple \extension{COMPLETE} sets so
+frequently is computationally intractable.
+We will worry about that in \Cref{ssec:residual-complete}.
 
 \subsection{Literals}
 
@@ -2238,6 +2239,7 @@ as possibly overlapping, so they behave exactly like nullary pattern synonyms
 without a \extension{COMPLETE} set.
 
 \subsection{Newtypes}
+\label{ssec:newtypes}
 
 \begin{figure}
 \[
@@ -2317,8 +2319,8 @@ To a first approximation, programmers interact with a newtype
 as if it was a data type with a single constructor with a single field.
 But the pattern-matching semantics of newtypes are different!
 Here are three key examples that distinguish newtypes from data types.
-Functions |g1|, |g2|, |g3| match on a \emph{newtype} |N|, while functions
-|h1|, |h2|, |h3| match on a \emph{data type} |D|:
+Functions |g1|, |g2| match on a \emph{newtype} |N|, while functions
+|h1|, |h2| match on a \emph{data type} |D|:
 
 \begin{minipage}{\textwidth}
 \begin{minipage}[b]{0.5\textwidth}
@@ -2370,9 +2372,8 @@ when matching against |(MkN _)| and hence is redundant.
 The third equation will evaluate the first argument, which is surely bottom,
 so matching will diverge and the equation is inaccessible.
 A perhaps surprising consequence is that the definition of |g1| is exhaustive,
-because after |N Void| was deprived of its sole inhabitant $\bot \equiv
-MkN\,\bot$ by the third GRHS, there is nothing left to match on (similarly for
-|h1|).
+because after |N Void| was deprived of its sole inhabitant |bot = MkN bot| by
+the third GRHS, there is nothing left to match on (similarly for |h1|).
 Analogous subtle reasoning justifies the difference in warnings for |g2| and
 |h2|.
 
@@ -2458,7 +2459,8 @@ feature for a change! So far, we have focused on Haskell as the source
 language, which is lazy by default. Although the difference in evaluation
 strategy of the source language becomes irrelevant after desugaring, it raises the
 question of how much our approach could be simplified if we targeted a source
-language that was strict by default, such as OCaml or Idris (or even Rust).
+language that was strict by default, such as OCaml, Lean, Idris, Rust, Python or
+C\#.
 
 On first thought, it is tempting to simply drop all parts related to laziness
 from the formalism, such as $\grdbang{x}$ from $\Grd$ and
@@ -2469,7 +2471,7 @@ Since there wouldn't be any bang guards, there is no reason to have $x
 \inhabitedbot judgment form has to go, because $\bot$ does not inhabit any types
 anymore.
 
-And compiler writers for total languages such as Idris or Agda would live
+And compiler writers for total languages such as Lean, Idris or Agda would live
 happily after: Talking about $x \ntermeq \bot$ constraints made no sense there
 to begin with. Not so with OCaml or Rust, which are strict, non-total languages
 and allow arbitrary side-effects in expressions. Here's an example in OCaml:
@@ -2482,6 +2484,7 @@ let rec f p x =
   | _::tl                      -> f p tl;;
 \end{code}
 
+\noindent
 Is the second clause redundant? It depends on whether |p| performs a
 side-effect, such as throwing an exception, diverging, or even releasing a
 mutex. We may not say without knowing the definition of |p|, so the second
@@ -2510,24 +2513,21 @@ will be flagged as inaccessible. Since the RHS of a |let| guard, such as
 may no longer identify $|p hs| \termeq |t|$ as in \Cref{ssec:extviewpat}.
 
 Zooming out a bit more, desugaring of Haskell pattern matches using bang guards
-$\grdbang{|x|}$ can be understood as an \emph{effect handler} for \emph{one
-specific effect}, namely divergence. We have shown in this work that divergence
-is an ambient side-effect of a non-total, lazy language that is worth worrying
-about and gave a formalism that handles that specific effect with respect to
-pattern-match coverage checking. We believe that a very similar formalism could
-scale to arbitrary side-effects such as releasing a mutex.
+$\grdbang{|x|}$ can be understood as forcing \emph{one
+specific effect}, namely divergence. In this work, we have given this side-effect
+a first-class treatment in our formalism in order to get accurate coverage
+warnings in a lazy language.
+
 
 \section{Implementation}
 \label{sec:impl}
 
-We have implemented \lyg in a to-be-released version of GHC\footnote{The
-functionality described in this paper will be available in GHC 8.12 and later.},
+Our implementation of \lyg has been part of GHC since the 9.0 release in 2020,
 including all extensions in \Cref{sec:extensions} (except for strict-by-default
-source syntax in Appendix A). Our implementation accumulates quite a few tricks
+source syntax). Our implementation accumulates quite a few tricks
 that go beyond the pure formalism. This section is dedicated to describing
 these.
 
-\sg{Delete this paragraph?}
 Warning messages need to reference source syntax in order to be comprehensible
 by the user. At the same time, coverage checks involving GADTs need a
 type checked program, so the only reasonable design is to run the coverage checker
@@ -2549,7 +2549,7 @@ checking in the same tree traversal as desugaring.
   \end{cases} \\
 \end{array}
 \]
-\[ \ruleform{ \uncann(\overline{\nabla}, t) = (\overline{\nabla}, \Ant) } \]
+\[ \ruleform{ \uncann(\overline{\nabla}, t) = (\overline{\nabla}, u) } \]
 \[
 \begin{array}{lcl}
 \uncann(\overline{\nabla}, \gdtrhs{n}) &=& (\epsilon, \antrhs{\overline{\nabla}}{n}) \\
