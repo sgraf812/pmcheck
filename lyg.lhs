@@ -12,7 +12,6 @@
 
 %\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
 
-\let\Bbbk\undefined % https://github.com/kosmikus/lhs2tex/issues/82
 %include custom.fmt
 
 %% Journal information
@@ -558,49 +557,54 @@ the programmer to ensure that this invariant is upheld.
 \label{ssec:strictness}
 
 The evaluation order of pattern matching can impact whether a pattern is
-reachable or not. While Haskell is a lazy language, programmers can opt
-into extra strict evaluation by giving a data type strict fields, such as in
-this example:
+reachable or not.
+Consider:
 
 \begin{code}
-data Void -- No data constructors; only inhabitant is bottom
-data SMaybe a = SJust !!a | SNothing
-
-v :: SMaybe Void -> Int
-v SNothing   = 0
-v (SJust _)  = 1   -- Redundant!
+f :: Bool -> Bool -> Int
+f _     False  = 1
+f True  False  = 2
+f _     _      = 3
 \end{code}
-The ``!'' in the definition of |SJust| makes the constructor strict,
-which means that in contrast to lazy |Just|, evaluating |(SJust (error "boom"))|
-will evaluate |(error "boom")| eagerly, just like in a strict language such as
-OCaml, thus |(SJust (error "boom"))| is equivalent to |(error "boom")| under
-beta reduction.
 
-The role of |error "boom"| is generic here; we could have used other expressions
-that throw an exception, such as |undefined|, or loop indefinitely, such as
-the definition |loop = loop|.
-We loosely refer to these kinds of expressions as \emph{diverging}, and denote
-them semantically with $\bot$, as is common in denotational semantics,
-and get semantic equalities such as $(|SJust bot|) = \bot$.
+\noindent
+Is the second clause redundant?
+In a strict language such as OCaml or Lean the answer is ``Yes'', but
+in lazy Haskell this the answer is ``No''.
+To see that, consider the call |f (error "boom") True|, an expression that in
+a strict language would immediately evaluate the error in the argument |(error
+"boom")| by-value before making the call.
 
-Curiously, the strict field semantics of |SJust| makes the second equation of
-$v$ redundant!
-Since $\bot$ is the only inhabitant of type |Void|, the only inhabitants of
-|SMaybe Void| are |SNothing| and $\bot$.  The former will match on the first equation;
-the latter will make the first equation diverge.  In neither case will execution
-flow to the second equation, so it is redundant and can be deleted.
+In Haskell, after falling through the first clause that does not match in the
+second argument, the second clause will evaluate the first argument in order to
+match against |True|.
+Doing so forces the error, to much the same effect as in a strict language, and we
+see that |f (error "boom") True| evaluates to |error "boom"|.
+However, if we \emph{remove} the second clause, |f (error "boom") True|
+would evaluate to |3|, because the first argument is never needed during
+pattern-matching.
+Since removing the clause changes the semantics of the function, it
+cannot be redundant, but its right-hand side is \emph{inaccessible} still
+(\Cref{sssec:inaccessibility}).
 
-% Although \citet{gadtpm} incorporates strictness constraints into their algorithm,
-% it does not consider constraints that arise from strict fields.
+We could have used a different error such as |undefined| or a non-terminating
+expression such as |loop = loop| in the example above.
+The Haskell Language Report~\citep{haskell2010} does not distinguish between
+these different kinds of divergence, referring to them as $\bot$, and we do the
+same here.
+There are a number of language features which interact with $\bot$ in the
+context of pattern-matching.
 
 \subsubsection{Redundancy versus Inaccessibility}
 \label{sssec:inaccessibility}
 
-When reporting unreachable equations, we must distinguish between \emph{redundant}
-and \emph{inaccessible} cases. A redundant equation can be removed from a function
-without changing its semantics, whereas an inaccessible equation cannot, even
-though its right-hand side is unreachable.
-The examples below illustrate this:
+The example function |f| above demonstrates that when reporting unreachable
+equations, we must distinguish between \emph{redundant} and \emph{inaccessible}
+cases.
+A redundant equation can be removed from a function without changing its
+semantics, whereas an inaccessible equation cannot, even though its right-hand
+side is unreachable.
+The examples below illustrate the challenges for \lyg in more detail:
 
 \begin{minipage}{\textwidth}
 \begin{minipage}{0.4\textwidth}
@@ -624,22 +628,50 @@ u' _              = 3
 \end{minipage}
 \noindent
 Within |u|, the equations that return |1| and |3| could be deleted without
-changing the semantics of |u|, so they are classified as \emph{redundant}. Within |u'|,
-one can never reach the right-hand sides of the equations that return |1| and |2|,
-but they cannot be removed so easily. Using the definition above,
-$|u'|~\bot~|=|~\bot$, but if the first two equations were removed, then
-$|u'|~\bot~|= 3|$ because the argument is no longer forced by the |()|
-pattern. As a result, \lyg warns that the first two equations in |u'| are
-\emph{inaccessible}, which suggests to the programmer that |u'| might benefit from a
-refactor to avoid this (e.g., |u' () = 3|).
+changing the semantics of |u|, so they are classified as \emph{redundant}.
+Within |u'|, the right-hand sides of the equations that return |1| and |2|
+are inaccessible, but they cannot both be redundant because their clause
+evaluates the parameter; $|u'|~\bot~|=|~\bot$.
+As a result, \lyg picks the first equation in |u'| as inaccessible to keep
+alive the pattern-match on the parameter, and the second equation as redundant.
+Inaccessibility suggests to the programmer that |u'| might benefit from a
+refactor to render the first equation redundant as well (e.g., |u' () = 3|).
 
 Observe that |u| and |u'| have completely different warnings, but the
 only difference between the two functions is whether the second equation uses |True| or |False| in its guard.
 Moreover, this second equation affects the warnings for \emph{other} equations.
 This demonstrates that determining whether code is redundant or inaccessible
 is a non-local problem.
-Inaccessibility may seem like a tricky corner case, but GHC's users have
+Inaccessibility may seem like a corner case, but GHC's users have
 reported many bugs of this sort (\Cref{sec:ghc-issues}).
+
+\subsubsection{Strict Fields}
+
+Just like Haskell function parameters, fields of data constructors may hide
+arbitrary computations as well.
+However, Haskell programmers can opt into extra strict evaluation by giving a
+data type strict fields, such as in this example:
+
+\begin{code}
+data Void -- No data constructors; only inhabitant is bottom
+data SMaybe a = SJust !!a | SNothing
+
+v :: SMaybe Void -> Int
+v SNothing   = 0
+v (SJust _)  = 1   -- Redundant!
+\end{code}
+
+\noindent
+The ``!'' in the definition of |SJust| makes the constructor strict, so
+|(SJust bot) = bot| semantically, in contrast to the regular lazy |Just|
+constructor.
+
+Curiously, the strict field semantics of |SJust| makes the second equation of
+$v$ redundant!
+Since $\bot$ is the only inhabitant of type |Void|, the only inhabitants of
+|SMaybe Void| are |SNothing| and $\bot$.  The former will match on the first equation;
+the latter will make the first equation diverge.  In neither case will execution
+flow to the second equation, so it is redundant and can be deleted.
 
 \subsubsection{Bang Patterns}
 

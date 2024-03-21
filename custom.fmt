@@ -1,3 +1,4 @@
+\let\Bbbk\undefined % https://github.com/kosmikus/lhs2tex/issues/82
 %include polycode.fmt
 
 %subst conid a = "\conid{" a "}"
@@ -7,6 +8,7 @@
 %format ^^ = "\;"
 
 % suppress some built-in formatting of lhs2TeX:
+%format undefined = "\varid{undefined}"
 %format not = "\varid{not}"
 %format == = "\mathbin{==}"
 %format /= = "\mathbin{{/}{=}}"
