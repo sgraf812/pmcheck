@@ -110,27 +110,6 @@
 }
 \email{rgscott@@indiana.edu}
 
-% Some conditional build stuff for handling the Appendix
-
-\newif\ifmain
-\newif\ifappendix
-
-% Builds only the main paper by default.
-\maintrue
-\appendixfalse
-% But we provide a switch to build the Appendix only.
-\def\appendixonly{\mainfalse{}\appendixtrue{}}
-
-% .. so that you can comment out the following line to build the Appendix only
-% This is done by the `make appendix` target.
-%\appendixonly
-
-% Same thing for an extended version that includes the Appendix
-\def\extended{\maintrue{}\appendixtrue{}}
-%\extended
-
-\ifmain
-
 \begin{abstract}
 A compiler should warn if a function defined by pattern matching
 does not cover its inputs---that is, if there are missing or redundant
@@ -157,7 +136,7 @@ checker, both in accuracy and performance.
 %% 2012 ACM Computing Classification System (CSS) concepts
 %% Generate at 'http://dl.acm.org/ccs/ccs.cfm'.
 \begin{CCSXML}
-<ccs2012>
+ <ccs2012>
    <concept>
        <concept_id>10011007.10011006.10011041</concept_id>
        <concept_desc>Software and its engineering~Compilers</concept_desc>
@@ -3216,14 +3195,5 @@ Maranget and Sebastian Ullrich.
 \end{acks}
 
 \bibliography{references}
-
-\fi % \ifmain
-
-% Appendix
-\ifappendix
-\appendix
-\section{Appendix}\label{sec:appendix}
-\input{appendix}
-\fi % \ifappendix
 
 \end{document}
