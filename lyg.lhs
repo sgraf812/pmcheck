@@ -2523,17 +2523,17 @@ warnings in a lazy language.
 \begin{figure}
 \[
 \begin{array}{c}
-  pat   \Coloneqq ... \mid \highlight{pat_1 \mathtt{;} pat_2} \\
+  pat   \Coloneqq ... \mid \highlight{pat_1;\; pat_2} \\
 \end{array}
 \]
 \[
 \begin{array}{rcll}
-  t \in \Gdt &\Coloneqq& ... \mid \highlight{\gdtguard{d}{t}}         \\
-  d \in \GdDag &\Coloneqq& \dagone{g} \mid \dagpar{d_1}{d_2} \mid \dagseq{d_1}{d_2} \\
+  t \in \Gdt &\Coloneqq& ... \mid \gdtguard{\highlight{d}}{t}         \\
+  d \in \GrdDag &\Coloneqq& \epsilon \mid \dagone{g} \mid \dagpar{d_1}{d_2} \mid \dagseq{d_1}{d_2} \\
 \end{array}
 \]
 \[
-  \ds(x, pat_1 \mathtt{;} pat_2) = \grdcon{N \; y_1\,...\,y_n}{x}, \ds(y_1, pat_1), ..., \ds(y_n, pat_n)
+  \ds(x, pat_1;\; pat_2) = \dagpar{\ds(x, pat_1)}{\ds(x, pat_2)}
 \]
 
 \[
@@ -2619,7 +2619,7 @@ One can show that this leads to exponential code blowup for repeated use of
 Or-patterns, hence we propose a different solution: Guard \emph{DAGs}
 (directed-acyclic graphs).
 
-The structure of guard DAGs, $\GdDag$, is defined in \Cref{fig:orpats}.
+The structure of guard DAGs, $\GrdDag$, is defined in \Cref{fig:orpats}.
 Now consider the function
 
 \begin{code}
@@ -2629,7 +2629,7 @@ f _         _         = 2
 \end{code}
 
 \noindent
-The presumed desugaring to guard trees looks as follows:
+The desugaring to guard trees according to \Cref{fig:orpats} looks as follows:
 
 \begin{forest}
   grdtree,
@@ -2638,7 +2638,7 @@ The presumed desugaring to guard trees looks as follows:
                       {\dagseq{\dagone{\grdbang{x_1}}}{\dagone{\grdcon{|EQ|}{x_1}}}}}
               {\dagpar{\dagseq{\dagone{\grdbang{x_1}}}{\dagone{\grdcon{|EQ|}{x_1}}}}
                       {\dagseq{\dagone{\grdbang{x_1}}}{\dagone{\grdcon{|GT|}{x_1}}}}}$} [1]]
-    [{$\grdcon{|True|}{|otherwise|}$} [2]]]
+    [2]]
 \end{forest}
 \\
 
