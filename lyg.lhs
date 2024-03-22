@@ -2629,20 +2629,22 @@ f _         _         = 2
 \end{code}
 
 \noindent
-The desugaring to guard trees according to \Cref{fig:orpats} looks as follows:
+The desugaring to guard trees according to \Cref{fig:orpats} is thus
 
+\vskip\abovedisplayskip
 \begin{forest}
   grdtree,
   [
     [{$\dagseq{\dagpar{\dagseq{\dagone{\grdbang{x_1}}}{\dagone{\grdcon{|LT|}{x_1}}}}
                       {\dagseq{\dagone{\grdbang{x_1}}}{\dagone{\grdcon{|EQ|}{x_1}}}}}
-              {\dagpar{\dagseq{\dagone{\grdbang{x_1}}}{\dagone{\grdcon{|EQ|}{x_1}}}}
-                      {\dagseq{\dagone{\grdbang{x_1}}}{\dagone{\grdcon{|GT|}{x_1}}}}}$} [1]]
+              {\dagpar{\dagseq{\dagone{\grdbang{x_2}}}{\dagone{\grdcon{|EQ|}{x_2}}}}
+                      {\dagseq{\dagone{\grdbang{x_2}}}{\dagone{\grdcon{|GT|}{x_2}}}}}$} [1]]
     [2]]
 \end{forest}
-\\
+\vskip\belowdisplayskip
 
-Matching is defined as follows:
+\noindent
+We define matching as follows:
 \begin{itemize}
   \item Matching $\dagone{g}$ means matching a single guard $g \in \Grd$, just like $\gdtguard{g}{}$ did previously.
     However, $\gdtguard{d}{}$ stores a guard DAG $d$ instead of a single guard $g$ now.
@@ -2653,28 +2655,93 @@ Matching is defined as follows:
     If either match fails, the whole match fails.
 \end{itemize}
 
-%\[
-%\begin{array}{ccc}
-%&
-%\leadsto &
-%\fbox{\begin{code}
-%f :: Ordering -> Ordering -> Int
-%f LT  EQ  = 1; f LT  GT  = 1
-%f EQ  EQ  = 1; f EQ  GT  = 1
-%f _   _   = 2
-%\end{code}}
-%\end{array}
-%\]
+\noindent
+A clearer, non-flat visualisation of the guard DAG of the first clause could be
 
-and thus would easily lead to exponential blow-up in the size of generated guard
-trees.
+\vskip\abovedisplayskip
+\begin{tikzpicture}[scale=1.5]
+    \tikzstyle{bullet}=[circle, draw, fill=black, minimum size=3pt, inner sep=0pt]
+    \tikzstyle{vertex}=[rectangle,draw, minimum size=4pt, inner sep=2pt]
+    \tikzstyle{edge}=[draw, line width=0.5pt]
+
+    % Nodes
+    \node (before) at (-0.3,0) {};
+    \node[bullet] (src) at (0,0) {};
+
+    \node[bullet] (tl1) at (0.3,0.2) {};
+    \node[vertex] (A) at (0.6,0.2) {$\grdbang{x_1}$};
+    \node[bullet] (tl2) at (0.9,0.2) {};
+    \node[vertex] (B) at (1.5,0.2) {$\grdcon{|LT|}{x_1}$};
+    \node[bullet] (tl3) at (2.1,0.2) {};
+
+    \node[bullet] (bl1) at (0.3,-0.2) {};
+    \node[vertex] (C) at (0.6,-0.2) {$\grdbang{x_1}$};
+    \node[bullet] (bl2) at (0.9,-0.2) {};
+    \node[vertex] (D) at (1.5,-0.2) {$\grdcon{|EQ|}{x_1}$};
+    \node[bullet] (bl3) at (2.1,-0.2) {};
+
+    \node[bullet] (mid) at (2.4,0) {};
+
+    \node[bullet] (tr1) at (2.7,0.2) {};
+    \node[vertex] (E) at (3.0,0.2) {$\grdbang{x_2}$};
+    \node[bullet] (tr2) at (3.3,0.2) {};
+    \node[vertex] (F) at (3.9,0.2) {$\grdcon{|EQ|}{x_2}$};
+    \node[bullet] (tr3) at (4.5,0.2) {};
+
+    \node[bullet] (br1) at (2.7,-0.2) {};
+    \node[vertex] (G) at (3.0,-0.2) {$\grdbang{x_2}$};
+    \node[bullet] (br2) at (3.3,-0.2) {};
+    \node[vertex] (H) at (3.9,-0.2) {$\grdcon{|GT|}{x_2}$};
+    \node[bullet] (br3) at (4.5,-0.2) {};
+
+    \node[bullet] (sink) at (4.8,0) {};
+    \node (after) at (5.2,0) {$1$};
+
+    % Edges
+    \draw[edge,-{Bar[]}] (before) -- (src);
+    \draw[edge] (src) -- (tl1);
+    \draw[edge] (src) -- (bl1);
+
+    \draw[edge] (tl1) -- (A);
+    \draw[edge] (A) -- (tl2);
+    \draw[edge] (tl2) -- (B);
+    \draw[edge] (B) -- (tl3);
+
+    \draw[edge] (bl1) -- (C);
+    \draw[edge] (C) -- (bl2);
+    \draw[edge] (bl2) -- (D);
+    \draw[edge] (D) -- (bl3);
+
+    \draw[edge] (tl3) -- (mid);
+    \draw[edge] (bl3) -- (mid);
+    \draw[edge] (mid) -- (tr1);
+    \draw[edge] (mid) -- (br1);
+
+    \draw[edge] (tr1) -- (E);
+    \draw[edge] (E) -- (tr2);
+    \draw[edge] (tr2) -- (F);
+    \draw[edge] (F) -- (tr3);
+
+    \draw[edge] (br1) -- (G);
+    \draw[edge] (G) -- (br2);
+    \draw[edge] (br2) -- (H);
+    \draw[edge] (H) -- (br3);
+
+    \draw[edge] (tr3) -- (sink);
+    \draw[edge] (br3) -- (sink);
+    \draw[edge,->] (sink) -- (after);
+\end{tikzpicture}
+\vskip\belowdisplayskip
 
 \noindent
+This visualisation acknowledges that $\GrdDag$ really models labelled
+\emph{series-parallel graphs}~\citep{series-parallel}, a very specific
+kind of DAG with a straightforward encoding as an algebraic data type.
+Every guard $g$ induces a series-parallel graph with a single edge from source to sink.
+Conjunction $\dagseq{d_1}{d_2}$ corresponds to series composition of $d_1$ and $d_2$,
+and disjunction $\dagpar{d_1}{d_2}$ corresponds to parallel composition of $d_1$ and $d_2$.
 
-
-doing
-would never ``backtrack''because they introduce
-The results are recorded in \Cref{fig:orpats}.
+TODO show overloading of $\unc$
 
 \section{Implementation}
 \label{sec:impl}
