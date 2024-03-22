@@ -2536,46 +2536,16 @@ warnings in a lazy language.
   \ds(x, pat_1;\; pat_2) = \dagpar{\ds(x, pat_1)}{\ds(x, pat_2)}
 \]
 
+\[ \ruleform{ \unc(\Theta, t) = \Theta } \]
 \[
 \begin{array}{lcl}
-  \repnt{\Delta}{x} &=& \begin{cases}
-    \repnt{\Delta}{y} & x \termeq y \in \Delta \text{ or } x \termeq |N|\;\overline{a}\;y \in \Delta \\
-    x & \text{otherwise} \\
-  \end{cases} \\
-\end{array}
-\]
-
-\[
-\begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}ll}
-  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \ldots \text{as before} \ldots & (4a) \\
-  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\ntconapp{N}{\sigma}{e}} &=& \nreft{\Gamma,x{:}\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \ntconapp{N}{a}{y} \addphi \ctlet{y{:}\tau'}{e} & (4b) \\
-  &&&& \quad \text{where $\overline{a}\,y \freein \Gamma$, $e{:}\tau'$} \\
-\end{array}
-\]
-
-\[
-\begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}ll}
-  \nreft{\Gamma}{\Delta} &\adddelta& x \termeq  \deltaconapp{K}{a}{y} &=& \ldots \text{as before} \ldots & (10a) \\
-  \nreft{\Gamma}{\Delta} &\adddelta& \highlight{x \termeq \ntconapp{N}{a}{y}} &=&
-    \begin{cases}
-      \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta y \termeq z & \text{if $x' \termeq \ntconapp{N}{b}{z} \in \Delta$} \\
-      \nreft{\Gamma}{\Delta} & \text{if $x' = \repnt{\Delta}{y'}$} \\
-      \nreft{\Gamma}{((\Delta\!\setminus\!x'), x'\!\termeq\!\ntconapp{N}{a}{y'})} \adddelta (\restrict{\Delta}{x'}\![y'\!/\!x'])
-        & \text{otherwise} \\
-    \end{cases} & (10b)\\
-    &&&&\text{where}~x' = \rep{\Delta}{x} \; \text{and} \; y' = \rep{\Delta}{y} \\
-  \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq |K| &=& \ldots \text{as before} \ldots & (11a) \\
-  \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq |N| &=& \false & (11b) \\
-  \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
-    \false & \text{if $\highlight{\repnt{\Delta}{x}} \ntermeq \bot \in \Delta$} \\
-    \nreft{\Gamma}{(\Delta,\highlight{\repnt{\Delta}{x}}\termeq \bot)} & \text{otherwise} \\
-  \end{cases} & (12) \\
-  \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
-    \false & \text{if $\highlight{\repnt{\Delta}{x}} \termeq \bot \in \Delta$} \\
-    \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\highlight{\repnt{\Delta}{x}}\ntermeq\bot)}}{x}$} \\
-    \nreft{\Gamma}{(\Delta,\highlight{\repnt{\Delta}{x}} \ntermeq \bot)} & \text{otherwise} \\
-  \end{cases} & (13) \\
-
+\unc(\reft{\Gamma}{\Phi}, \gdtrhs{n}) &=& \reft{\Gamma}{\false} \\
+\unc(\Theta, \gdtseq{t_1}{t_2}) &=& \unc(\unc(\Theta, t_1), t_2) \\
+\unc(\Theta, \gdtguard{\dagpar{d_1}}{d_2}) &=& \unc(\unc(\Theta, \gdtguard{d_1}), \gdtguard{d_2}) \\
+& & \textit{TODO adjust other cases} \\
+\unc(\Theta, \gdtguard{\grdbang{x}}{t}) &=& \unc(\Theta \andtheta (x \ntermeq \bot), t) \\
+\unc(\Theta, \gdtguard{\grdlet{x}{e}}{t}) &=& \unc(\Theta \andtheta (\ctlet{x}{e}), t) \\
+\unc(\Theta, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& (\Theta \andtheta (x \ntermeq K)) \uniontheta \unc(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
 
