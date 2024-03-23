@@ -77,7 +77,7 @@
     grdtree,
     [ [{$#1$}] ]
   \end{forest}}}}
-\newcommand{\gdtseq}[2]{
+\newcommand{\gdtpar}[2]{
   \vcenter{\hbox{\begin{forest}
     grdtree,
     for tree={delay={edge={-}}},
@@ -98,7 +98,7 @@
     anttree,
     [ [{$#1$\,$#2$}] ]
   \end{forest}}}}
-\newcommand{\antseq}[2]{
+\newcommand{\antpar}[2]{
   \vcenter{\hbox{\begin{forest}
     anttree,
     for tree={delay={edge={-}}},
@@ -146,6 +146,7 @@
 \newcommand{\ds}{\mathcal{D}}
 
 % Checking functions
+\newcommand{\cov}{\mathcal{C}}
 \newcommand{\unc}{\mathcal{U}}
 \newcommand{\ann}{\mathcal{A}}
 \newcommand{\red}{\mathcal{R}}
@@ -158,8 +159,8 @@
 
 % Refinement type syntax
 \newcommand{\reft}[2]{\langle \, #1 \mid #2 \, \rangle}
-\newcommand{\andtheta}{\,\dot{\wedge}\,}
-\newcommand{\uniontheta}{\,\cup\,}
+\newcommand{\andtheta}{\mathbin{\dot{\wedge}}}
+\newcommand{\uniontheta}{\cup}
 
 % Normalised refinement types
 \newcommand{\inv}[1]{I#1}

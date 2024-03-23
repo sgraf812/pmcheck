@@ -778,21 +778,21 @@ Stardust \cite{dunfieldthesis}.
 \begin{array}{cc}
 \textbf{Meta variables} & \textbf{Pattern syntax} \\
 \begin{array}{rl}
-  x,y,z,f,g,h &\text{Term variables} \\
-  a,b,c       &\text{Type variables} \\
-  K           &\text{Data constructors} \\
-  P           &\text{Pattern synonyms} \\
-  T           &\text{Type constructors} \\
-  l           &\text{Literal} \\
-  expr        &\text{Expressions} \\
+  x,y,z,f,g,h   &\text{Term variables} \\
+  a,b,c         &\text{Type variables} \\
+  K             &\text{Data constructors} \\
+  P             &\text{Pattern synonyms} \\
+  T             &\text{Type constructors} \\
+  l             &\text{Literal} \\
+  \mathit{expr} &\text{Expressions} \\
 \end{array} &
 \begin{array}{rcl}
   \mathit{defn}   &\Coloneqq& \overline{clause} \\
-  clause &\Coloneqq&  f \; \overline{pat} \; match \\
-  pat    &\Coloneqq& x \mid |_| \mid K \; \overline{pat} \mid x|@|pat \mid |!|pat \mid expr \rightarrow pat \\
-  match  &\Coloneqq& \mathtt{=} \; expr \mid \overline{grhs} \\
-  grhs   &\Coloneqq& \mathtt{\mid} \; \overline{guard} \; \mathtt{=} \; expr \\
-  guard  &\Coloneqq& pat \leftarrow expr \mid expr \mid \mathtt{let} \; x \; \mathtt{=} \; expr \\
+  \mathit{clause} &\Coloneqq&  f \; \overline{\mathit{pat}} \; \mathit{match} \\
+  \mathit{pat}    &\Coloneqq& x \mid |_| \mid K \; \overline{\mathit{pat}} \mid x|@|\mathit{pat} \mid |!|\mathit{pat} \mid \mathit{expr} \rightarrow \mathit{pat} \\
+  \mathit{match}  &\Coloneqq& \mathtt{=} \; \mathit{expr} \mid \overline{\mathit{grhs}} \\
+  \mathit{grhs}   &\Coloneqq& \mathtt{\mid} \; \overline{guard} \; \mathtt{=} \; \mathit{expr} \\
+  \mathit{guard}  &\Coloneqq& \mathit{pat} \leftarrow \mathit{expr} \mid \mathit{expr} \mid \mathtt{let} \; x \; \mathtt{=} \; \mathit{expr} \\
 \end{array}
 \end{array}
 \]
@@ -806,36 +806,40 @@ Stardust \cite{dunfieldthesis}.
 \[ \textbf{Guard syntax} \]
 \[
 \begin{array}{cc}
-\begin{array}{rlcl}
-  k,n,m       \in &\mathbb{N}&    & \\
-  K           \in &\Con &         & \\
-  x,y,a,b     \in &\Var &         & \\
-  \tau,\sigma \in &\Type&\Coloneqq& a \mid ... \\
-  e \in           &\Expr&\Coloneqq& x \mid  \genconapp{K}{\tau}{\gamma}{e} \mid ... \\
+\arraycolsep=2pt
+\begin{array}{rclcl}
+  k,n,m       & \in &\mathbb{N}&    & \\
+  K           & \in &\Con &         & \\
+  x,y,a,b     & \in &\Var &         & \\
+  \tau,\sigma & \in &\Type&\Coloneqq& a \mid ... \\
+  e           & \in &\Expr&\Coloneqq& x \mid  \genconapp{K}{\tau}{\gamma}{e} \mid ... \\
 \end{array} &
-\begin{array}{rlcl}
-  \gamma \in      &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
+\arraycolsep=2pt
+\begin{array}{rclcl}
+  \gamma & \in    &\TyCt&\Coloneqq& \tau_1 \typeeq \tau_2 \mid ... \\
 
-  p \in           &\Pat &\Coloneqq& \_ \mid K \; \overline{p} \mid ... \\ % used in 3.4 when we generate inhabiting patterns
+  p      & \in    &\Pat &\Coloneqq& \_ \mid K \; \overline{p} \mid ... \\ % used in 3.4 when we generate inhabiting patterns
 
-  g \in           &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
-                  &     &\mid     & \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \\
-                  &     &\mid     & \grdbang{x} \\
+  g      & \in    &\Grd &\Coloneqq& \grdlet{x:\tau}{e} \\
+         &        &     &\mid     & \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \\
+         &        &     &\mid     & \grdbang{x} \\
 \end{array}
 \end{array}
 \]
 
 \[ \textbf{Clause tree syntax} \]
 \[
-\begin{array}{rcll}
-  t \in \Gdt &\Coloneqq& \gdtrhs{k} \mid \gdtseq{t_1}{t_2} \mid \gdtguard{g}{t}         \\
-  u \in \Ant &\Coloneqq& \antrhs{\Theta}{k} \mid \antseq{u_1}{u_2} \mid \antbang{\Theta}{u} \\
+\arraycolsep=2pt
+\begin{array}{rclcll}
+  t & \in & \Gdt &\Coloneqq& \gdtrhs{k} \mid \gdtpar{t_1}{t_2} \mid \gdtguard{g}{t}         \\
+  u & \in & \Ant &\Coloneqq& \antrhs{\Theta}{k} \mid \antpar{u_1}{u_2} \mid \antbang{\Theta}{u} \\
 \end{array}
 \]
 
 \[ \textbf{Refinement type syntax} \]
 \[
-\begin{array}{rcll}
+\arraycolsep=2pt
+\begin{array}{rcl@@{\quad}l}
   \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
   \varphi &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Literals} \\
   \Phi &\Coloneqq& \varphi \mid \Phi \wedge \Phi \mid \Phi \vee \Phi & \text{Formula} \\
@@ -911,57 +915,57 @@ advantages are:
 \begin{figure}
 
   \[ \ruleform{\begin{array}{c}
-      \ds(\mathit{defn}) = \Gdt,\quad \ds(clause) = \Gdt,\quad \ds(grhs) = \Gdt \\
-      k_{rhs} \; \text{is the index of the right hand side}\; rhs
+      \ds(\mathit{defn}) = \Gdt,\quad \ds(clause) = \Gdt,\quad \ds(\mathit{grhs}) = \Gdt \\
+      k_{\mathit{rhs}} \; \text{is the index of the right hand side}\; \mathit{rhs}
       \end{array}} \]
 \[
 \begin{array}{l}
 \begin{array}{lcl}
 
-\ds(clause_1\,...\,clause_n) &=&
+\ds(\mathit{clause}_1\,...\,\mathit{clause}_n) &=&
   \raisebox{3px}{\begin{forest}
     baseline,
     grdtree,
     grhs/.style={tier=rhs,edge={-}},
-    [ [{$\ds(clause_1)$}] [...] [{$\ds(clause_n)$}] ] ]
+    [ [{$\ds(\mathit{clause}_1)$}] [...] [{$\ds(\mathit{clause}_n)$}] ] ]
   \end{forest}} \\
 \\
-\ds(f \; pat_1\,...\,pat_n \; \mathtt{=} \; rhs) &=&
+\ds(f \; \mathit{pat}_1\,...\,\mathit{pat}_n \; \mathtt{=} \; \mathit{rhs}) &=&
   \raisebox{3px}{\begin{forest}
     baseline,
     grdtree,
-    [ [{$\ds(x_1, pat_1)\,...\,\ds(x_n, pat_n)$} [{$k_{rhs}$}] ] ]
+    [ [{$\ds(x_1, \mathit{pat}_1)\,...\,\ds(x_n, \mathit{pat}_n)$} [{$k_{\mathit{rhs}}$}] ] ]
   \end{forest}} \\
-\ds(f \; pat_1\,...\,pat_n \; grhs_1\,...\,grhs_m) &=&
+\ds(f \; \mathit{pat}_1\,...\,\mathit{pat}_n \; grhs_1\,...\,grhs_m) &=&
   \raisebox{3px}{\begin{forest}
     baseline,
     grdtree,
     grhs/.style={tier=rhs,edge={-}},
-    [ [{$\ds(x_1, pat_1)\,...\,\ds(x_n, pat_n)$} [{$\ds(grhs_1)$}] [...] [{$\ds(grhs_m)$}] ] ]
+    [ [{$\ds(x_1, \mathit{pat}_1)\,...\,\ds(x_n, \mathit{pat}_n)$} [{$\ds(grhs_1)$}] [...] [{$\ds(grhs_m)$}] ] ]
   \end{forest}} \\
-\ds(\mathtt{\mid} \; guard_1\,...\,guard_n \; \mathtt{=} \; rhs) &=&
+\ds(\mathtt{\mid} \; guard_1\,...\,guard_n \; \mathtt{=} \; \mathit{rhs}) &=&
   \raisebox{3px}{\begin{forest}
     baseline,
     grdtree,
-    [ [{$\ds(guard_1)\,...\,\ds(guard_n)$} [{$k_{rhs}$}] ] ]
+    [ [{$\ds(guard_1)\,...\,\ds(guard_n)$} [{$k_{\mathit{rhs}}$}] ] ]
   \end{forest}} \\
 \end{array} \\ \\
-\multicolumn{1}{c}{\ruleform{ \ds(guard) = \overline{\Grd},\quad \ds(x, pat) = \overline{\Grd} }} \\[2mm]
+\multicolumn{1}{c}{\ruleform{ \ds(guard) = \overline{\Grd},\quad \ds(x, \mathit{pat}) = \overline{\Grd} }} \\[2mm]
 \begin{array}{lcl@@{\hspace{5mm}}l}
-\ds(pat \leftarrow expr) &=& \grdlet{x}{expr}, \ds(x, pat)
+\ds(\mathit{pat} \leftarrow \mathit{expr}) &=& \grdlet{x}{\mathit{expr}}, \ds(x, \mathit{pat})
    & x \, \text{fresh} \\
-\ds(expr) &=& \grdlet{y}{expr}, \ds(y, |True|)
+\ds(\mathit{expr}) &=& \grdlet{y}{\mathit{expr}}, \ds(y, |True|)
    & y \, \text{fresh} \\
-\ds(\mathtt{let} \; x \; \mathtt{=} \; expr) &=& \grdlet{x}{expr} \\
+\ds(\mathtt{let} \; x \; \mathtt{=} \; \mathit{expr}) &=& \grdlet{x}{\mathit{expr}} \\
 \end{array} \\ \\
 \begin{array}{lcl@@{\hspace{5mm}}l}
 \ds(x, y) &=& \grdlet{y}{x} \\
 \ds(x, |_|) &=& \epsilon \\
-\ds(x, K \; pat_1\,...\,pat_n) &=& \grdbang{x}, \grdcon{K \; y_1\,...\,y_n}{x}, \ds(y_1, pat_1), ..., \ds(y_n, pat_n)
+\ds(x, K \; \mathit{pat}_1\,...\,\mathit{pat}_n) &=& \grdbang{x}, \grdcon{K \; y_1\,...\,y_n}{x}, \ds(y_1, \mathit{pat}_1), ..., \ds(y_n, \mathit{pat}_n)
    & y_i \, \text{fresh}\;(\dagger) \\
-\ds(x, y|@|pat) &=& \grdlet{y}{x}, \ds(y, pat) \\
-\ds(x, |!|pat) &=& \grdbang{x}, \ds(x, pat) \\
-\ds(x, expr \rightarrow pat) &=& \grdlet{|y|}{expr \; x}, \ds(y, pat)
+\ds(x, y|@|\mathit{pat}) &=& \grdlet{y}{x}, \ds(y, \mathit{pat}) \\
+\ds(x, |!|\mathit{pat}) &=& \grdbang{x}, \ds(x, \mathit{pat}) \\
+\ds(x, \mathit{expr} \rightarrow \mathit{pat}) &=& \grdlet{|y|}{\mathit{expr} \; x}, \ds(y, \mathit{pat})
    & y \, \text{fresh}
 \end{array}
 \end{array}
@@ -1017,7 +1021,7 @@ defined as follows:
 \begin{itemize}
 \item Matching a guard tree $\gdtrhs{k}$ succeeds, and selects the $k$'th right
   hand side of the pattern match group.
-\item Matching a guard tree $\gdtseq{t_1}{t_2}$ means matching against $t_1$;
+\item Matching a guard tree $\gdtpar{t_1}{t_2}$ means matching against $t_1$;
   if that succeeds, the overall match succeeds; if not, match against $t_2$.
 \item Matching a guard tree $\gdtguard{\grdbang{x}}{t}$ evaluates $x$;
   if that diverges the match diverges; if not match $t$.
@@ -1160,7 +1164,7 @@ time to come up with the language of guard trees.  We recommend it!
 % constructor application it was matched against. The $\Gdt$ tree language
 % determines how to cope with a failed guard. Left-to-right matching semantics is
 % captured by $\gdtguard{}{\hspace{-0.6em}}$, whereas top-to-bottom backtracking
-% is expressed by sequence ($\gdtseq{}{}$). The leaves in a guard tree each
+% is expressed by sequence ($\gdtpar{}{}$). The leaves in a guard tree each
 % correspond to a GRHS.
 
 \subsection{Checking Guard Trees} \label{sec:check}
@@ -1179,7 +1183,7 @@ time to come up with the language of guard trees.  We recommend it!
 \[
 \begin{array}{lcl}
 \unc(\reft{\Gamma}{\Phi}, \gdtrhs{n}) &=& \reft{\Gamma}{\false} \\
-\unc(\Theta, \gdtseq{t_1}{t_2}) &=& \unc(\unc(\Theta, t_1), t_2) \\
+\unc(\Theta, \gdtpar{t_1}{t_2}) &=& \unc(\unc(\Theta, t_1), t_2) \\
 \unc(\Theta, \gdtguard{\grdbang{x}}{t}) &=& \unc(\Theta \andtheta (x \ntermeq \bot), t) \\
 \unc(\Theta, \gdtguard{\grdlet{x}{e}}{t}) &=& \unc(\Theta \andtheta (\ctlet{x}{e}), t) \\
 \unc(\Theta, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& (\Theta \andtheta (x \ntermeq K)) \uniontheta \unc(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
@@ -1189,7 +1193,7 @@ time to come up with the language of guard trees.  We recommend it!
 \[
 \begin{array}{lcl}
 \ann(\Theta,\gdtrhs{n}) &=& \antrhs{\Theta}{n} \\
-\ann(\Theta, \gdtseq{t_1}{t_2}) &=& \antseq{\ann(\Theta, t_1)}{\ann(\unc(\Theta, t_1), t_2)} \\
+\ann(\Theta, \gdtpar{t_1}{t_2}) &=& \antpar{\ann(\Theta, t_1)}{\ann(\unc(\Theta, t_1), t_2)} \\
 \ann(\Theta, \gdtguard{\grdbang{x}}{t}) &=& \antbang{\Theta \andtheta (x \termeq \bot)}{\ann(\Theta \andtheta (x \ntermeq \bot), t)} \\
 \ann(\Theta, \gdtguard{\grdlet{x}{e}}{t}) &=& \ann(\Theta \andtheta (\ctlet{x}{e}), t) \\
 \ann(\Theta, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& \ann(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
@@ -1237,7 +1241,7 @@ finds refinements describing values that \emph{are} matched by a guard tree, or
 that cause matching to diverge. It does so by producing an \emph{annotated
 tree} (hence $\ann$nnotate), whose syntax is given in \Cref{fig:syn}. An
 annotated tree has the same general structure as the guard tree from whence it
-came: in particular the top-to-bottom compositions $\gdtseq{}{}$ are in the same
+came: in particular the top-to-bottom compositions $\gdtpar{}{}$ are in the same
 places.  But in an annotated tree, each $\antrhs{\Theta}{k}$ leaf is annotated with a
 refinement type $\Theta$ describing the input values that will lead to that right-hand
 side; and each $\antbang{\Theta}{\hspace{-0.6em}}$ node is annotated with a
@@ -1377,7 +1381,7 @@ emphasises clarity over efficiency.}.
     (\epsilon, \epsilon, n), & \text{if $\generate(\Theta) = \emptyset$} \\
     (n, \epsilon, \epsilon), & \text{otherwise} \\
   \end{cases} \\
-\red(\antseq{t}{u}) &=& (\overline{k}\,\overline{k'}, \overline{n}\,\overline{n'}, \overline{m}\,\overline{m'}) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
+\red(\antpar{t}{u}) &=& (\overline{k}\,\overline{k'}, \overline{n}\,\overline{n'}, \overline{m}\,\overline{m'}) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
     (\overline{k}, \overline{n}, \overline{m}) &=& \red(t) \\
     (\overline{k'}, \overline{n'}, \overline{m'}) &=& \red(u) \\
   \end{array} \\
@@ -1487,7 +1491,7 @@ $\red$ is defined in \Cref{fig:gen}:
 \item Having reached a node $\antbang{\Theta}{t}$, if $\Theta$ is inhabited there is a possibility of
   divergence. Now suppose that all the GRHSs in $t$ are redundant.  Then we should pick the first
   of them and mark it as inaccessible.
-\item The case for $\antseq{t}{u}$ follows by congruence: just combine the classifications of $t$ and $u$.
+\item The case for $\antpar{t}{u}$ follows by congruence: just combine the classifications of $t$ and $u$.
 \end{itemize}
 To illustrate the second case consider |u'| from \Cref{sssec:inaccessibility} and its annotated tree:
 
@@ -2105,7 +2109,7 @@ source syntax and IR syntax by adding the syntactic concept of a
 \begin{array}{cc}
 \begin{array}{rcl}
   cl     &\Coloneqq& K \mid P \\
-  pat    &\Coloneqq& x \mid |_| \mid \highlight{cl} \; \overline{pat} \mid x|@|pat \mid ... \\
+  \mathit{pat}    &\Coloneqq& x \mid |_| \mid \highlight{cl} \; \overline{\mathit{pat}} \mid x|@|\mathit{pat} \mid ... \\
 \end{array} &
 \begin{array}{rlcl}
   P \in           &\PS \\
@@ -2254,7 +2258,7 @@ without a \extension{COMPLETE} set.
 \end{array}
 \]
 \[
-  \ds(x, N \; pat_1\,...\,pat_n) = \grdcon{N \; y_1\,...\,y_n}{x}, \ds(y_1, pat_1), ..., \ds(y_n, pat_n)
+  \ds(x, N \; \mathit{pat}_1\,...\,\mathit{pat}_n) = \grdcon{N \; y_1\,...\,y_n}{x}, \ds(y_1, \mathit{pat}_1), ..., \ds(y_n, \mathit{pat}_n)
 \]
 
 \[
@@ -2381,7 +2385,7 @@ Analogous subtle reasoning justifies the difference in warnings for |g2| and
 
 \begin{itemize}
 
-  \item A newtype pattern match $N \; pat_1\,...\,pat_n$ is lazy: it does not
+  \item A newtype pattern match $N \; \mathit{pat}_1\,...\,\mathit{pat}_n$ is lazy: it does not
   force evaluation. So, compared to data constructor matches, the desugaring
   function $\ds$ omits the $\grdbang{x}$. Additionally, Equation (4) of
   $\addphi$, responsible for reasoning about |let| bindings, has a special case
@@ -2519,33 +2523,63 @@ a first-class treatment in our formalism in order to get accurate coverage
 warnings in a lazy language.
 
 \subsection{Or-patterns}
+\label{ssec:orpats}
 
 \begin{figure}
 \[
 \begin{array}{c}
-  pat   \Coloneqq ... \mid \highlight{pat_1;\; pat_2} \\
+  \mathit{pat}   \Coloneqq ... \mid \highlight{\mathit{pat}_1;\, \mathit{pat}_2} \\
 \end{array}
 \]
 \[
-\begin{array}{rcll}
-  t \in \Gdt &\Coloneqq& ... \mid \gdtguard{\highlight{d}}{t}         \\
-  d \in \GrdDag &\Coloneqq& \epsilon \mid \dagone{g} \mid \dagpar{d_1}{d_2} \mid \dagseq{d_1}{d_2} \\
+\arraycolsep=2pt
+\begin{array}{rcrcll}
+  t & \in & \Gdt &\Coloneqq& ... \mid \gdtguard{\highlight{d}}{t}         \\
+  d & \in & \GrdDag &\Coloneqq& \dagone{g} \mid \highlight{\dagpar{d_1}{d_2}} \mid \dagseq{d_1}{d_2} \\
 \end{array}
 \]
 \[
-  \ds(x, pat_1;\; pat_2) = \dagpar{\ds(x, pat_1)}{\ds(x, pat_2)}
+  \ds(x, (\mathit{pat}_1;\, \mathit{pat}_2)) = \dagpar{\ds(x, \mathit{pat}_1)}{\ds(x, \mathit{pat}_2)}
 \]
 
-\[ \ruleform{ \unc(\Theta, t) = \Theta } \]
+\[ \ruleform{ \cov(\Theta, d) = \Theta } \]
+\[
+\begin{array}{lcl}
+\cov(\Theta, \dagpar{d_1}{d_2}) &=& \cov(\Theta, d_1) \uniontheta \cov(\unc(\Theta, d_1), d_2) \\
+\cov(\Theta, \dagseq{d_1}{d_2}) &=& \cov(\cov(\Theta, d_1), d_2) \\
+\cov(\Theta, \dagone{\grdbang{x}}) &=& \Theta \andtheta (x \ntermeq \bot) \\
+\cov(\Theta, \dagone{\grdlet{x}{e}}) &=& \Theta \andtheta (\ctlet{x}{e}) \\
+\cov(\Theta, \dagone{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}) &=& \Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}) \\
+\end{array}
+\]
+
+\[ \ruleform{ \unc(\Theta, t) = \Theta, \qquad \unc(\Theta, d) = \Theta } \]
 \[
 \begin{array}{lcl}
 \unc(\reft{\Gamma}{\Phi}, \gdtrhs{n}) &=& \reft{\Gamma}{\false} \\
-\unc(\Theta, \gdtseq{t_1}{t_2}) &=& \unc(\unc(\Theta, t_1), t_2) \\
-\unc(\Theta, \gdtguard{\dagpar{d_1}}{d_2}) &=& \unc(\unc(\Theta, \gdtguard{d_1}), \gdtguard{d_2}) \\
-& & \textit{TODO adjust other cases} \\
-\unc(\Theta, \gdtguard{\grdbang{x}}{t}) &=& \unc(\Theta \andtheta (x \ntermeq \bot), t) \\
-\unc(\Theta, \gdtguard{\grdlet{x}{e}}{t}) &=& \unc(\Theta \andtheta (\ctlet{x}{e}), t) \\
-\unc(\Theta, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& (\Theta \andtheta (x \ntermeq K)) \uniontheta \unc(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
+\unc(\Theta, \gdtpar{t_1}{t_2}) &=& \unc(\unc(\Theta, t_1), t_2) \\
+\unc(\Theta, \gdtguard{d}{t}) &=& \unc(\Theta, d) \uniontheta \unc(\cov(\Theta, d), t) \\
+\\[-0.5em]
+\unc(\Theta, \dagpar{d_1}{d_2}) &=& \unc(\unc(\Theta, d_1), d_2) \\
+\unc(\Theta, \dagseq{d_1}{d_2}) &=& \unc(\Theta, d_1) \uniontheta \unc(\cov(\Theta, d_1), d_2) \\
+\unc(\reft{\Gamma}{\Phi}, \grdbang{x}) &=& \reft{\Gamma}{\false} \\
+\unc(\reft{\Gamma}{\Phi}, \grdlet{x}{e}) &=& \reft{\Gamma}{\false} \\
+\unc(\Theta, \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}) &=& \Theta \andtheta (x \ntermeq K) \\
+\end{array}
+\]
+
+\[ \ruleform{ \ann(\Theta, t) = u, \qquad \ann(\Theta, d) = \Theta } \]
+\[
+\begin{array}{lcl}
+\ann(\Theta,\gdtrhs{n}) &=& \antrhs{\Theta}{n} \\
+\ann(\Theta, \gdtpar{t_1}{t_2}) &=& \antpar{\ann(\Theta, t_1)}{\ann(\unc(\Theta, t_1), t_2)} \\
+\ann(\Theta, \gdtguard{d}{t}) &=& \antbang{\ann(\Theta, d)}{\ann(\cov(\Theta, d), t)} \\
+\\[-0.5em]
+\ann(\Theta, \dagpar{d_1}{d_2}) &=& \ann(\Theta, d_1) \uniontheta \ann(\unc(\Theta, d_1), d_2) \\
+\ann(\Theta, \dagseq{d_1}{d_2}) &=& \ann(\Theta, d_1) \uniontheta \ann(\cov(\Theta, d_1), d_2) \\
+\ann(\Theta, \grdbang{x}) &=& \Theta \andtheta (x \termeq \bot) \\
+\ann(\reft{\Gamma}{\Phi}, \grdlet{x}{e}) &=& \reft{\Gamma}{\false} \\
+\ann(\reft{\Gamma}{\Phi}, \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}) &=& \reft{\Gamma}{\false} \\
 \end{array}
 \]
 
@@ -2556,7 +2590,8 @@ warnings in a lazy language.
 Since this work appeared at ICFP in 2020, GHC 9.12 accumulated a new extension
 to the pattern language: \emph{Or-patterns}%
 \footnote{\url{https://github.com/ghc-proposals/ghc-proposals/blob/master/proposals/0522-or-patterns.rst}}.
-Or-patterns are an established language feature in OCaml and Python as well, and can be used as follows:
+Or-patterns are an established language feature in many other languages such as
+OCaml and Python, and can be used as follows:
 
 \begin{code}
 data LogLevel = Debug | Info | Error
@@ -2568,28 +2603,48 @@ notifyAdmin (Debug; Info)  = False
 \noindent
 Here, the second clause matches when either |Debug| or |Info| matches the
 parameter.
-When the programmer later adds a new |LogLevel| |Warning|, \lyg should report
-the match in |notifyAdmin| as inexhaustive.
-Compared to using a wildcard match for the second clause that would silently
-define |notifyAdmin Warning = False|, the coverage warning prompts the
-programmer to make a conscious decision about which value should be returned.
+When the programmer later adds a new data constructor |Warning| to |LogLevel|,
+\lyg should report the match in |notifyAdmin| as inexhaustive.
+This coverage warning prompts the programmer to make a conscious decision about
+which value should be returned for |notifyAdmin Warning|.
+That is far better than the alternative of using a wildcard match for the last
+clause: doing so would silently define |notifyAdmin Warning = False|.
 
 Or-patterns were an interesting real-world benchmark to see how well \lyg
 scales to new language features.
 Previously in \Cref{fig:desugar}, if one part of a pattern failed to match, the
 whole pattern would fail.
 As a result, the desugaring function $\ds$ could map a pattern into a
-(conjunctive) list of $\Grd$s.
-However, with Or-patterns, we need a way to encode first-match semantics as in
-$\gdtseq{|t1|}{|t2|}$ as well.
-One way to do so would be to desugar patterns into guard trees as well.
-That would be akin to \emph{exploding} each Or-pattern into two clauses, copying
-the guard tree of the tail of the clause each time.
-One can show that this leads to exponential code blowup for repeated use of
-Or-patterns, hence we propose a different solution: Guard \emph{DAGs}
-(directed-acyclic graphs).
+(conjunctive) list of guards ($\overline{\Grd}$), which was then exploded into
+a nesting of $\gdtguard{g}{t}$ forms, suitable for a single recursive definition
+of $\unc$ and $\ann$.
+However, with Or-patterns, we need a way to encode (disjunctive) first-match
+semantics in the result of $\ds(x, \mathit{pat})$.
+Such first-match semantics is currently exclusive to the
+$\gdtpar{\makebox(3pt,2pt){$t_1$}}{\makebox(3pt,2pt){$t_2$}}$ guard tree form.
+So one way to desugar Or-patterns would be to desugar
+patterns into full guard trees instead of lists of guards.
+That would be akin to \emph{exploding} each Or-pattern into two clauses.
+We would get the equality
 
-The structure of guard DAGs, $\GrdDag$, is defined in \Cref{fig:orpats}.
+\[
+\ds(f \; (\mathit{pat}_a;\, \mathit{pat}_b) \, \mathit{pat}_c \; \mathtt{=} \; \mathit{rhs}) \; =
+  \raisebox{10px}{\begin{forest}
+    baseline,
+    grdtree,
+    [ [{$\ds(x_1, \mathit{pat}_a),\; \ds(x_2, \mathit{pat}_c)$} [{$k_{\mathit{rhs}}$}] ]
+      [{$\ds(x_1, \mathit{pat}_b),\; \ds(x_2, \mathit{pat}_c)$} [{$k_{\mathit{rhs}}$}] ] ]
+  \end{forest}},
+\]
+
+\noindent
+thus duplicating the desugaring of $\mathit{pat_c}$.
+It is easy to see how a sequence of Or-patterns may lead to an exponential number of
+duplications of $\mathit{pat}_c$, leading to unacceptable checking performance.
+Hence we propose a different solution: \emph{Guard DAGs} (directed-acyclic
+graphs).
+
+\Cref{fig:orpats} defines the stucture of guard DAGs ($\GrdDag$) inductively.
 Now consider the function
 
 \begin{code}
@@ -2599,7 +2654,7 @@ f _         _         = 2
 \end{code}
 
 \noindent
-The desugaring to guard trees according to \Cref{fig:orpats} is thus
+The desugaring to guard trees according to \Cref{fig:orpats} is
 
 \vskip\abovedisplayskip
 \begin{forest}
@@ -2616,14 +2671,17 @@ The desugaring to guard trees according to \Cref{fig:orpats} is thus
 \noindent
 We define matching as follows:
 \begin{itemize}
-  \item Matching $\dagone{g}$ means matching a single guard $g \in \Grd$, just like $\gdtguard{g}{}$ did previously.
-    However, $\gdtguard{d}{}$ stores a guard DAG $d$ instead of a single guard $g$ now.
+  \item Matching $\dagone{g}$ means matching a single guard $g \in \Grd$, which was done by $\gdtguard{g}{t}$ previously.
+    However, the new $\gdtguard{d}{t}$ form stores a guard DAG $d$ instead of a single guard $g$.
   \item Matching a parallel composition $\dagpar{d_1}{d_2}$ means matching against $d_1$;
     if that succeeds, the overall match succeeds; if not, match against $d_2$.
   \item Matching a sequential composition $\dagseq{d_1}{d_2}$ means matching against $d_1$;
     if that succeeds, match against $d_2$.
     If either match fails, the whole match fails.
 \end{itemize}
+Matching parallel composition $\dagpar{d_1}{d_2}$ is much like matching
+$\gdtpar{\makebox(3pt,2pt){$t_1$}}{\makebox(3pt,2pt){$t_2$}}$, and matching sequential composition $\dagseq{d_1}{d_2}$ is
+much like matching $\gdtguard{d}{t}$.
 
 \noindent
 A clearer, non-flat visualisation of the guard DAG of the first clause could be
@@ -2706,17 +2764,62 @@ A clearer, non-flat visualisation of the guard DAG of the first clause could be
 \noindent
 This visualisation acknowledges that $\GrdDag$ really models labelled
 \emph{series-parallel graphs}~\citep{series-parallel}, a very specific
-kind of DAG with a straightforward encoding as an algebraic data type.
-Every guard $g$ induces a series-parallel graph with a single edge from source to sink.
-Conjunction $\dagseq{d_1}{d_2}$ corresponds to series composition of $d_1$ and $d_2$,
-and disjunction $\dagpar{d_1}{d_2}$ corresponds to parallel composition of $d_1$ and $d_2$.
+kind of DAG with a straightforward encoding as an algebraic data type:
+every guard $g$ induces a series-parallel graph with a single edge from source to sink;
+conjunction $\dagseq{d_1}{d_2}$ corresponds to series composition of graphs for $d_1$ and $d_2$;
+and disjunction $\dagpar{d_1}{d_2}$ corresponds to parallel composition of graphs for $d_1$ and $d_2$.
 
-TODO show overloading of $\unc$
+Although the redefinition of coverage checking functions in \Cref{fig:orpats} is
+much more expansive in size than the original definition in \Cref{fig:check}, we
+will see that the encoded logic is derivative.
+
+There is a new function $\cov$ that computes the \emph{covered} set of a guard dag $d$.
+This function was previously inlined into the recursive call sites of $\unc$ and
+$\ann$; it computes the set of $\Theta$ reaching $t$ in $\gdtguard{g}{t}$.
+It is no longer possible to inline it because the $\gdtguard{d}{t}$ form now
+carries a guard DAG $d$ with nested structure; hence we need a separate function
+and a small refactor.
+
+As expected, computing the uncovered set of parallel composition $\dagpar{d_1}{d_2}$
+is much the same as for the
+$\gdtpar{\makebox(3pt,2pt){$t_1$}}{\makebox(3pt,2pt){$t_2$}}$ form, and similarly
+for sequential composition $\dagseq{d_1}{d_2}$ and the $\gdtguard{d}{t}$ form.
+Similarly, the uncovered set for the $\gdtrhs{n}$ form is the same as that of
+the irrefutable guards $\grdbang{x}$ and $\grdlet{x}{e}$.
+For the purposes of $\unc$, we could have written a small function from $\Gdt$
+to $\GrdDag$ to share this duplicate code.
+Our actual implementation in GHC (\Cref{sec:impl}) simply re-uses polymorphic
+combinators.
+
+The changes to $\ann$ are similar in nature.
+The use of $\uniontheta$ in $\ann(\Theta, \dagseq{g_1}{g_2})$ may be unexpected,
+since usually sequential composition leads to conjunction $\andtheta$, not
+disjunction $\uniontheta$.
+Nevertheless, $\uniontheta$ is the correct choice, because it
+follows directly from the previous definition of
+$\ann(\Theta, \gdtguard{g_1,g_2}{t})$ and how the resulting
+$\vcenter{\hbox{\begin{forest}
+    anttree,
+    for tree={delay={edge={-}}},
+    [ [{$\Theta_1$\,\lightning} [{$\Theta_2$\,\lightning} [{$u$}]]]]
+  \end{forest}}}$
+annotations are used in $\red$ (\Cref{fig:gen}): $u$ can be redundant only if
+there is no inhabitant in $\Theta_1 \uniontheta \Theta_2$; otherwise it is
+inaccessible.
+
+It is reassuring to know that extending coverage checking in \Cref{fig:check}
+with Or-patterns is derivative and compatible with all the other proposed
+extensions, although it takes a slight refactoring.
+On the other hand, years of maintaining \lyg have shown that the entire
+complexity rests in the inhabitation test (\Cref{fig:inh}).
+We did not need to touch that; and neither did we need to adjust \Cref{fig:gen}
+or later: this is compelling evidence that the core of our approach is quite
+extensible and robust.
 
 \section{Implementation}
 \label{sec:impl}
 
-Our implementation of \lyg has been part of GHC since the 9.0 release in 2020,
+Our implementation of \lyg has been part of GHC since the 8.10 release in 2020,
 including all extensions in \Cref{sec:extensions} (except for strict-by-default
 source syntax). Our implementation accumulates quite a few tricks
 that go beyond the pure formalism. This section is dedicated to describing
@@ -2747,7 +2850,7 @@ checking in the same tree traversal as desugaring.
 \[
 \begin{array}{lcl}
 \uncann(\overline{\nabla}, \gdtrhs{n}) &=& (\epsilon, \antrhs{\overline{\nabla}}{n}) \\
-\uncann(\overline{\nabla}, \gdtseq{t_1}{t_2}) &=& (\overline{\nabla}_2, \antseq{u_1}{u_2}) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
+\uncann(\overline{\nabla}, \gdtpar{t_1}{t_2}) &=& (\overline{\nabla}_2, \antpar{u_1}{u_2}) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
     (\overline{\nabla}_1, u_1) &=& \uncann(\overline{\nabla}, t_1) \\
     (\overline{\nabla}_2, u_2) &=& \uncann(\overline{\nabla}_1, t_2)
   \end{array} \\
@@ -2772,8 +2875,8 @@ $\ann$.
 
 But there's more: Looking at the last clause of $\unc$ in \Cref{fig:check},
 we can see that we syntactically duplicate $\Theta$ every time we have a
-pattern guard. That can amount to exponential growth of the refinement
-predicate in the worst case and for the time to prove it empty!
+pattern guard. In the worst case, that can amount to exponential growth of the
+refinement predicate and for the time to prove it empty!
 
 % Clearly, the space usage won't actually grow exponentially due to sharing in
 % the implementation, but the problems for runtime performance remain.
@@ -2844,7 +2947,7 @@ sound overapproximation.
 
 In our implementation, we call this \emph{throttling}: We limit the number of
 reaching $\nabla$s to a constant. Whenever a split would exceed this limit, we
-continue with the original input $\nabla$s, a conservative estimate, instead.
+continue with the original reaching $\nabla$s, a conservative estimate, instead.
 Intuitively, throttling corresponds to \emph{forgetting} what we matched on in
 that particular subtree. Throttling is refreshingly easy to implement! Only the
 last clause of $\uncann$, where splitting is performed, needs to change:
@@ -2870,14 +2973,6 @@ with $K$ being an arbitrary constant. We use 30 as an arbitrary limit in our
 implementation (dynamically configurable via a command-line flag) without
 noticing any false positives in terms of exhaustiveness warnings outside of the
 test suite.
-
-% For the sake of our above example we'll use 4 as the limit. The initial $\nabla$
-% will be split by the first equation in two, which in turn results in 4 $\nabla$s
-% reaching the third equation. Here, splitting would result in 8 $\nabla$s, so
-% we throttle, so that the same four $\nabla$s reaching the third equation also
-% reach the fourth equation, and so on. Basically, every equation is checked for
-% overlaps \emph{as if} it was the third equation, because we keep on forgetting
-% what was matched beyond that.
 
 \subsection{Maintaining Residual \extension{COMPLETE} Sets}
 \label{ssec:residual-complete}
@@ -2958,6 +3053,36 @@ rather than on GHC-specific data constructors. For example, coverage checking
       f x = ... where 'x' is not one of {0}
 \end{Verbatim}
 
+\subsection{Syntax-specific Guard Tree Types}
+
+Since we submitted our work to ICFP in 2020, we continued to improve and
+refactor the implementation of \lyg in GHC.
+Many of the changes were incremental improvements and bug fixes that are
+not easy to present without a lot of context, but one particularly important
+innovation%
+\footnote{\url{https://gitlab.haskell.org/ghc/ghc/-/commit/1207576ac0cfdd3fe1ea00b5505f7c874613451e}}
+was the introduction of syntax-specific instances of guard trees, such as
+\begin{code}
+type SrcInfo = String -- {appromixately; identifies the $k$ in $\mathit{rhs}_k$}
+data PmMatch p  = PmMatch  { pm_pats :: p, pm_grhss :: [PmGRHS p] }
+data PmGRHS p   = PmGRHS   { pg_grds :: p, pg_rhs :: SrcInfo }
+\end{code}
+These types are in structural correspondence to the $\mathit{match}$ and
+$\mathit{grhs}$ constructs in \Cref{fig:srcsyn} from whence they desugar.
+Prior to coverage checking, type parameter |p| is instantiated to lists
+of guards $\overline{Grd}$ (resp.\ $\GrdDag$ after Or-patterns were
+introduced, \Cref{ssec:orpats}), and coverage checking elaborates this list
+into |RedSets|, carrying $\Theta$s encoding covered and diverging input
+values.
+
+Of course, the meaning of |PmMatch| and |PmGRHS| is in terms of the
+desugaring into unrestricted guard trees $\Gdt$, as before.
+However, with the new encoding it became much easier to extract covered sets
+for long-distance information (\Cref{ssec:ldi}), because the |pm_grhss| field
+has the same number of elements as there are $\overline{\mathit{grhs}}$ in a
+$\mathit{match}$ and simple |Data.List.zip| suffices to bring covered sets and
+$\mathit{grhs}$ together.
+
 \section{Evaluation}
 \label{sec:eval}
 
@@ -2996,11 +3121,12 @@ the |False| guard to quickly try out a code path that prints a more detailed
 error message. Moreover, leaving the first clause in the code ensures that it
 is typechecked and less susceptible to bitrotting over time.
 
-We may consider adding a primitive function |considerAccessible| such that
-|considerAccessible False| does not get marked as redundant in order to support
-use cases like \texttt{HsYAML}'s. The unreachable code in \texttt{Cabal} and
-\texttt{network} is of a similar caliber and would also benefit from
-|considerAccessible|.
+In order to support this use case in \texttt{HsYAML}, a primitive definition
+|considerAccessible = False| was added in GHC 9.2, to be used instead of |False|
+above and signalling to GHC that the first clause should not get marked as
+redundant.
+The unreachable code in \texttt{Cabal} and \texttt{network} is of a similar
+caliber and could benefit from |considerAccessible| as well.
 
 \subsection{Performance Tests}
 
@@ -3038,15 +3164,17 @@ which presents several test cases that caused GHC to exhibit exponential running
 during coverage checking.
 
 We compiled each test case with GHC 8.8.3, which uses \gmtm as its checking
-algorithm, and GHC HEAD, which uses \lyg. We measured (1) the time spent in the
-desugarer, the phase of compilation in which coverage checking occurs, and (2)
-how many megabytes were allocated during desugaring. \Cref{fig:perf} shows
-these figures as well as the percent change going from 8.8.3 to HEAD. Most
-cases exhibit a noticeable improvement under \lyg, with the exception of
-\texttt{T11276}. Investigating \texttt{T11276} suggests that the performance
-of GHC's equality constraint solver has become more expensive in HEAD
-~\cite{gitlab:17891}, and these extra costs outweigh the performance benefits
-of using \lyg.
+algorithm, and GHC HEAD (a pre-release of GHC 8.10), which uses \lyg.
+We measured (1) the time spent in the desugarer, the phase of compilation in
+which coverage checking occurs, and (2) how many megabytes were allocated during
+desugaring. \Cref{fig:perf} shows these figures as well as the percent change
+going from 8.8.3 to HEAD. Most cases exhibit a noticeable improvement under
+\lyg, with the exception of \texttt{T11276}. Investigating \texttt{T11276}
+suggests that the performance of GHC's equality constraint solver has become
+more expensive in HEAD ~\cite{gitlab:17891}, and these extra costs outweigh the
+performance benefits of using \lyg.
+This performance bug was fixed in GHC 9.0%
+\footnote{\url{https://gitlab.haskell.org/ghc/ghc/-/commit/fd7ea0fee92a60f9658254cc4fe3abdb4ff299b1}}.
 
 Note that for typical code (rather than for regression tests), time spent doing
 coverage checking is dwarfed by the time the rest of the desugarer takes. A
@@ -3142,8 +3270,6 @@ easily be extended, as \lyg's treatment of view patterns
 (\Cref{ssec:extviewpat}) demonstrates. While \gmtm's term oracle could be
 improved to accomplish the same thing, it is unlikely to be as
 straightforward of a process as extending $\addphi$.
-
-\pagebreak
 
 \subsection{Comparison with Similar Coverage Checkers}
 
@@ -3425,6 +3551,10 @@ In this paper, we describe Lower Your Guards, a coverage checking algorithm that
 distills rich pattern matching into simple guard trees. Guard trees are
 amenable to analyses that are not easily expressible in coverage checkers
 that work over structural pattern matches.
+The last 4 years of continued maintenance of GHC's implementation offer a
+compelling retrospective: the approach scales well to new language features,
+causes very few functional bug reports in practice, and offers robust
+performance.
 
 \begin{acks}
 We would like to thank the anonymous ICFP reviewers for their feedback, as well
