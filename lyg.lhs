@@ -1942,33 +1942,6 @@ list-like constructors and $n=1$ otherwise) and consider supplementing that
 with a simple termination analysis to detect uninhabited data types like |T|
 in the future.
 
-\subsection{A Note on Precision}
-
-Using fuel to limit the number of inhabitation tests is one example
-where \lyg sacrifices a small amount of precision in its warnings. It is worth
-noting that this does not impact \lyg's soundness. In terms of the formalism,
-\lyg overapproximates---but never underapproximates---the set of reaching
-values passed to $\unc$ and $\ann$. As a result, \lyg will never fail to report
-uncovered clauses (no false negatives), but it may report false positives.
-Similarly, \lyg will never report accessible clauses as redundant (no false
-positives), but it may fail to report clauses which are redundant when the code
-involved is too close to ``undecidable territory''. We can broadly describe
-three places where \lyg overapproximates:
-
-\begin{itemize}
-  \item
-    \lyg can run out of fuel for inhabitation testing (\Cref{sec:inhabitation}).
-
-  \item
-    Throttling (\Cref{ssec:throttling}) is useful when implementing \lyg.
-
-  \item
-    \lyg forgoes non-trivial semantic analysis of expressions. \lyg can
-    recognize identical patterns or subexpressions, but it stops short of
-    anything more sophisticated, such as interprocedural analysis or
-    SMT-style reasoning (\Cref{ssec:comparison-with-structural}).
-\end{itemize}
-
 \section{Extensions} \label{sec:extensions}
 
 \lyg is well equipped to handle the fragment of Haskell it was designed to
@@ -3216,6 +3189,87 @@ to coverage checking. These include:
     \cite{gitlab:15305,gitlab:15584,gitlab:17234,gitlab:17248}
 
 \end{itemize}
+
+\section{Soundness} \label{sec:soundness}
+
+\begin{figure}
+\[ \textbf{Semantics of guard trees} \]
+\[
+\arraycolsep=2pt
+\begin{array}{rclcl}
+   d & \in & \Domain & = & \bot \mid K \; \overline{d} \mid ... \\
+   \rho & \in & \Subst & \Coloneqq & [\overline{x \mapsto d}] \\
+   r & \in & \Result & \Coloneqq & \yes{\rho} \mid \no \mid \diverge \\
+\end{array}
+\]
+\[ \ruleform{\exprsem{e}_\rho = d, \qquad \grdsem{g}_\rho = r, \qquad \gdtsem{t}_\rho = r} \]
+\[
+\begin{array}{lcl}
+\exprsem{\genconapp{K}{a}{\gamma}{e:\tau}}_\rho & = & K \; \overline{\exprsem{e}_\rho} \\
+\exprsem{e}_\rho & = & ... \\
+\\[-0.5em]
+\grdsem{\grdlet{x}{e}}_\rho & = & \rho[x \mapsto \exprsem{e}_\rho] \\
+\grdsem{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}_\rho & = & \begin{cases}
+  \yes{\rho[\overline{y \mapsto d}]} & \text{if $\rho(x) = K \; \overline{d}$} \\
+  \no                        & \text{otherwise} \\
+\end{cases} \\
+\grdsem{\grdbang{x}}_\rho & = & \begin{cases}
+  \diverge & \text{if $\rho(x) = \bot$} \\
+  \yes{\rho} & \text{otherwise} \\
+\end{cases} \\
+\\[-0.5em]
+\gdtsem{\gdtrhs{n}}_\rho & = & \yes{\rho} \\
+\gdtsem{\gdtpar{t_1}{t_2}}_\rho & = & \begin{cases}
+  \gdtsem{t_2}_\rho & \text{if $\gdtsem{t_1}_\rho = \no$} \\
+  \gdtsem{t_1}_\rho & \text{otherwise} \\
+\end{cases} \\
+\gdtsem{\gdtguard{g}{t}}_\rho & = & \begin{cases}
+  \gdtsem{t}_{\rho'} & \text{if $\grdsem{g}_\rho = \yes{\rho'}$} \\
+  \grdsem{g}_\rho & \text{otherwise} \\
+\end{cases} \\
+\end{array}
+\]
+
+\caption{Semantics of guard trees}
+\label{fig:sem}
+\end{figure}
+
+The evaluation in \Cref{sec:eval} yields compelling evidence that \lyg is \emph{sound}.
+That is, in terms of the formalism, \lyg \emph{overapproximates}---but never
+underapproximates---the set of reaching values passed to $\unc$ and $\ann$.
+As a result, \lyg will never fail to report uncovered clauses (no false
+negatives), but it may report false positives. Similarly, \lyg will never report
+accessible clauses as redundant (no false positives), but it may fail to report
+clauses which are redundant when the code involved is too close to ``undecidable
+territory''.
+
+We can broadly describe three places where \lyg overapproximates:
+
+\begin{itemize}
+  \item
+    \lyg can run out of fuel for inhabitation testing (\Cref{sec:inhabitation}).
+
+  \item
+    Throttling (\Cref{ssec:throttling}) is useful when implementing \lyg efficiently.
+
+  \item
+    \lyg forgoes non-trivial semantic analysis of expressions. \lyg can
+    recognize identical patterns or subexpressions, but it stops short of
+    anything more sophisticated, such as interprocedural analysis or
+    SMT-style reasoning (\Cref{ssec:comparison-with-structural}).
+\end{itemize}
+
+But what does it actually \emph{mean} for a value to reach a particular part of
+a guard tree, such as a right-hand side $\gdtrhs{n}$?
+In what precise sense does \lyg overapproximate this supposed \emph{semantics}?
+
+Since this work appeared at ICFP 2020, \citet{dieterichs:thesis} worked out both
+a formal semantics as well as a mechanised correctness proof.
+We will briefly summarise the results here.
+
+\subsection{Semantics}
+
+The semantics of guard trees can be described by a function \Cref{fig:sem}
 
 \section{Related Work} \label{sec:related}
 
