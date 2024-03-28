@@ -2947,6 +2947,11 @@ implementation (dynamically configurable via a command-line flag) without
 noticing any false positives in terms of exhaustiveness warnings outside of the
 test suite.
 
+It is worth noting that Or-patterns (\Cref{ssec:orpats}) introduce a function
+$\cov$ to compute the covered set of a guard DAG $d$, and its case for
+$\dagpar{d_1}{d_2}$ splits the incoming $\Theta$ as well; hence we throttle
+there as well to ensure graceful degradation.
+
 \subsection{Maintaining Residual \extension{COMPLETE} Sets}
 \label{ssec:residual-complete}
 
