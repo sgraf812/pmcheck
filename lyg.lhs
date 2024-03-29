@@ -64,7 +64,7 @@
 \usepackage{float}
 
 \usepackage{hyperref}
-\usepackage{cleveref}
+\usepackage[nameinlink]{cleveref}
 
 \input{macros}
 
@@ -273,9 +273,19 @@ performance pitfalls. We make the following contributions:
 \item
   We discuss how to optimize the performance of \lyg (\Cref{sec:impl}) and
   implement a proof of concept in GHC (\Cref{sec:eval}).
+
+\item
+  The evaluation against a large number of Haskell packages
+  (\Cref{sec:eval}) provides evidence that \lyg is sound.
+  In order to discuss soundness formally in \Cref{sec:soundness}, we turn the
+  informal semantics of guard trees and refinement types in \Cref{sec:overview}
+  into formal semantics.
+  We also list mechanisms that render \lyg incomplete in order to guarantee good
+  performance.
+
+\item
+  We discuss the wealth of related work in \Cref{sec:related}.
 \end{itemize}
-\noindent
-We discuss the wealth of related work in \Cref{sec:related}.
 
 % Contributions from our call:
 % \begin{itemize}
@@ -1014,7 +1024,7 @@ $\vcenter{\hbox{\begin{forest}
   \end{forest}}}$
 for notational convenience.
 
-More formally, matching a guard tree may \emph{succeed} (binding
+Informally, matching a guard tree may \emph{succeed} (binding
 the variables bound in the tree), \emph{fail}, or \emph{diverge}.
 Referring to the syntax of guard trees in \Cref{fig:syn}, matching is
 defined as follows:
@@ -1034,6 +1044,7 @@ defined as follows:
 \item Matching a guard tree $\gdtguard{\grdlet{x}{e}}{t}$ binds $x$
   (lazily) to $e$, and matches $t$.
 \end{itemize}
+See \Cref{sec:sem} for a formal account of this semantics.
 The desugaring algorithm, $\ds$, is given in \Cref{fig:desugar}.
 It is a straightforward recursive descent over the source syntax, with a little
 bit of administrative bureaucracy to account for renaming.
@@ -1224,7 +1235,8 @@ The syntax of $\Phi$ is given in \Cref{fig:syn}. It consists of a collection
 of \emph{literals} $\varphi$, combined with conjunction and disjunction.
 Unconventionally, however, a literal may bind one or more variables, and those
 bindings are in scope in conjunctions to the right. This can readily be formalised
-by giving a type system for $\Phi$, but we omit that here. \simon{It would be nice to add it.}
+by giving a type system for $\Phi$, and we do so in \Cref{sec:sem}, where we
+define satisfiability of $\Phi$ in formal detail.
 The literal $\true$ means ``true'', as illustrated above; while
 $\false$ means ``false'', so that $\reft{\Gamma}{\false}$ denotes the empty set $\emptyset$.
 
@@ -3203,18 +3215,19 @@ to coverage checking. These include:
 \arraycolsep=2pt
 \begin{array}{rclcl}
    d & \in & \Domain & = & \bot \mid K \; \overline{d} \mid ... \\
-   \rho & \in & \Subst & \Coloneqq & [\overline{x \mapsto d}] \\
-   r & \in & \Result & \Coloneqq & \yes{\rho} \mid \no \mid \diverge \\
+   \rho & \in & \Env & \Coloneqq & [\overline{x \mapsto d}] \\
+   r & \in & \Result [ \square ] & \Coloneqq & \yes{\square} \mid \no \mid \diverge \\
 \end{array}
 \]
-\[ \ruleform{\exprsem{e}_\rho = d, \qquad \grdsem{g}_\rho = r, \qquad \gdtsem{t}_\rho = r} \]
+
+\[ \ruleform{\exprsem{e}_\rho \in \Domain, \qquad \grdsem{g}_\rho \in \Result [ \rho ], \qquad \gdtsem{t}_\rho \in \Result [ k ]} \]
 \[
 \begin{array}{lcl}
-\exprsem{\genconapp{K}{a}{\gamma}{e:\tau}}_\rho & = & K \; \overline{\exprsem{e}_\rho} \\
+\exprsem{K \; \overline{e}}_\rho & = & K \; \overline{\exprsem{e}_\rho} \\
 \exprsem{e}_\rho & = & ... \\
 \\[-0.5em]
 \grdsem{\grdlet{x}{e}}_\rho & = & \rho[x \mapsto \exprsem{e}_\rho] \\
-\grdsem{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}_\rho & = & \begin{cases}
+\grdsem{\grdcon{K \; \overline{y}}{x}}_\rho & = & \begin{cases}
   \yes{\rho[\overline{y \mapsto d}]} & \text{if $\rho(x) = K \; \overline{d}$} \\
   \no                        & \text{otherwise} \\
 \end{cases} \\
@@ -3223,7 +3236,7 @@ to coverage checking. These include:
   \yes{\rho} & \text{otherwise} \\
 \end{cases} \\
 \\[-0.5em]
-\gdtsem{\gdtrhs{n}}_\rho & = & \yes{\rho} \\
+\gdtsem{\gdtrhs{k}}_\rho & = & \yes{k} \\
 \gdtsem{\gdtpar{t_1}{t_2}}_\rho & = & \begin{cases}
   \gdtsem{t_2}_\rho & \text{if $\gdtsem{t_1}_\rho = \no$} \\
   \gdtsem{t_1}_\rho & \text{otherwise} \\
@@ -3232,6 +3245,68 @@ to coverage checking. These include:
   \gdtsem{t}_{\rho'} & \text{if $\grdsem{g}_\rho = \yes{\rho'}$} \\
   \grdsem{g}_\rho & \text{otherwise} \\
 \end{cases} \\
+\end{array}
+\]
+
+\[ \textbf{Semantics of refinement types} \]
+\[ \ruleform{ \reftvalid{\rho}{(\varphi,\rho)}, \qquad \reftvalid{\rho}{\Theta}} \]
+\[
+\begin{array}{c}
+  \prooftree
+  \justifies
+    \reftvalid{\rho}{(\true,\rho)}
+  \endprooftree
+\qquad
+  \prooftree
+    {\rho(x) = K \; \overline{d}}
+  \justifies
+    \reftvalid{\rho}{(\ctcon{K \; \overline{y}}{x},\rho[\overline{y \mapsto d}])}
+  \endprooftree
+\qquad
+  \prooftree
+    {\rho(x) \not= K \; \overline{d}}
+  \justifies
+    \reftvalid{\rho}{(x \ntermeq K,\rho)}
+  \endprooftree
+\\
+\\[-0.5em]
+  \prooftree
+    {\rho(x) = \bot}
+  \justifies
+    \reftvalid{\rho}{(x \termeq \bot,\rho)}
+  \endprooftree
+\qquad
+  \prooftree
+    {\rho(x) \not= \bot}
+  \justifies
+    \reftvalid{\rho}{(x \ntermeq \bot,\rho)}
+  \endprooftree
+\qquad
+  \prooftree
+  \justifies
+    \reftvalid{\rho}{(\ctlet{x}{e},\rho[x \mapsto \exprsem{e}_\rho])}
+  \endprooftree
+\\
+\\[-0.5em]
+  \prooftree
+    \Gamma_1 \vdash \rho_1 \quad
+    \Gamma_2 \vdash \rho_2 \quad
+    \reftvalid{\rho_1}{(\varphi,\rho_2)} \quad \reftvalid{\rho_2}{\reft{\Gamma}{\Phi}}
+  \justifies
+    \reftvalid{\rho_1}{\reft{\Gamma_1}{\varphi \wedge \Phi}}
+  \endprooftree
+\qquad
+  \prooftree
+    \reftvalid{\rho}{\reft{\Gamma}{\Phi_1}}
+  \justifies
+    \reftvalid{\rho}{\reft{\Gamma}{\Phi_1 \vee \Phi_2}}
+  \endprooftree
+\qquad
+  \prooftree
+    \reftvalid{\rho}{\reft{\Gamma}{\Phi_2}}
+  \justifies
+    \reftvalid{\rho}{\reft{\Gamma}{\Phi_1 \vee \Phi_2}}
+  \endprooftree
 \end{array}
 \]
 
@@ -3248,7 +3323,9 @@ accessible clauses as redundant (no false positives), but it may fail to report
 clauses which are redundant when the code involved is too close to ``undecidable
 territory''.
 
-We can broadly describe three places where \lyg overapproximates:
+Remarkably, the symbolic checking process involving $\unc$, $\ann$ und $\red$
+does not overapproximate at all.
+To our knowledge, \lyg overapproximates only in these three mechanisms:
 
 \begin{itemize}
   \item
@@ -3264,17 +3341,105 @@ We can broadly describe three places where \lyg overapproximates:
     SMT-style reasoning (\Cref{ssec:comparison-with-structural}).
 \end{itemize}
 
-But what does it actually \emph{mean} for a value to reach a particular part of
-a guard tree, such as a right-hand side $\gdtrhs{n}$?
-In what precise sense does \lyg overapproximate this supposed \emph{semantics}?
+But what does it actually \emph{mean} for a value to match a particular part of
+a guard tree, such as a right-hand side $\gdtrhs{k}$?
+In what precise sense does \lyg --- or does not --- overapproximate this supposed
+\emph{semantics}?
 
 Since this work appeared at ICFP 2020, \citet{dieterichs:thesis} worked out both
-a formal semantics as well as a mechanised correctness proof.
-We will briefly summarise the results here.
+a formal semantics as well as a mechanised correctness proof in Lean 3 for the
+coverage checking pass from guard trees into uncovered set and annotated trees.%
+\footnote{Types and type constraints are ignored; their interaction is largely
+a black box to our approach anyway.}
+He shows that $\unc$, $\ann$ and $\red$ preserve key semantic properties of the
+guard trees under analysis, provided that function $\generate(\Theta)$ for
+generating inhabitants indeed overapproximates $\Theta$.
+We will briefly summarise the correctness results regarding $\unc$ here.
+For that, we need to define a plausible formal semantics for guard trees and
+refinement predicates.
 
 \subsection{Semantics}
 
-The semantics of guard trees can be described by a function \Cref{fig:sem}
+We have described the semantics of guard trees and guards informally in
+\Cref{sec:desugar}.
+\Cref{fig:sem} formalises this intuition, describing the semantics of
+guard trees by a function $\gdtsem{t}_\rho$ that, given a guard tree $t$ and an
+environment $\rho$ describing a vector of values to match against, returns
+
+\begin{itemize}
+  \item
+    $\yes{k}$ when $\rho$ describes a vector of values that when matched
+    against $t$ will reach RHS $k$.
+
+  \item
+    $\no$ when $\rho$ describes a vector of values that is not covered
+    by $t$.
+
+  \item
+    $\diverge$ when $\rho$ describes a vector of values that will lead to
+    divergence when matched against $t$.
+\end{itemize}
+
+Likewise, the valuation $\grdsem{g}_\rho$ returns $\yes{\rho'}$ when the vector
+of values $\rho$ matches guard $g$, extending $\rho$ with new bindings into
+$\rho'$.
+The semantics of expressions $\exprsem{e}_\rho$ maps into the semantic domain
+$\Domain$, just as the environment $\rho$.
+Since this work leaves open a lot of details about the expression fragment
+of the source language, the semantics leaves open $\Domain$ and most of
+$\exprsem{e}_\rho$ as well, with the exception of postulating a semantics for
+the data constructor application case.
+
+Refinement types have been introduced by informal examples in \Cref{sec:check},
+denoting refinement types $\Theta$ by sets of vectors of values $\rho$ that
+satisfy the encoded refinement predicate.
+\Cref{fig:sem} finally defines the satisfiability relation by an inductive
+predicate $\reftvalid{\rho}{\Theta}$.
+Thus, whenever a vector of values $\rho$ is part of the set denoted by a
+refinement type $\Theta$, the inductive predicate must be provable.
+
+The definition of $\reftvalid{\rho}{\Theta}$ assumes that conjunction $\wedge$
+is associated to the right, $\varphi \wedge \Phi$, highlighting an unusual
+scoping semantics that was previously implicit:
+Any binding constructs in the $\varphi$ to the left of $\wedge$, such as
+$\ctlet{x}{e}$ or $\ctcon{K \; \overline{y}}{x}$, introduce names that are
+subsequently in scope in the $\Phi$ to the right of $\wedge$.
+In hindsight, we could have picked a different operator symbol to
+avoid this confusion, for example $(\varphi~\textsf{in}~\Phi)$, such as in
+\citet{dieterichs:thesis}.
+Doing so would however complicate the $(\Theta \andtheta \varphi)$ operator a bit.
+In the absence of types, the postulated judgment $\Gamma \vdash \rho$ merely
+becomes a scoping check, namely that $\Gamma$ has the same domain as $\rho$.
+
+\subsection{Formal Soundness Statement}
+
+Having stated plausible semantics for the inputs and outputs of $\unc$, we can
+formulate and prove what it means for $\unc$ to be correct, following
+\citet[Section 4.1]{dieterichs:thesis}.
+
+\begin{theorem}
+  \label{thm:unc}
+  Let $\unc(\reft{\Gamma}{\true},t) = \Theta$.
+  Then $\gdtsem{t}_\rho = \no$ if and only if $\reftvalid{\rho}{\Theta}$.
+\end{theorem}
+
+In other words: when $\Theta$ is the set of uncovered values of guard tree $t$
+as computed by $\unc$, then any vector of values $\rho$ that falls through
+all cases of $t$ (i.e., $\gdtsem{t}_\rho = \no$) is in $\Theta$
+(\ie $\reftvalid{\rho}{\Theta}$).
+In this precise sense, $\unc$ is \emph{sound}.
+Conversely, when $\unc$ returns a non-empty refinement type $\Theta$, there
+exists a vector of values $\rho$ in $\Theta$, and by \Cref{thm:unc} we have that
+$\rho$ must also fall through all clauses of $t$.
+In this precise sense, $\unc$ is \emph{complete}.
+
+Of course, the judgment $\reftvalid{\rho}{\Theta}$ frequently compares domain
+values $d$ that ultimately come from evaluating expressions $\exprsem{e}_\rho$,
+rendering the predicate undecidable for many source languages.
+Thus, any implementation of $\generate$ will be sound \wrt
+$\reftvalid{\rho}{\Theta}$, but not complete --- it will \emph{overapproximate}
+$\Theta$. \citet{dieterichs:thesis} captures this in his
+\texttt{can\_prove\_empty} definition.
 
 \section{Related Work} \label{sec:related}
 
