@@ -3354,7 +3354,7 @@ a black box to our approach anyway.}
 He shows that $\unc$, $\ann$ and $\red$ preserve key semantic properties of the
 guard trees under analysis, provided that function $\generate(\Theta)$ for
 generating inhabitants indeed overapproximates $\Theta$.
-We will briefly summarise the correctness results regarding $\unc$ here.
+We will briefly summarise the correctness results here.
 For that, we need to define a plausible formal semantics for guard trees and
 refinement predicates.
 
@@ -3368,15 +3368,15 @@ environment $\rho$ describing a vector of values to match against, returns
 
 \begin{itemize}
   \item
-    $\yes{k}$ when $\rho$ describes a vector of values that when matched
-    against $t$ will reach RHS $k$.
+    $\yes{k}$ when $\rho$ is a vector of values that will reach RHS $k$ when
+    matched against $t$.
 
   \item
-    $\no$ when $\rho$ describes a vector of values that is not covered
+    $\no$ when $\rho$ is a vector of values that is not covered
     by $t$.
 
   \item
-    $\diverge$ when $\rho$ describes a vector of values that will lead to
+    $\diverge$ when $\rho$ is a vector of values that will lead to
     divergence when matched against $t$.
 \end{itemize}
 
@@ -3414,8 +3414,8 @@ becomes a scoping check, namely that $\Gamma$ has the same domain as $\rho$.
 \subsection{Formal Soundness Statement}
 
 Having stated plausible semantics for the inputs and outputs of $\unc$, we can
-formulate and prove what it means for $\unc$ to be correct, following
-\citet[Section 4.1]{dieterichs:thesis}.
+formulate what it means for $\unc$ to be correct, following \citet[Section
+4.1]{dieterichs:thesis} who mechanised the proof in Lean 3.
 
 \begin{theorem}
   \label{thm:unc}
@@ -3425,7 +3425,7 @@ formulate and prove what it means for $\unc$ to be correct, following
 
 In other words: when $\Theta$ is the set of uncovered values of guard tree $t$
 as computed by $\unc$, then any vector of values $\rho$ that falls through
-all cases of $t$ (i.e., $\gdtsem{t}_\rho = \no$) is in $\Theta$
+all clauses of $t$ (i.e., $\gdtsem{t}_\rho = \no$) is in $\Theta$
 (\ie $\reftvalid{\rho}{\Theta}$).
 In this precise sense, $\unc$ is \emph{sound}.
 Conversely, when $\unc$ returns a non-empty refinement type $\Theta$, there
@@ -3439,7 +3439,31 @@ rendering the predicate undecidable for many source languages.
 Thus, any implementation of $\generate$ will be sound \wrt
 $\reftvalid{\rho}{\Theta}$, but not complete --- it will \emph{overapproximate}
 $\Theta$. \citet{dieterichs:thesis} captures this in his
-\texttt{can\_prove\_empty} definition.
+\texttt{can\_prove\_empty} definition to abstract over sound implementations of
+$\generate$.
+\citet[Section 4.2]{dieterichs:thesis} proves the following soundness theorem
+about $\ann$ and $\red$.
+
+\begin{theorem}
+\label{thm:red}
+Let $\red(\ann(\reft{\Gamma}{\true}, t)) = (a,i,r)$ and $\generate$ sound in the
+above sense.
+\begin{itemize}
+\item
+  If $\gdtsem{t}_\rho = \yes{k}$, then $k \in a$, \ie, clause $k$ is accessible
+  according to $\ann$ and $\red$.
+
+\item
+  If $k \in r$ is redundant, then removing clause $k$ from guard tree $t$
+  does not change the semantics of $t$, \ie, $\forall \rho.\ \gdtsem{t}_\rho =
+  \gdtsem{\mathit{remove}(k,t)}_\rho$ (where $\mathit{remove}(k,t)$ is the
+  implied removal operation).
+\end{itemize}
+\end{theorem}
+
+Perhaps unsurprisingly, proving correct the transformation in the second part of
+\Cref{thm:red} proved far more subtle than the proof for \Cref{thm:unc}.
+Fortunately, mechanisation provides confidence in its correctness.
 
 \section{Related Work} \label{sec:related}
 
