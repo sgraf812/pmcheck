@@ -217,9 +217,9 @@ raft of innovations that have become part of a modern programming language
 like Haskell, including: view patterns, pattern guards, pattern synonyms,
 overloaded literals, bang patterns, lazy patterns, as-patterns, strict data constructors,
 empty case expressions, and long-distance effects (\Cref{sec:extensions}).
-Particularly tricky are: \emph{GADTs} where the \emph{type} of a match can determine
-what \emph{values} can possibly appear \cite{recdatac}; and \emph{local type-equality constraints} brought into
-scope by pattern matching \cite{outsideinx}.
+Particularly tricky are: \emph{Generalised Algebraic Datatypes} (\emph{GADTs}, for short) where the \emph{type} of a match can determine
+what \emph{values} can possibly appear \citep{recdatac}; and \emph{local type-equality constraints} brought into
+scope by pattern matching \citep{outsideinx}.
 
 % If coverage checking catches mistakes in pattern matches, then who checks for
 % mistakes in the coverage checker itself? It is a surprisingly frequent
