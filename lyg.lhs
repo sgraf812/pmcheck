@@ -43,9 +43,7 @@
 \usepackage{fancyvrb}  % for indentation in Verbatim
 \usepackage{wasysym}   % for \checked
 
-\usepackage{prooftree} % For derivation trees
-\usepackage{stackengine} % For linebraks in derivation tree premises
-\stackMath
+\usepackage{mathpartir} % For derivation trees
 \usepackage[edges]{forest} % For guard trees
 \usepackage{tikz}
 \usetikzlibrary{arrows,decorations.pathmorphing,shapes}
@@ -1840,35 +1838,30 @@ contradiction.
 \[
 \begin{array}{c}
 
-  \prooftree
+  \inferrule*[right=\inhabitedbot]{
     (\nreft{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false
-  \justifies
+  }{
     \inhabited{\nreft{\Gamma}{\Delta}}{x}
-  \using
-    \inhabitedbot
-  \endprooftree
+  }
 
   \qquad
 
-  \prooftree
+  \inferrule*[right=\inhabitednocpl]{
     {x:\tau \in \Gamma \quad \cons(\nreft{\Gamma}{\Delta}, \tau) = \bot}
-  \justifies
+  }{
     \inhabited{\nreft{\Gamma}{\Delta}}{x}
-  \using
-    \inhabitednocpl
-  \endprooftree
+  }
 
   \\
   \\
 
-  \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad K \in \cons(\nreft{\Gamma}{\Delta}, \tau)}
-                {\inst(\nreft{\Gamma}{\Delta}, x, K) \not= \false}}
-  \justifies
+  \inferrule*[right=\inhabitedinst]{
+    {x:\tau \in \Gamma \quad K \in \cons(\nreft{\Gamma}{\Delta}, \tau)}
+    \\\\
+    {\inst(\nreft{\Gamma}{\Delta}, x, K) \not= \false}
+  }{
     \inhabited{\nreft{\Gamma}{\Delta}}{x}
-  \using
-    \inhabitedinst
-  \endprooftree
+  }
 
 \end{array}
 \]
@@ -2165,24 +2158,21 @@ is by looking up all \extension{COMPLETE} sets attached to a type and check
 that none of them is completely covered:
 \[
 \begin{array}{cc}
-  \prooftree
+  \inferrule*[right=\inhabitedbot]{
     (\nreft{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false
-  \justifies
+  }{
     \inhabited{\nreft{\Gamma}{\Delta}}{x}
-  \using
-    \inhabitedbot
-  \endprooftree
+  }
 
   &
 
-  \prooftree
-    \Shortstack{{x:\tau \in \Gamma \quad \cons(\nreft{\Gamma}{\Delta}, \tau)=\highlight{\overline{C_1,...,C_{n_i}}^i}}
-                {\highlight{\overline{\inst(\nreft{\Gamma}{\Delta}, x, C_j) \not= \false}^i}}}
-  \justifies
+  \inferrule*[right=\inhabitedinst]{
+    {x:\tau \in \Gamma \quad \cons(\nreft{\Gamma}{\Delta}, \tau)=\highlight{\overline{C_1,...,C_{n_i}}^i}}
+    \\\\
+    {\highlight{\overline{\inst(\nreft{\Gamma}{\Delta}, x, C_j) \not= \false}^i}}
+  }{
     \inhabited{\nreft{\Gamma}{\Delta}}{x}
-  \using
-    \inhabitedinst
-  \endprooftree
+  }
 \end{array}
 \]
 \[
@@ -3252,61 +3242,61 @@ to coverage checking. These include:
 \[ \ruleform{ \reftvalid{\rho}{(\varphi,\rho)}, \qquad \reftvalid{\rho}{\Theta}} \]
 \[
 \begin{array}{c}
-  \prooftree
-  \justifies
+  \inferrule{
+  }{
     \reftvalid{\rho}{(\true,\rho)}
-  \endprooftree
+  }
 \qquad
-  \prooftree
+  \inferrule{
     {\rho(x) = K \; \overline{d}}
-  \justifies
+  }{
     \reftvalid{\rho}{(\ctcon{K \; \overline{y}}{x},\rho[\overline{y \mapsto d}])}
-  \endprooftree
+  }
 \qquad
-  \prooftree
+  \inferrule{
     {\rho(x) \not= K \; \overline{d}}
-  \justifies
+  }{
     \reftvalid{\rho}{(x \ntermeq K,\rho)}
-  \endprooftree
+  }
 \\
 \\[-0.5em]
-  \prooftree
+  \inferrule{
     {\rho(x) = \bot}
-  \justifies
+  }{
     \reftvalid{\rho}{(x \termeq \bot,\rho)}
-  \endprooftree
+  }
 \qquad
-  \prooftree
+  \inferrule{
     {\rho(x) \not= \bot}
-  \justifies
+  }{
     \reftvalid{\rho}{(x \ntermeq \bot,\rho)}
-  \endprooftree
+  }
 \qquad
-  \prooftree
-  \justifies
+  \inferrule{
+  }{
     \reftvalid{\rho}{(\ctlet{x}{e},\rho[x \mapsto \exprsem{e}_\rho])}
-  \endprooftree
+  }
 \\
 \\[-0.5em]
-  \prooftree
+  \inferrule{
     \Gamma_1 \vdash \rho_1 \quad
     \Gamma_2 \vdash \rho_2 \quad
     \reftvalid{\rho_1}{(\varphi,\rho_2)} \quad \reftvalid{\rho_2}{\reft{\Gamma}{\Phi}}
-  \justifies
+  }{
     \reftvalid{\rho_1}{\reft{\Gamma_1}{\varphi \wedge \Phi}}
-  \endprooftree
+  }
 \qquad
-  \prooftree
+  \inferrule{
     \reftvalid{\rho}{\reft{\Gamma}{\Phi_1}}
-  \justifies
+  }{
     \reftvalid{\rho}{\reft{\Gamma}{\Phi_1 \vee \Phi_2}}
-  \endprooftree
+  }
 \qquad
-  \prooftree
+  \inferrule{
     \reftvalid{\rho}{\reft{\Gamma}{\Phi_2}}
-  \justifies
+  }{
     \reftvalid{\rho}{\reft{\Gamma}{\Phi_1 \vee \Phi_2}}
-  \endprooftree
+  }
 \end{array}
 \]
 
