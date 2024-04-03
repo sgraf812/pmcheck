@@ -230,7 +230,7 @@ scope by pattern matching \citep{outsideinx}.
 % with all of these features is no small task.
 
 The current state of the art for coverage checking in a richer language of this
-sort is \emph{GADTs Meet Their Match} \cite{gadtpm}, or \gmtm{} for short. It
+sort is \emph{GADTs Meet Their Match} \citep{gadtpm}, or \gmtm{} for short. It
 presents an algorithm that handles the intricacies of checking GADTs, lazy
 patterns, and pattern guards. However \gmtm{} is monolithic and does not
 account for a number of important language features; it gives incorrect results
@@ -321,7 +321,7 @@ since term and type constraints can make some combinations of constructors
 unreachable if matched on, and some combinations of data constructors can
 overlap others. Moreover, what constitutes a ``data constructor''?
 In addition to traditional data constructors, GHC features \emph{pattern synonyms}
-~\cite{patsyns},
+~\citep{patsyns},
 which provide an abstract way to embed arbitrary computation into patterns.
 Matching on a pattern synonym is syntactically identical to matching on a data
 constructor, which makes coverage checking in the presence of pattern synonyms
@@ -513,7 +513,7 @@ safeLast (reverse -> (x : _))  = Just x
 \subsubsection{Pattern Synonyms}
 \label{ssec:patsyn}
 
-Pattern synonyms~\cite{patsyns} allow abstraction over patterns themselves.
+Pattern synonyms~\citep{patsyns} allow abstraction over patterns themselves.
 Pattern synonyms and view patterns can be useful in tandem, as the pattern
 synonym can present an abstract interface to a view pattern that does
 complicated things under the hood. For example, one can define
@@ -551,7 +551,7 @@ challenging to automatically check that the combination of |Text.null| and
 Nevertheless, |Text.null| and |Text.uncons| together are in fact exhaustive, and  GHC allows
 programmers to communicate this fact to the coverage checker using
 a \extension{COMPLETE} pragma
-\cite{complete-users-guide}.
+\citep{complete-users-guide}.
 A \extension{COMPLETE} set is a combination of data constructors
 and pattern synonyms that should be regarded as exhaustive when a function matches
 on all of them.
@@ -705,7 +705,7 @@ the second equation being reached. Note that the second equation is inaccessible
 
 Besides strictness, another way for pattern matches to be rendered unreachable
 is by way of \emph{equality constraints}. A popular method for introducing
-equalities between types is matching on GADTs \cite{recdatac}. The following examples
+equalities between types is matching on GADTs \citep{recdatac}. The following examples
 demonstrate the interaction between GADTs and coverage checking:
 
 \begin{minipage}{\textwidth}
@@ -737,7 +737,7 @@ which is why matching the second argument against |False| or |True| will typeche
 Phrased differently, matching against
 |T1| brings into scope an \emph{equality constraint} between the types
 |b| and |Bool|. GHC has a powerful type inference engine that is equipped to
-reason about type equalities of this sort \cite{outsideinx}.
+reason about type equalities of this sort \citep{outsideinx}.
 
 Just as important as the code used in the |g1| function is the code that is
 \emph{not} used in |g1|. One might wonder if |g1| not matching its first argument against
@@ -762,11 +762,11 @@ Concluding that |g2| is exhaustive requires some non-trivial reasoning about
 equality constraints. In GHC, the same engine that typechecks GADT pattern matches is
 also used to rule out cases made unreachable by type equalities, and \lyg
 adopts a similar approach.
-Besides GHC's current coverage checker \cite{gadtpm}, there are a variety of
+Besides GHC's current coverage checker \citep{gadtpm}, there are a variety of
 other coverage checking algorithms that account for GADTs,
-including those for OCaml \cite{ocamlgadts},
-Dependent ML \cite{deadcodexi,xithesis,dependentxi}, and
-Stardust \cite{dunfieldthesis}.
+including those for OCaml \citep{ocamlgadts},
+Dependent ML \citep{deadcodexi,xithesis,dependentxi}, and
+Stardust \citep{dunfieldthesis}.
 % \lyg continues this tradition---see
 % \ryan{What section?}\sg{It's a little implicit at the moment, because it just works. Not sure what to reference here.} for \lyg's take on GADTs.
 
@@ -873,7 +873,7 @@ In this section, we describe our new coverage checking algorithm, \lyg.
   an \textbf{annotated tree} $u \in \Ant$, which has the same general branching structure as $t$ but
   describes which clauses are accessible, inaccessible, or redundant.
   The function $\unc(t)$, on the other hand, returns a \emph{refinement type} $\Theta$
-  \cite{rushby1998subtypes,boundschecking}
+  \citep{rushby1998subtypes,boundschecking}
   that describes the set of \emph{uncovered values}, which are not matched by any of the clauses.
 \item Finally, an error-reporting pass generates comprehensible error messages (\Cref{sec:inhabitants}).
   Again there are two things to do.
@@ -912,7 +912,7 @@ advantages are:
     sets properly (\Cref{ssec:residual-complete}).
 
   \item
-    Fixing various bugs present in \gmtm, both in the paper \cite{gadtpm} and
+    Fixing various bugs present in \gmtm, both in the paper \citep{gadtpm} and
     in GHC's implementation thereof (\Cref{sec:ghc-issues}).
 
 \end{itemize}
@@ -3151,7 +3151,7 @@ desugaring. \Cref{fig:perf} shows these figures as well as the percent change
 going from 8.8.3 to HEAD. Most cases exhibit a noticeable improvement under
 \lyg, with the exception of \texttt{T11276}. Investigating \texttt{T11276}
 suggests that the performance of GHC's equality constraint solver has become
-more expensive in HEAD ~\cite{gitlab:17891}, and these extra costs outweigh the
+more expensive in HEAD ~\citep{gitlab:17891}, and these extra costs outweigh the
 performance benefits of using \lyg.
 This performance bug was fixed in GHC 9.0%
 \footnote{\url{https://gitlab.haskell.org/ghc/ghc/-/commit/fd7ea0fee92a60f9658254cc4fe3abdb4ff299b1}}.
@@ -3169,31 +3169,31 @@ to coverage checking. These include:
 \begin{itemize}
   \item
     Better compile-time performance
-    \cite{gitlab:11195,gitlab:11528,gitlab:17096,gitlab:17264}
+    \citep{gitlab:11195,gitlab:11528,gitlab:17096,gitlab:17264}
 
   \item
     More accurate warnings for empty |case| expressions
-    \cite{gitlab:10746,gitlab:13717,gitlab:14813,gitlab:15450,gitlab:17376}
+    \citep{gitlab:10746,gitlab:13717,gitlab:14813,gitlab:15450,gitlab:17376}
 
   \item
     More accurate warnings due to \lyg's desugaring
-    \cite{gitlab:11984,gitlab:12949,gitlab:14098,gitlab:15385,gitlab:17646}
+    \citep{gitlab:11984,gitlab:12949,gitlab:14098,gitlab:15385,gitlab:17646}
 
   \item
     More accurate warnings due to improved term-level reasoning
-    \cite{gitlab:12957,gitlab:14546,gitlab:14667,gitlab:15713,gitlab:15753,gitlab:15884,gitlab:16129,gitlab:16289,gitlab:17251}
+    \citep{gitlab:12957,gitlab:14546,gitlab:14667,gitlab:15713,gitlab:15753,gitlab:15884,gitlab:16129,gitlab:16289,gitlab:17251}
 
   \item
     More accurate warnings due to tracking long-distance information
-    \cite{gitlab:17465,gitlab:17703,gitlab:17783}
+    \citep{gitlab:17465,gitlab:17703,gitlab:17783}
 
   \item
     Improved treatment of \extension{COMPLETE} sets
-    \cite{gitlab:13021,gitlab:13363,gitlab:13965,gitlab:14059,gitlab:14253,gitlab:14851,gitlab:17112,gitlab:17149,gitlab:17386}
+    \citep{gitlab:13021,gitlab:13363,gitlab:13965,gitlab:14059,gitlab:14253,gitlab:14851,gitlab:17112,gitlab:17149,gitlab:17386}
 
   \item
     Better treatment of strictness, bang patterns, and newtypes
-    \cite{gitlab:15305,gitlab:15584,gitlab:17234,gitlab:17248}
+    \citep{gitlab:15305,gitlab:15584,gitlab:17234,gitlab:17248}
 
 \end{itemize}
 
@@ -3566,7 +3566,7 @@ reasoning as part of its \texttt{DataKinds} language extension
 \subsubsection{Refinement Type--Based Totality Checking in Liquid Haskell}
 
 In addition to \lyg, Liquid Haskell uses refinement types to perform a limited form of
-exhaustivity checking \cite{liquidhaskell,refinement-reflection}.
+exhaustivity checking \citep{liquidhaskell,refinement-reflection}.
 While exhaustiveness checks are optional in ordinary
 Haskell, they are mandatory for Liquid Haskell, as proofs written in Liquid
 Haskell require user-defined functions to be total (and therefore exhaustive)
@@ -3670,8 +3670,8 @@ Choosing $\{|True'|,|False|\}$ here will mark the third GRHS as redundant,
 while choosing $\{|True|,|False|\}$ won't. GHC's implementation used to try
 each \extension{COMPLETE} set in turn and would disambiguate using a
 complicated metric based on the number and kinds of warnings the choice of each
-set would generate \cite{complete-users-guide}, which was broken still
-\cite{gitlab:13363}.
+set would generate \citep{complete-users-guide}, which was broken still
+\citep{gitlab:13363}.
 
 Negative constraints make \lyg efficient in other places too, such as in this example:
 
