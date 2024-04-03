@@ -1,186 +1,31 @@
-% -*- mode: LaTeX -*-
-%% For double-blind review submission, w/o CCS and ACM Reference (max submission space)
-%\documentclass[acmsmall,review,anonymous,natbib=false]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
-%% For double-blind review submission, w/ CCS and ACM Reference
-%\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true}
-%% For single-blind review submission, w/o CCS and ACM Reference (max submission space)
-%\documentclass[acmsmall,review]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
-%% For single-blind review submission, w/ CCS and ACM Reference
-%\documentclass[acmsmall,review]{acmart}\settopmatter{printfolios=true}
-%% For final camera-ready submission, w/ required CCS and ACM Reference
-\documentclass[acmsmall,screen]{acmart}\settopmatter{}
+%\clubpenalty = 1000000
+%\widowpenalty = 1000000
+%\displaywidowpenalty = 1000000
 
-%\documentclass[acmsmall,review,anonymous]{acmart}\settopmatter{printfolios=true,printccs=false,printacmref=false}
+\chapter{A Compositional Pattern-Match Coverage Checker}
 
-%include custom.fmt
-
-%% Journal information
-%% The following is specific to ICFP '20 and the paper
-%% 'Lower Your Guards'
-%% by Sebastian Graf, Simon Peyton Jones, and Ryan G. Scott.
-%%
-\setcopyright{rightsretained}
-\acmPrice{}
-\acmDOI{10.1145/3408989}
-\acmYear{2020}
-\copyrightyear{2020}
-\acmSubmissionID{icfp20main-p57-p}
-\acmJournal{PACMPL}
-\acmVolume{4}
-\acmNumber{ICFP}
-\acmArticle{107}
-\acmMonth{8}
-
-%% Bibliography style
-\bibliographystyle{ACM-Reference-Format}
-%% Citation style
-%% Note: author/year citations are required for papers published as an
-%% issue of PACMPL.
-\citestyle{acmauthoryear}   %% For author/year citations
-
-%%%%%%%
-\usepackage{todonotes}
-\usepackage{fancyvrb}  % for indentation in Verbatim
-\usepackage{wasysym}   % for \checked
-
-\usepackage{mathpartir} % For derivation trees
-\usepackage[edges]{forest} % For guard trees
-\usepackage{tikz}
-\usetikzlibrary{arrows,decorations.pathmorphing,shapes}
-
-\PassOptionsToPackage{table}{xcolor} % for highlight
-\usepackage{pgf}
-\usepackage[T1]{fontenc}   % for textsc in headings
-
-% For strange matrices
-\usepackage{array}
-\usepackage{multirow}
-\usepackage{multicol}
-
-\usepackage{xspace}
-
-\usepackage{float}
-
-\usepackage{hyperref}
-\usepackage[nameinlink]{cleveref}
-
-\input{macros}
-
-\clubpenalty = 1000000
-\widowpenalty = 1000000
-\displaywidowpenalty = 1000000
-
-% Tables should have the caption above
-\floatstyle{plaintop}
-\restylefloat{table}
-
-\begin{document}
-
-\special{papersize=8.5in,11in}
-\setlength{\pdfpageheight}{\paperheight}
-\setlength{\pdfpagewidth}{\paperwidth}
-
-\title{Lower Your Guards}
-\subtitle{A Compositional Pattern-Match Coverage Checker}
-
-\author{Sebastian Graf}
-\affiliation{%
-  \institution{Karlsruhe Institute of Technology}
-  \city{Karlsruhe}
-  \country{Germany}
-}
-\email{sebastian.graf@@kit.edu}
-
-\author{Simon Peyton Jones}
-\affiliation{%
-  \institution{Microsoft Research}
-  \city{Cambridge}
-  \country{UK}
-}
-\email{simonpj@@microsoft.com}
-
-\author{Ryan G. Scott}
-\affiliation{%
-  \institution{Indiana University}
-  \city{Bloomington, Indiana}
-  \country{USA}
-}
-\email{rgscott@@indiana.edu}
-
-\begin{abstract}
-A compiler should warn if a function defined by pattern matching
-does not cover its inputs---that is, if there are missing or redundant
-patterns. Generating such warnings accurately is difficult
-for modern languages due to the myriad of language features
-that interact with pattern matching. This is especially true in Haskell, a language with
-a complicated pattern language that is made even more complex by extensions
-offered by the Glasgow Haskell Compiler (GHC). Although GHC has spent a
-significant amount of effort towards improving its
-pattern-match coverage warnings, there are still several cases where
-it reports inaccurate warnings.
-
-We introduce a coverage checking algorithm called Lower Your Guards,
-which boils down the complexities of pattern matching into \emph{guard trees}.
-While the source language may have many exotic forms of patterns, guard
-trees only have three different constructs, which vastly simplifies the
-coverage checking process. Our algorithm is modular, allowing for new forms
-of source-language patterns to be handled with little changes to the overall
-structure of the algorithm. We have implemented the algorithm in GHC and
-demonstrate places where it performs better than GHC's current coverage
-checker, both in accuracy and performance.
-\end{abstract}
-
-%% 2012 ACM Computing Classification System (CSS) concepts
-%% Generate at 'http://dl.acm.org/ccs/ccs.cfm'.
-\begin{CCSXML}
- <ccs2012>
-   <concept>
-       <concept_id>10011007.10011006.10011041</concept_id>
-       <concept_desc>Software and its engineering~Compilers</concept_desc>
-       <concept_significance>500</concept_significance>
-       </concept>
-   <concept>
-       <concept_id>10011007.10011006.10011073</concept_id>
-       <concept_desc>Software and its engineering~Software maintenance tools</concept_desc>
-       <concept_significance>300</concept_significance>
-       </concept>
-   <concept>
-       <concept_id>10011007.10011006.10011008.10011024.10011035</concept_id>
-       <concept_desc>Software and its engineering~Procedures, functions and subroutines</concept_desc>
-       <concept_significance>100</concept_significance>
-       </concept>
-   <concept>
-       <concept_id>10011007.10011006.10011008.10011024.10011032</concept_id>
-       <concept_desc>Software and its engineering~Constraints</concept_desc>
-       <concept_significance>300</concept_significance>
-       </concept>
-   <concept>
-       <concept_id>10011007.10011006.10011008.10011009.10011012</concept_id>
-       <concept_desc>Software and its engineering~Functional languages</concept_desc>
-       <concept_significance>300</concept_significance>
-       </concept>
-   <concept>
-       <concept_id>10011007.10011006.10011008.10011009.10011021</concept_id>
-       <concept_desc>Software and its engineering~Multiparadigm languages</concept_desc>
-       <concept_significance>300</concept_significance>
-       </concept>
- </ccs2012>
-\end{CCSXML}
-
-\ccsdesc[500]{Software and its engineering~Compilers}
-\ccsdesc[300]{Software and its engineering~Software maintenance tools}
-\ccsdesc[100]{Software and its engineering~Procedures, functions and subroutines}
-\ccsdesc[300]{Software and its engineering~Constraints}
-\ccsdesc[300]{Software and its engineering~Functional languages}
-\ccsdesc[300]{Software and its engineering~Multiparadigm languages}
-%% End of generated code
-
-
-%% Keywords
-%% comma separated list
-\keywords{Haskell, pattern matching, guards, strictness}  %% \keywords are mandatory in final camera-ready submission
-
-\maketitle
+%\begin{abstract}
+%A compiler should warn if a function defined by pattern matching
+%does not cover its inputs---that is, if there are missing or redundant
+%patterns. Generating such warnings accurately is difficult
+%for modern languages due to the myriad of language features
+%that interact with pattern matching. This is especially true in Haskell, a language with
+%a complicated pattern language that is made even more complex by extensions
+%offered by the Glasgow Haskell Compiler (GHC). Although GHC has spent a
+%significant amount of effort towards improving its
+%pattern-match coverage warnings, there are still several cases where
+%it reports inaccurate warnings.
+%
+%We introduce a coverage checking algorithm called Lower Your Guards,
+%which boils down the complexities of pattern matching into \emph{guard trees}.
+%While the source language may have many exotic forms of patterns, guard
+%trees only have three different constructs, which vastly simplifies the
+%coverage checking process. Our algorithm is modular, allowing for new forms
+%of source-language patterns to be handled with little changes to the overall
+%structure of the algorithm. We have implemented the algorithm in GHC and
+%demonstrate places where it performs better than GHC's current coverage
+%checker, both in accuracy and performance.
+%\end{abstract}
 
 \section{Introduction}
 
@@ -376,33 +221,27 @@ inequalities. Clearly, coverage checking for guards is
 undecidable in general. However, while we cannot accurately check \emph{all} uses of guards,
 we can at least give decent warnings for some common cases.
 For instance, take the following functions:
-
-\begin{minipage}{\textwidth}
-\begin{minipage}{0.33\textwidth}
-\centering
+\[
+\mathhs
+\begin{array}{ccc}
 \begin{code}
 not :: Bool -> Bool
 not b  | False <- b  = True
        | True <- b   = False
-\end{code}
-\end{minipage}
-\begin{minipage}{0.33\textwidth}
-\centering
+\end{code} &
 \begin{code}
 not2 :: Bool -> Bool
 not2 False  = True
 not2 True   = False
-\end{code}
-\end{minipage}
-\begin{minipage}{0.33\textwidth}
-\centering
+\end{code} &
 \begin{code}
 not3 :: Bool -> Bool
 not3 x | False <- x  = True
 not3 True            = False
 \end{code}
-\end{minipage}
-\end{minipage}
+\end{array}
+\plainhs
+\]
 \noindent
 Clearly all are equivalent.  Our coverage checking algorithm should find that all three
 are exhaustive, and indeed, \lyg does so.
@@ -469,9 +308,8 @@ For example, one can use view patterns to succinctly define a function that
 computes the length of Haskell's opaque |Text| data type:
 
 \begin{code}
-Text.null :: Text -> Bool   -- Checks if a Text is empty
-Text.uncons :: Text -> Maybe (Char, Text)  -- If a Text is non-empty, return Just (x, xs),
-                                           -- where x is the first character and xs is the rest
+Text.null :: Text -> Bool
+Text.uncons :: Text -> Maybe (Char, Text)
 
 length :: Text -> Int
 length (Text.null -> True)            = 0
@@ -500,10 +338,15 @@ length (Text.uncons -> Just (_, xs))  = 1 + length xs
 % As a result, any coverage-checking algorithm that can handle guards can also
 % handle view patterns, provided that the view patterns desugar to guards that
 % are not too complex.
+Function |Text.null| returns |True| when the given |Text| is empty.
+When it is non-empty, it must have a first character |x :: Char| and the
+remainder |xs :: Text|, in which case |Text.uncons| returns |Just (x,xs)|.
+
 Again, it would be unreasonable to expect a coverage checking algorithm to
-prove that |length| is exhaustive, but one might hope for a coverage checking algorithm that handles
-some common usage patterns.  For example, \lyg{} indeed \emph{is} able to
-prove that the |safeLast| function is exhaustive:
+prove that the definition of |length| is exhaustive, but one might hope for
+a coverage checking algorithm that handles some common usage patterns. For
+example, \lyg{} indeed \emph{is} able to prove that the |safeLast| function is
+exhaustive:
 \begin{code}
 safeLast :: [a] -> Maybe a
 safeLast (reverse -> [])       = Nothing
@@ -519,23 +362,16 @@ synonym can present an abstract interface to a view pattern that does
 complicated things under the hood. For example, one can define
 |length| with pattern synonyms like so:
 
-\begin{minipage}{\textwidth}
-\begin{minipage}[t]{0.55\textwidth}
 \begin{code}
 pattern Nil :: Text
 pattern Nil <- (Text.null -> True)
 pattern Cons :: Char -> Text -> Text
 pattern Cons x xs <- (Text.uncons -> Just (x, xs))
-\end{code}
-\end{minipage}%
-\begin{minipage}[t]{0.3\textwidth}
-\begin{code}
+
 length :: Text -> Int
 length Nil = 0
 length (Cons _ xs) = 1 + length xs
 \end{code}
-\end{minipage}
-\end{minipage}
 \noindent
 The pattern synonym |Nil| matches precisely when the view pattern
 |Text.null -> True| would match, and similarly for |Cons|.
@@ -708,30 +544,27 @@ Besides strictness, another way for pattern matches to be rendered unreachable
 is by way of \emph{type equality constraints}. A popular method for introducing
 equalities between types is matching on GADTs \citep{recdatac}. The following examples
 demonstrate the interaction between GADTs and coverage checking:
-
-\begin{minipage}{\textwidth}
-\begin{minipage}[t]{0.3\textwidth}
+\[
+\mathhs
+\begin{array}{ccc}
 \begin{code}
 data T a b where
   T1 :: T Int  Bool
   T2 :: T Char Bool
-\end{code}
-\end{minipage}%
-\begin{minipage}[t]{0.3\textwidth}
+\end{code} &
 \begin{code}
 g1 :: T Int b -> b -> Int
 g1 T1 False = 0
 g1 T1 True  = 1
-\end{code}
-\end{minipage}%
-\begin{minipage}[t]{0.3\textwidth}
+\end{code} &
 \begin{code}
 g2 :: T a b -> T a b -> Int
 g2 T1 T1 = 0
 g2 T2 T2 = 1
 \end{code}
-\end{minipage}
-\end{minipage}
+\end{array}
+\plainhs
+\]
 \noindent
 When |g1| matches against |T1|, the |b| in the type |T Int b| is known to be a |Bool|,
 which is why matching the second argument against |False| or |True| will typecheck.
@@ -776,7 +609,8 @@ Stardust \citep{dunfieldthesis}.
 \label{sec:overview}
 
 \begin{figure}
-\includegraphics{pipeline.pdf}
+\centering
+\includegraphics[scale=0.85]{lyg/pipeline.pdf}
 \caption{Bird's eye view of pattern match checking}
 \label{fig:pipeline}
 \end{figure}
@@ -793,15 +627,18 @@ Stardust \citep{dunfieldthesis}.
   P             &\text{Pattern synonyms} \\
   T             &\text{Type constructors} \\
   l             &\text{Literal} \\
-  \mathit{expr} &\text{Expressions} \\
+  |expr| &\text{Expressions} \\
 \end{array} &
+\arraycolsep=2pt
 \begin{array}{rcl}
-  \mathit{defn}   &\Coloneqq& \overline{clause} \\
-  \mathit{clause} &\Coloneqq&  f \; \overline{\mathit{pat}} \; \mathit{match} \\
-  \mathit{pat}    &\Coloneqq& x \mid |_| \mid K \; \overline{\mathit{pat}} \mid x|@|\mathit{pat} \mid |!|\mathit{pat} \mid \mathit{expr} \rightarrow \mathit{pat} \\
-  \mathit{match}  &\Coloneqq& \mathtt{=} \; \mathit{expr} \mid \overline{\mathit{grhs}} \\
-  \mathit{grhs}   &\Coloneqq& \mathtt{\mid} \; \overline{guard} \; \mathtt{=} \; \mathit{expr} \\
-  \mathit{guard}  &\Coloneqq& \mathit{pat} \leftarrow \mathit{expr} \mid \mathit{expr} \mid \mathtt{let} \; x \; \mathtt{=} \; \mathit{expr} \\
+  |defn|   &\Coloneqq& \overline{clause} \\
+  |clause| &\Coloneqq&  f \; \overline{|pat|} \; |match| \\
+  |pat|    &\Coloneqq& x \mid |_| \mid K \; \overline{|pat|} \mid x|@||pat| \\
+                  &\mid     & |!||pat| \mid |expr| \rightarrow |pat| \\
+  |match|  &\Coloneqq& \mathtt{=} \; |expr| \mid \overline{|grhs|} \\
+  |grhs|   &\Coloneqq& \mathtt{\mid} \; \overline{guard} \; \mathtt{=} \; |expr| \\
+  |guard|  &\Coloneqq& |pat| \leftarrow |expr| \mid |expr| \\
+                  &\mid     & \mathtt{let} \; x \; \mathtt{=} \; |expr| \\
 \end{array}
 \end{array}
 \]
@@ -850,7 +687,8 @@ Stardust \citep{dunfieldthesis}.
 \arraycolsep=2pt
 \begin{array}{rcl@@{\quad}l}
   \Gamma &\Coloneqq& \varnothing \mid \Gamma, x:\tau \mid \Gamma, a & \text{Context} \\
-  \varphi &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \text{Literals} \\
+  \varphi &\Coloneqq& \true \mid \false \mid \ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x} \mid x \ntermeq K & \text{Literals} \\
+          &\mid& x \termeq \bot \mid x \ntermeq \bot \mid \ctlet{x}{e} & \\
   \Phi &\Coloneqq& \varphi \mid \Phi \wedge \Phi \mid \Phi \vee \Phi & \text{Formula} \\
   \Theta &\Coloneqq& \reft{\Gamma}{\Phi} & \text{Refinement type} \\
 \end{array}
@@ -923,60 +761,60 @@ advantages are:
 
 \begin{figure}
 
-  \[ \ruleform{\begin{array}{c}
-      \ds(\mathit{defn}) = \Gdt,\quad \ds(clause) = \Gdt,\quad \ds(\mathit{grhs}) = \Gdt \\
-      k_{\mathit{rhs}} \; \text{is the index of the right hand side}\; \mathit{rhs}
-      \end{array}} \]
+\[ \ruleform{\begin{array}{c}
+  \ds(|defn|) = \Gdt,\quad \ds(\overline{x}, clause) = \Gdt,\quad \ds(|grhs|) = \Gdt \\
+  k_{|rhs|} \; \text{is the index of the right hand side}\; |rhs|
+\end{array}} \]
 \[
-\begin{array}{l}
-\begin{array}{lcl}
+\begin{array}{lcl@@{\hspace{5mm}}l}
+\ds(\overline{|clause|}^n) &=&
+  \raisebox{3px}{\begin{forest}
+    baseline,
+    grdtree,
+    grhs/.style={tier=rhs,edge={-}},
+    [ [{$\ds(\overline{x}, |clause|_1)$}] [...] [{$\ds(\overline{x}, |clause|_n)$}] ] ]
+  \end{forest}} & \begin{array}[t]{l@@{\hspace{2pt}}l}\overline{x}^m & \text{fresh; $m$ arity} \\ & \text{of $\overline{|clause|}$}\end{array} \\
+\\[-0.5em]
+\ds(\overline{x}, f \; \overline{|pat|} \; \mathtt{=} \; |rhs|) &=&
+  \raisebox{3px}{\begin{forest}
+    baseline,
+    grdtree,
+    [ [{$\overline{\ds(x, |pat|)}$} [{$k_{|rhs|}$}] ] ]
+  \end{forest}} \\
+\ds(\overline{x}, f \; \overline{|pat|} \; \overline{|grhs|}^n) &=&
+  \raisebox{3px}{\begin{forest}
+    baseline,
+    grdtree,
+    grhs/.style={tier=rhs,edge={-}},
+    [ [{$\overline{\ds(x, |pat|)}$} [{$\ds(grhs_1)$}] [...] [{$\ds(grhs_n)$}] ] ]
+  \end{forest}} \\
+\\[-0.5em]
+\ds(\mathtt{\mid} \; \overline{guard} \; \mathtt{=} \; |rhs|) &=&
+  \raisebox{3px}{\begin{forest}
+    baseline,
+    grdtree,
+    [ [{$\overline{\ds(guard)}$} [{$k_{|rhs|}$}] ] ]
+  \end{forest}}
+\end{array}
+\]
 
-\ds(\mathit{clause}_1\,...\,\mathit{clause}_n) &=&
-  \raisebox{3px}{\begin{forest}
-    baseline,
-    grdtree,
-    grhs/.style={tier=rhs,edge={-}},
-    [ [{$\ds(\mathit{clause}_1)$}] [...] [{$\ds(\mathit{clause}_n)$}] ] ]
-  \end{forest}} \\
-\\
-\ds(f \; \mathit{pat}_1\,...\,\mathit{pat}_n \; \mathtt{=} \; \mathit{rhs}) &=&
-  \raisebox{3px}{\begin{forest}
-    baseline,
-    grdtree,
-    [ [{$\ds(x_1, \mathit{pat}_1)\,...\,\ds(x_n, \mathit{pat}_n)$} [{$k_{\mathit{rhs}}$}] ] ]
-  \end{forest}} \\
-\ds(f \; \mathit{pat}_1\,...\,\mathit{pat}_n \; grhs_1\,...\,grhs_m) &=&
-  \raisebox{3px}{\begin{forest}
-    baseline,
-    grdtree,
-    grhs/.style={tier=rhs,edge={-}},
-    [ [{$\ds(x_1, \mathit{pat}_1)\,...\,\ds(x_n, \mathit{pat}_n)$} [{$\ds(grhs_1)$}] [...] [{$\ds(grhs_m)$}] ] ]
-  \end{forest}} \\
-\ds(\mathtt{\mid} \; guard_1\,...\,guard_n \; \mathtt{=} \; \mathit{rhs}) &=&
-  \raisebox{3px}{\begin{forest}
-    baseline,
-    grdtree,
-    [ [{$\ds(guard_1)\,...\,\ds(guard_n)$} [{$k_{\mathit{rhs}}$}] ] ]
-  \end{forest}} \\
-\end{array} \\ \\
-\multicolumn{1}{c}{\ruleform{ \ds(guard) = \overline{\Grd},\quad \ds(x, \mathit{pat}) = \overline{\Grd} }} \\[2mm]
+\[ \ruleform{ \ds(guard) = \overline{\Grd},\quad \ds(x, |pat|) = \overline{\Grd} } \]
+\[
 \begin{array}{lcl@@{\hspace{5mm}}l}
-\ds(\mathit{pat} \leftarrow \mathit{expr}) &=& \grdlet{x}{\mathit{expr}}, \ds(x, \mathit{pat})
+\ds(|pat| \leftarrow |expr|) &=& \grdlet{x}{|expr|}, \ds(x, |pat|)
    & x \, \text{fresh} \\
-\ds(\mathit{expr}) &=& \grdlet{y}{\mathit{expr}}, \ds(y, |True|)
+\ds(|expr|) &=& \grdlet{y}{|expr|}, \ds(y, |True|)
    & y \, \text{fresh} \\
-\ds(\mathtt{let} \; x \; \mathtt{=} \; \mathit{expr}) &=& \grdlet{x}{\mathit{expr}} \\
-\end{array} \\ \\
-\begin{array}{lcl@@{\hspace{5mm}}l}
+\ds(\mathtt{let} \; x \; \mathtt{=} \; |expr|) &=& \grdlet{x}{|expr|} \\
+\\[-0.5em]
 \ds(x, y) &=& \grdlet{y}{x} \\
 \ds(x, |_|) &=& \epsilon \\
-\ds(x, K \; \mathit{pat}_1\,...\,\mathit{pat}_n) &=& \grdbang{x}, \grdcon{K \; y_1\,...\,y_n}{x}, \ds(y_1, \mathit{pat}_1), ..., \ds(y_n, \mathit{pat}_n)
-   & y_i \, \text{fresh}\;(\dagger) \\
-\ds(x, y|@|\mathit{pat}) &=& \grdlet{y}{x}, \ds(y, \mathit{pat}) \\
-\ds(x, |!|\mathit{pat}) &=& \grdbang{x}, \ds(x, \mathit{pat}) \\
-\ds(x, \mathit{expr} \rightarrow \mathit{pat}) &=& \grdlet{y}{\mathit{expr} \; x}, \ds(y, \mathit{pat})
+\ds(x, K \; \overline{|pat|}) &=& \grdbang{x}, \grdcon{K \; \overline{y}}{x}, \overline{\ds(y, |pat|)}
+   & \overline{y} \, \text{fresh}\;(\dagger) \\
+\ds(x, y|@||pat|) &=& \grdlet{y}{x}, \ds(y, |pat|) \\
+\ds(x, |!||pat|) &=& \grdbang{x}, \ds(x, |pat|) \\
+\ds(x, |expr| \rightarrow |pat|) &=& \grdlet{y}{|expr| \; x}, \ds(y, |pat|)
    & y \, \text{fresh}
-\end{array}
 \end{array}
 \]
 \caption{$\ds$esugaring from source language to $\Gdt$}
@@ -985,7 +823,7 @@ advantages are:
 
 The first step is to desugar the source language into the language of guard
 trees. The syntax of the source language is given in \Cref{fig:srcsyn}.
-Definitions $\mathit{defn}$ consist of a list of $\mathit{clauses}$, each of
+Definitions $|defn|$ consist of a list of $|clauses|$, each of
 which has a list of \emph{patterns}, and a list of \emph{guarded right-hand
 sides} (GRHSs). Patterns include variables and constructor patterns, of course,
 but also a representative selection of extensions: wildcards, as-patterns, bang
@@ -998,7 +836,7 @@ is translated into a minimal form very similar to pattern guards.  We start
 with an example:
 
 \begin{code}
-f (Just (!xs,_))  ys@Nothing   = True
+f (Just (!xs,_))  ys           = True
 f Nothing         (g -> True)  = False
 \end{code}
 
@@ -1008,7 +846,7 @@ This desugars to the following guard tree (where the $x_i$ represent |f|'s argum
 \begin{forest}
   grdtree,
   [
-    [{$\grdbang{x_1}, \grdcon{|Just t1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{xs}{t_2}, \grdlet{ys}{x_2}, \grdbang{ys}, \grdcon{|Nothing|}{ys}$} [1]]
+    [{$\grdbang{x_1}, \grdcon{|Just t1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{|xs|}{t_2}, \grdlet{|ys|}{x_2}$} [1]]
     [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_4}{|g x2|}, \grdbang{t_4}, \grdcon{|True|}{t_4}$} [2]]]
 \end{forest}
 \\
@@ -1074,14 +912,14 @@ It desugars thus:
 \begin{forest}
   grdtree
   [
-    [{$\grdbang{mx},\, \grdcon{|Nothing|}{mx},\, \grdbang{my},\, \grdcon{|Nothing|}{my}$} [1]]
-    [{$\grdbang{my},\, \grdcon{|Just y|}{my}$}
-     [{$ \grdbang{mx},\, \grdcon{|Just x|}{mx},\, \grdlet{t}{|x == y|},\, \grdbang{t},\, \grdcon{|True|}{t}$} [2]]
+    [{$\grdbang{|mx|},\, \grdcon{|Nothing|}{|mx|},\, \grdbang{|my|},\, \grdcon{|Nothing|}{|my|}$} [1]]
+    [{$\grdbang{|my|},\, \grdcon{|Just y|}{|my|}$}
+     [{$ \grdbang{|mx|},\, \grdcon{|Just x|}{|mx|},\, \grdlet{t}{|x == y|},\, \grdbang{t},\, \grdcon{|True|}{t}$} [2]]
       [{$\grdbang{otherwise},\, \grdcon{|True|}{otherwise}$} [3]]]]
 \end{forest}
 
 \noindent
-Notice that the pattern guard |(Just x <- mx)| and the
+Notice that the pattern guard |(Just x <- |mx|)| and the
 boolean guard |(x == y)| have both turned into the same constructor-matching
 construct in the guard tree.
 
@@ -1196,7 +1034,8 @@ time to come up with the language of guard trees.  We recommend it!
 \unc(\Theta, \gdtpar{t_1}{t_2}) &=& \unc(\unc(\Theta, t_1), t_2) \\
 \unc(\Theta, \gdtguard{\grdbang{x}}{t}) &=& \unc(\Theta \andtheta (x \ntermeq \bot), t) \\
 \unc(\Theta, \gdtguard{\grdlet{x}{e}}{t}) &=& \unc(\Theta \andtheta (\ctlet{x}{e}), t) \\
-\unc(\Theta, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& (\Theta \andtheta (x \ntermeq K)) \uniontheta \unc(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
+\unc(\Theta, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& (\Theta \andtheta (x \ntermeq K)) \\
+                                                                         & & {} \uniontheta {} \unc(\Theta \andtheta (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
 \end{array}
 \]
 \[ \ruleform{ \ann(\Theta, t) = u } \]
@@ -1221,19 +1060,19 @@ values of the match that are not covered by the match.  We use the
 language of \emph{refinement types} to describe this set (see \Cref{fig:syn}).
 A refinement type $\Theta = \reft{x_1{:}\tau_1, \ldots, x_n{:}\tau_n}{\Phi}$
 denotes the vector of values $x_1 \ldots x_n$ that satisfy the predicate $\Phi$.
-For example:
+For example (the type omitted in the last line is |Maybe Bool|):
 $$
 \begin{array}{rcl}
   \reft{ x{:}|Bool|}{ \true } & \text{denotes} & \{ \bot, |True|, |False| \} \\
   \reft{ x{:}|Bool|}{ x \ntermeq \bot } & \text{denotes} & \{ |True|, |False| \} \\
   \reft{ x{:}|Bool|}{ x \ntermeq \bot \wedge \ctcon{|True|}{x} } & \text{denotes} & \{ |True| \} \\
-  \reft{ mx{:}|Maybe Bool|}{ mx \ntermeq \bot \wedge \ctcon{|Just x|}{mx} \wedge x \ntermeq \bot } & \text{denotes} & \{ |Just True|, |Just False| \} \\
+  \reft{ y{:}|...|}{ y \ntermeq \bot \wedge \ctcon{|Just x|}{y} \wedge x \ntermeq \bot } & \text{denotes} & \{ |Just True|, |Just False| \} \\
 \end{array}
 $$
 The syntax of $\Phi$ is given in \Cref{fig:syn}. It consists of a collection
 of \emph{literals} $\varphi$, combined with conjunction and disjunction.
 Unconventionally, however, a literal may bind one or more variables, and those
-bindings are in scope in conjunctions to the right. This can readily be formalised
+bindings are in scope in conjunctions to the right. This can be formalised
 by giving a type system for $\Phi$, and we do so in \Cref{ssec:sem}, where we
 define satisfiability of $\Phi$ in formal detail.
 The literal $\true$ means ``true'', as illustrated above; while
@@ -1402,41 +1241,43 @@ emphasises clarity over efficiency.}.
   \end{cases} \\
 \end{array}
 \]
+\caption{Collecting accessible, inaccessible and redundant GRHSs}
+\label{fig:collect}
+\end{figure}
 
+\begin{figure}
+\centering
 \[ \textbf{Normalised refinement type syntax} \]
 \[
 \begin{array}{rcll}
   \nabla &\Coloneqq& \false \mid \nreft{\Gamma}{\Delta} & \text{Normalised refinement type} \\
   \Delta &\Coloneqq& \varnothing \mid \Delta,\delta & \text{Set of constraints} \\
-  \delta &\Coloneqq& \gamma \mid x \termeq \deltaconapp{K}{a}{y} \mid x \ntermeq K \mid x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y & \text{Constraints} \\
+  \delta &\Coloneqq& \gamma \mid x \termeq \deltaconapp{K}{a}{y} \mid x \ntermeq K & \text{Constraints} \\
+         &\mid&      x \termeq \bot \mid x \ntermeq \bot \mid x \termeq y &
 \end{array}
 \]
 
-\[ \textbf{$\generate$enerate inhabitants of $\Theta$} \]
-\[ \ruleform{ \generate(\Theta) = \mathcal{P}(\overline{p}) } \]
+\[ \textbf{$\generate$enerate inhabitants of $\Theta$} \quad
+   \ruleform{ \generate(\Theta) = \mathcal{P}(\overline{p}) } \]
 \[
-\begin{array}{c}
    \generate(\reft{\Gamma}{\Phi}) = \left\{ \expand(\nabla, \mathsf{dom}(\Gamma)) \mid \nabla \in \normalise(\nreft{\Gamma}{\varnothing}, \Phi) \right\}
-\end{array}
 \]
 
-\[ \textbf{$\normalise$ormalise $\Phi$ into $\nabla$s} \]
-\[ \ruleform{ \normalise(\nabla, \Phi) = \mathcal{P}(\nabla) } \]
+\[ \textbf{$\normalise$ormalise $\Phi$ into $\nabla$s} \quad
+   \ruleform{ \normalise(\nabla, \Phi) = \mathcal{P}(\nabla) } \]
 \[
 \begin{array}{lcl}
-
   \normalise(\nabla, \varphi) &=& \begin{cases}
     \left\{ \nreft{\Gamma'}{\Delta'} \right\} & \text{where $\nreft{\Gamma'}{\Delta'} = \nabla \addphi \varphi$} \\
     \emptyset & \text{otherwise} \\
   \end{cases} \\
   \normalise(\nabla, \Phi_1 \wedge \Phi_2) &=& \bigcup \left\{ \normalise(\nabla', \Phi_2) \mid \nabla' \in \normalise(\nabla, \Phi_1) \right\} \\
   \normalise(\nabla, \Phi_1 \vee \Phi_2) &=& \normalise(\nabla, \Phi_1) \cup \normalise(\nabla, \Phi_2)
-
 \end{array}
 \]
 
-\[ \textbf{$\expand$xpand variables to $\Pat$ with $\nabla$} \]
-\[ \ruleform{ \expand(\nabla, x) = p, \quad \expand(\nabla, \overline{x}) = \overline{p} } \]
+\[ \textbf{$\expand$xpand variables to $\Pat$ with $\nabla$} \quad
+   \ruleform{ \expand(\nabla, x) = p, \quad \expand(\nabla, \overline{x}) = \overline{p} } \]
 \[
 \begin{array}{lcl}
 
@@ -1444,23 +1285,20 @@ emphasises clarity over efficiency.}.
   \expand(\nreft{\Gamma}{\Delta}, x) &=& \begin{cases}
     K \; \expand(\nreft{\Gamma}{\Delta}, \overline{y}) & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
     \_ & \text{otherwise} \\
-  \end{cases} \\
-
+  \end{cases}
 \end{array}
 \]
 
-\[ \textbf{Finding the representative of a variable in $\Delta$} \]
-\[ \ruleform{ \rep{\Delta}{x} = y } \]
+\[ \textbf{Finding the representative of a variable in $\Delta$} \quad
+   \ruleform{ \rep{\Delta}{x} = y } \]
 \[
 \begin{array}{lcl}
   \rep{\Delta}{x} &=& \begin{cases}
     \rep{\Delta}{y} & x \termeq y \in \Delta \\
     x & \text{otherwise} \\
-  \end{cases} \\
+  \end{cases}
 \end{array}
 \]
-
-
 \caption{Generating inhabitants of $\Theta$ via $\nabla$}
 \label{fig:gen}
 \end{figure}
@@ -1474,10 +1312,10 @@ missing equations.  Consider the following definition
 If $t$ is the guard tree obtained from $f$, the expression
 $\unc(\reft{x:|Maybe T|}{\true},t)$ will produce this refinement type
 describing values that are not matched:
-$$
+\[
 \Theta_f = \reft{ x{:}|Maybe T| }
-  { x \ntermeq \bot \wedge (x \ntermeq |Just| \vee (\ctcon{|Just y|}{x} \wedge |y| \ntermeq \bot \wedge (|y| \ntermeq |A| \vee (\ctcon{|A|}{|y|} \wedge \false)))) }
-$$
+  {\begin{array}[t]{l}x \ntermeq \bot \wedge (x \ntermeq |Just| \vee (\ctcon{|Just y|}{x} \\ {} \wedge |y| \ntermeq \bot \wedge (|y| \ntermeq |A| \vee (\ctcon{|A|}{|y|} \wedge \false))))\end{array}}
+\]
 \noindent
 This is not very helpful to report to the user. It would be far preferable
 to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, something like this:
@@ -1495,7 +1333,7 @@ But first notice that, by calling the very same function $\generate$,
 we can readily define the function $\red$, which reports a triple
 of (accessible, inaccessible, $\red$edundant) GRHSs,
 as needed in our overall pipeline (\Cref{fig:pipeline}).
-$\red$ is defined in \Cref{fig:gen}:
+$\red$ is defined in \Cref{fig:collect}:
 \begin{itemize}
 \item Having reached a leaf $\antrhs{\Theta}{k}$, if the refinement type $\Theta$ is
   uninhabited ($\generate(\Theta) = \emptyset$), then no input values can cause
@@ -1507,32 +1345,27 @@ $\red$ is defined in \Cref{fig:gen}:
 \end{itemize}
 To illustrate the second case, consider |u'| from \Cref{sssec:inaccessibility} and its annotated tree:
 
-\begin{minipage}{\textwidth}
-\begin{minipage}{0.22\textwidth}
-\centering
+\[
+\mathhs
+\begin{array}{ccc}
 \begin{code}
   u' ()  | False  = 1
          | False  = 2
   u' _            = 3
-\end{code}
-\end{minipage}%
-\begin{minipage}{0.05\textwidth}
-\centering
-$\leadsto$
-\end{minipage}%
-\begin{minipage}{0.2\textwidth}
-\centering
-\begin{forest}
+\end{code} &
+\leadsto &
+\raisebox{3px}{\begin{forest}
   anttree
   [
     [{$\Theta_1$\,\lightning}
       [{$\Theta_2$\,1}]
-      [{$\Theta_3$\,2}]]
+      [{$\Theta_3$\,2},baseline]]
     [{$\Theta_4$\,3}]]
-\end{forest}
-\end{minipage}
-\end{minipage}
-
+\end{forest}}
+\end{array}
+\plainhs
+\]
+$\Theta_2$ and $\Theta_3$ are uninhabited (because of the
 Refinement types $\Theta_2$ and $\Theta_3$ are uninhabited (because of the
 |False| guards). But we cannot delete both GRHSs as redundant,
 because that would make the call |u' bot| return 3 rather
@@ -2090,7 +1923,7 @@ source syntax and IR syntax by adding the syntactic concept of a
 \begin{array}{cc}
 \begin{array}{rcl}
   cl     &\Coloneqq& K \mid P \\
-  \mathit{pat}    &\Coloneqq& x \mid |_| \mid \highlight{cl} \; \overline{\mathit{pat}} \mid x|@|\mathit{pat} \mid ... \\
+  |pat|    &\Coloneqq& x \mid |_| \mid \highlight{cl} \; \overline{|pat|} \mid x|@||pat| \mid ... \\
 \end{array} &
 \begin{array}{rlcl}
   P \in           &\PS \\
@@ -2236,7 +2069,7 @@ synonyms without a \extension{COMPLETE} set.
 \end{array}
 \]
 \[
-  \ds(x, N \; \mathit{pat}_1\,...\,\mathit{pat}_n) = \grdcon{N \; y_1\,...\,y_n}{x}, \ds(y_1, \mathit{pat}_1), ..., \ds(y_n, \mathit{pat}_n)
+  \ds(x, N \; |pat|_1\,...\,|pat|_n) = \grdcon{N \; y_1\,...\,y_n}{x}, \ds(y_1, |pat|_1), ..., \ds(y_n, |pat|_n)
 \]
 
 \[
@@ -2362,7 +2195,7 @@ Analogous subtle reasoning justifies the difference in warnings for |g2| and
 
 \begin{itemize}
 
-  \item A newtype pattern match $N \; \mathit{pat}_1\,...\,\mathit{pat}_n$ is lazy: it does not
+  \item A newtype pattern match $N \; |pat|_1\,...\,|pat|_n$ is lazy: it does not
   force evaluation. So, compared to data constructor matches, the desugaring
   function $\ds$ omits the $\grdbang{x}$. Additionally, Equation (4) of
   $\addphi$, responsible for reasoning about |let| bindings, has a special case
@@ -2505,7 +2338,7 @@ warnings in a lazy language.
 \begin{figure}
 \[
 \begin{array}{c}
-  \mathit{pat}   \Coloneqq ... \mid \highlight{\mathit{pat}_1;\, \mathit{pat}_2}
+  |pat|   \Coloneqq ... \mid \highlight{|pat|_1;\, |pat|_2}
 \end{array}
 \]
 \[
@@ -2516,7 +2349,7 @@ warnings in a lazy language.
 \end{array}
 \]
 \[
-  \ds(x, (\mathit{pat}_1;\, \mathit{pat}_2)) = \dagpar{\ds(x, \mathit{pat}_1)}{\ds(x, \mathit{pat}_2)}
+  \ds(x, (|pat|_1;\, |pat|_2)) = \dagpar{\ds(x, |pat|_1)}{\ds(x, |pat|_2)}
 \]
 \[ \ruleform{ \cov(\Theta, d) = \Theta } \]
 \[
@@ -2595,7 +2428,7 @@ As a result, the desugaring function $\ds$ could map a pattern into a
 a nesting of $\gdtguard{g}{t}$ forms, suitable for a single recursive definition
 of $\unc$ and $\ann$.
 However, with Or-patterns, we need a way to encode (disjunctive) first-match
-semantics in the result of $\ds(x, \mathit{pat})$.
+semantics in the result of $\ds(x, |pat|)$.
 Such first-match semantics is currently exclusive to the
 $\gdtpar{\makebox(3pt,2pt){$t_1$}}{\makebox(3pt,2pt){$t_2$}}$ guard tree form.
 So one way to desugar Or-patterns would be to desugar
@@ -2603,18 +2436,18 @@ patterns into full guard trees instead of lists of guards.
 That would be akin to \emph{exploding} each Or-pattern into two clauses.
 We would get the equality
 \[
-\ds(f \; (\mathit{pat}_a;\, \mathit{pat}_b) \, \mathit{pat}_c \; \mathtt{=} \; \mathit{rhs}) \; =
+\ds(f \; (|pat|_a;\, |pat|_b) \, |pat|_c \; \mathtt{=} \; |rhs|) \; =
   \raisebox{10px}{\begin{forest}
     baseline,
     grdtree,
-    [ [{$\ds(x_1, \mathit{pat}_a),\; \ds(x_2, \mathit{pat}_c)$} [{$k_{\mathit{rhs}}$}] ]
-      [{$\ds(x_1, \mathit{pat}_b),\; \ds(x_2, \mathit{pat}_c)$} [{$k_{\mathit{rhs}}$}] ] ]
+    [ [{$\ds(x_1, |pat|_a),\; \ds(x_2, |pat|_c)$} [{$k_{|rhs|}$}] ]
+      [{$\ds(x_1, |pat|_b),\; \ds(x_2, |pat|_c)$} [{$k_{|rhs|}$}] ] ]
   \end{forest}}
 \]
 \noindent
-thus duplicating the desugaring of $\mathit{pat_c}$.
+thus duplicating the desugaring of $|pat_c|$.
 It is easy to see how a sequence of Or-patterns may lead to an exponential number of
-duplications of $\mathit{pat}_c$, leading to unacceptable checking performance.
+duplications of $|pat|_c$, leading to unacceptable checking performance.
 Hence we propose a different solution: \emph{Guard DAGs} (directed-acyclic
 graphs).
 
@@ -2777,7 +2610,7 @@ $\vcenter{\hbox{\begin{forest}
     for tree={delay={edge={-}}},
     [ [{$\Theta_1$\,\lightning} [{$\Theta_2$\,\lightning} [{$u$}]]]]
   \end{forest}}}$
-annotations are used in $\red$ (\Cref{fig:gen}): $u$ can be redundant only if
+annotations are used in $\red$ (\Cref{fig:collect}): $u$ can be redundant only if
 there is no inhabitant in $\Theta_1 \uniontheta \Theta_2$; otherwise it is
 inaccessible.
 
@@ -2786,7 +2619,7 @@ with Or-patterns is derivative and compatible with all the other proposed
 extensions, although it takes a slight refactoring.
 On the other hand, years of maintaining \lyg have shown that the entire
 complexity rests in the inhabitation test (\Cref{fig:inh}).
-We did not need to touch that; and neither did we need to adjust \Cref{fig:gen}
+We did not need to touch that; and neither did we need to adjust \Cref{fig:collect}
 or later: this is compelling evidence that the core of our approach is quite
 extensible and robust.
 
@@ -3042,12 +2875,12 @@ innovation%
 \footnote{\url{https://gitlab.haskell.org/ghc/ghc/-/commit/1207576ac0cfdd3fe1ea00b5505f7c874613451e}}
 was the introduction of syntax-specific instances of guard trees, such as
 \begin{code}
-type SrcInfo = String -- {appromixately; identifies the $k$ in $\mathit{rhs}_k$}
+type SrcInfo = String -- {appromixately; identifies the $k$ in $|rhs|_k$}
 data PmMatch p  = PmMatch  { pm_pats :: p, pm_grhss :: [PmGRHS p] }
 data PmGRHS p   = PmGRHS   { pg_grds :: p, pg_rhs :: SrcInfo }
 \end{code}
-These types are in structural correspondence to the $\mathit{match}$ and
-$\mathit{grhs}$ constructs in \Cref{fig:srcsyn} from whence they desugar.
+These types are in structural correspondence to the $|match|$ and
+$|grhs|$ constructs in \Cref{fig:srcsyn} from whence they desugar.
 Prior to coverage checking, type parameter |p| is instantiated to lists
 of guards $\overline{Grd}$ (resp.\ $\GrdDag$ after Or-patterns were
 introduced, \Cref{ssec:orpats}), and coverage checking elaborates this list
@@ -3058,9 +2891,9 @@ Of course, the meaning of |PmMatch| and |PmGRHS| is in terms of the
 desugaring into unrestricted guard trees $\Gdt$, as before.
 However, with the new encoding it became much easier to extract covered sets
 for long-distance information (\Cref{ssec:ldi}), because the |pm_grhss| field
-has the same number of elements as there are $\overline{\mathit{grhs}}$ in a
-$\mathit{match}$ and simple |Data.List.zip| suffices to bring covered sets and
-$\mathit{grhs}$ together.
+has the same number of elements as there are $\overline{|grhs|}$ in a
+$|match|$ and simple |Data.List.zip| suffices to bring covered sets and
+$|grhs|$ together.
 
 \section{Evaluation}
 \label{sec:eval}
@@ -3445,7 +3278,7 @@ above sense.
 \item
   If $k \in r$ is redundant, then removing clause $k$ from guard tree $t$
   does not change the semantics of $t$, \ie $\forall \rho.\ \gdtsem{t}_\rho =
-  \gdtsem{\mathit{remove}(k,t)}_\rho$ (where $\mathit{remove}(k,t)$ is the
+  \gdtsem{|remove|(k,t)}_\rho$ (where $|remove|(k,t)$ is the
   implied removal operation).
 \end{itemize}
 \end{theorem}
@@ -3793,12 +3626,8 @@ compelling retrospective: the approach scales well to new language features,
 causes very few functional bug reports in practice, and offers robust
 performance.
 
-\begin{acks}
-We would like to thank the anonymous ICFP reviewers for their feedback, as well
-as Henning Dieterichs, Martin Hecker, Sylvain Henry, Philipp Kr\"uger, Luc
-Maranget and Sebastian Ullrich.
-\end{acks}
-
-\bibliography{references}
-
-\end{document}
+%\begin{acks}
+%We would like to thank the anonymous ICFP reviewers for their feedback, as well
+%as Henning Dieterichs, Martin Hecker, Sylvain Henry, Philipp Kr\"uger, Luc
+%Maranget and Sebastian Ullrich.
+%\end{acks}
