@@ -578,12 +578,13 @@ f _     _      = 3
 \noindent
 Is the second clause redundant?
 In a strict language such as OCaml or Lean the answer is ``Yes'', but
-in lazy Haskell this the answer is ``No''.
+in lazy Haskell the answer is ``No''.
 To see that, consider the call |f (error "boom") True|, an expression that in
 a strict language would immediately evaluate the error in the argument |(error
 "boom")| by-value before making the call.
 
-In Haskell, after falling through the first clause that does not match in the
+In Haskell, however, the second argument is not evaluated until it is needed.
+Concretely, after falling through the first clause that does not match in the
 second argument, the second clause will evaluate the first argument in order to
 match against |True|.
 Doing so forces the error, to much the same effect as in a strict language, and we
