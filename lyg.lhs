@@ -974,7 +974,7 @@ advantages are:
    & y_i \, \text{fresh}\;(\dagger) \\
 \ds(x, y|@|\mathit{pat}) &=& \grdlet{y}{x}, \ds(y, \mathit{pat}) \\
 \ds(x, |!|\mathit{pat}) &=& \grdbang{x}, \ds(x, \mathit{pat}) \\
-\ds(x, \mathit{expr} \rightarrow \mathit{pat}) &=& \grdlet{|y|}{\mathit{expr} \; x}, \ds(y, \mathit{pat})
+\ds(x, \mathit{expr} \rightarrow \mathit{pat}) &=& \grdlet{y}{\mathit{expr} \; x}, \ds(y, \mathit{pat})
    & y \, \text{fresh}
 \end{array}
 \end{array}
@@ -1060,7 +1060,7 @@ a unique name.
 
 Notice that both ``structural'' pattern-matching in the source language (e.g.
 the match on |Nothing| in the second equation), and view patterns (e.g. |g -> True|)
-can readily be compiled to a single form of matching in guard trees.
+can straightforwardly translated into a single form of matching in guard trees.
 The same holds for pattern guards.  For example, consider this (stylistically contrived) definition
 of |liftEq|, which is inexhaustive:
 \begin{code}
@@ -1487,7 +1487,8 @@ to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, some
       f (Just B) = ...
       f (Just C) = ...
 \end{Verbatim}
-$\generate$enerating these inhabitants is the main challenge.
+$\generate$enerating these inhabitants is the main technical challenge in this
+work.
 It is done by $\generate(\Theta)$ in \Cref{fig:gen},
 which we discuss next in \Cref{sec:generate}.
 But first notice that, by calling the very same function $\generate$,
@@ -1497,8 +1498,8 @@ as needed in our overall pipeline (\Cref{fig:pipeline}).
 $\red$ is defined in \Cref{fig:gen}:
 \begin{itemize}
 \item Having reached a leaf $\antrhs{\Theta}{k}$, if the refinement type $\Theta$ is
-  uninhabited ($\generate(\Theta) = \emptyset$), then no input values can cause execution to reach right-hand side $k$,
-  and it is redundant.
+  uninhabited ($\generate(\Theta) = \emptyset$), then no input values can cause
+  execution to reach the right-hand side $k$, and it is redundant.
 \item Having reached a node $\antbang{\Theta}{t}$, if $\Theta$ is inhabited there is a possibility of
   divergence. Now suppose that all the GRHSs in $t$ are redundant.  Then we should pick the first
   of them and mark it as inaccessible.
