@@ -705,7 +705,7 @@ the second equation being reached. Note that the second equation is inaccessible
 \subsection{Type-Equality Constraints}
 
 Besides strictness, another way for pattern matches to be rendered unreachable
-is by way of \emph{equality constraints}. A popular method for introducing
+is by way of \emph{type equality constraints}. A popular method for introducing
 equalities between types is matching on GADTs \citep{recdatac}. The following examples
 demonstrate the interaction between GADTs and coverage checking:
 
@@ -1043,7 +1043,7 @@ defined as follows:
 \item Matching a guard tree $\gdtguard{\grdlet{x}{e}}{t}$ binds $x$
   (lazily) to $e$, and matches $t$.
 \end{itemize}
-See \Cref{sec:sem} for a formal account of this semantics.
+See \Cref{ssec:sem} for a formal account of this semantics.
 The desugaring algorithm, $\ds$, is given in \Cref{fig:desugar}.
 It is a straightforward recursive descent over the source syntax, with a little
 bit of administrative bureaucracy to account for renaming.
@@ -1234,7 +1234,7 @@ The syntax of $\Phi$ is given in \Cref{fig:syn}. It consists of a collection
 of \emph{literals} $\varphi$, combined with conjunction and disjunction.
 Unconventionally, however, a literal may bind one or more variables, and those
 bindings are in scope in conjunctions to the right. This can readily be formalised
-by giving a type system for $\Phi$, and we do so in \Cref{sec:sem}, where we
+by giving a type system for $\Phi$, and we do so in \Cref{ssec:sem}, where we
 define satisfiability of $\Phi$ in formal detail.
 The literal $\true$ means ``true'', as illustrated above; while
 $\false$ means ``false'', so that $\reft{\Gamma}{\false}$ denotes the empty set $\emptyset$.
@@ -3349,7 +3349,7 @@ We will briefly summarise the correctness results here.
 For that, we need to define a plausible formal semantics for guard trees and
 refinement predicates.
 
-\subsection{Semantics}
+\subsection{Semantics} \label{ssec:sem}
 
 We have described the semantics of guard trees and guards informally in
 \Cref{sec:desugar}.
