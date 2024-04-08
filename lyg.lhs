@@ -217,7 +217,7 @@ raft of innovations that have become part of a modern programming language
 like Haskell, including: view patterns, pattern guards, pattern synonyms,
 overloaded literals, bang patterns, lazy patterns, as-patterns, strict data constructors,
 empty case expressions, and long-distance effects (\Cref{sec:extensions}).
-Particularly tricky are: \emph{Generalised Algebraic Datatypes} (\emph{GADTs}, for short) where the \emph{type} of a match can determine
+Particularly tricky are: \emph{Generalised Algebraic Datatypes} (\emph{GADTs}) where the \emph{type} of a match can determine
 what \emph{values} can possibly appear \citep{recdatac}; and \emph{local type-equality constraints} brought into
 scope by pattern matching \citep{outsideinx}.
 
@@ -1505,7 +1505,7 @@ $\red$ is defined in \Cref{fig:gen}:
   of them and mark it as inaccessible.
 \item The case for $\antpar{t}{u}$ follows by congruence: just combine the classifications of $t$ and $u$.
 \end{itemize}
-To illustrate the second case consider |u'| from \Cref{sssec:inaccessibility} and its annotated tree:
+To illustrate the second case, consider |u'| from \Cref{sssec:inaccessibility} and its annotated tree:
 
 \begin{minipage}{\textwidth}
 \begin{minipage}{0.22\textwidth}
@@ -1533,7 +1533,7 @@ $\leadsto$
 \end{minipage}
 \end{minipage}
 
-$\Theta_2$ and $\Theta_3$ are uninhabited (because of the
+Refinement types $\Theta_2$ and $\Theta_3$ are uninhabited (because of the
 |False| guards). But we cannot delete both GRHSs as redundant,
 because that would make the call |u' bot| return 3 rather
 than diverging.  Rather, we want to report the first GRHSs as
@@ -1550,7 +1550,7 @@ and returns a (possibly-empty) set of patterns $\overline{p}$ (syntax in \Cref{f
 that give the shape of values that inhabit $\Theta$.
 We do this in two steps:
 \begin{itemize}
-\item Flatten $\Theta$ into a set of \emph{normalised refinement types} $\nabla$,
+\item Flatten $\Theta$ into a disjunctive union of \emph{normalised refinement types} $\nabla$,
   by the call $\normalise(\nreft{\Gamma}{\varnothing}, \Phi)$; see \Cref{sec:normalise}.
 \item For each such $\nabla$, expand $\Gamma$ into a list of patterns, by the call
   $\expand(\nabla, \mathsf{dom}(\Gamma))$; see \Cref{sec:expand}.
@@ -1558,10 +1558,11 @@ We do this in two steps:
 A normalised refinement type $\nabla$ is either empty ($\false$) or of the form
 $\nreft{\Gamma}{\Delta}$. It is similar to a refinement type $\Theta =
 \reft{\Gamma}{\Phi}$, but it takes a much more restricted form (\Cref{fig:gen}):
-\begin{itemize}
-\item $\Delta$ is simply a conjunction of literals $\delta$; there are no disjunctions.
-  Instead, disjunction reflects in the fact that $\normalise$ returns a \emph{set} of normalised refinement types.
-\end{itemize}
+$\Delta$ is simply a conjunction of literals $\delta$; there are no disjunctions
+as in $\varphi$.
+Instead, disjunction reflects in the fact that $\normalise$ returns a \emph{set}
+of normalised refinement types.
+
 Beyond these syntactic differences, we enforce the following
 invariants on a $\nabla = \nreft{\Gamma}{\Delta}$:
 \begin{enumerate}
@@ -1581,15 +1582,15 @@ invariants on a $\nabla = \nreft{\Gamma}{\Delta}$:
 \noindent
 Invariants \inv{1} and \inv{2} prevent $\Delta$ being self-contradictory,
 so that $\nabla$ (which denotes a set of values) is uninhabited.
-We use $\nabla = \false$ to represent an uninhabited refinement type.
+We use $\nabla = \false$ to represent an uninhabited refinement type, canonically.
 Invariants \inv{3} and \inv{4} require $\Delta$ to be in solved form,
 from which it is easy to ``read off'' a value that inhabits it --- this
 reading-off step is performed by $\expand$ (\Cref{sec:expand}).
 
-The structure is directly analogous to the structure of the standard unification
-algorithm. In unification we start with a set of equalities between types
+The setup here is directly analogous to the setup of standard unification
+algorithms. In unification, we start with a set of equalities between types
 (analogous to $\Theta$) and, by unification, normalise it to a substitution
-(analogous to $\nabla$).  That substition can itself be regarded as a set of
+(analogous to $\nabla$).  That substitution can itself be regarded as a set of
 equalities, but in a restricted form.  And indeed our normalisation algorithm
 (described in \Cref{sec:normalise}) is a form of generalised unification.
 
@@ -1628,7 +1629,7 @@ $\expand$xpanding a match variable $x$ under $\nabla$ to a pattern, by calling
 $\expand$ in \Cref{fig:gen}, is straightforward and overloaded to operate
 similarly on multiple match variables. When there is a solution like $\Delta(x)
 \termeq |Just y|$ in $\Delta$ for the match variable $x$ of interest,
-recursively expand $y$ and wrap it in a |Just|. Invariant \inv{4} guarantees
+recursively expand |y| and wrap it in a |Just|. Invariant \inv{4} guarantees
 that there is at most one such solution and $\expand$ is well-defined. When
 there is no solution for $x$, return $\_$. See \Cref{ssec:report} for how we
 improve on that in the implementation by taking negative
@@ -1741,8 +1742,8 @@ constraints and a positive constructor constraint arising from the binding.
 Equation (4) of $\!\addphi\!$ performs some limited, but important reasoning
 about let bindings: it flattens possibly nested constructor applications, such
 as $\ctlet{|x|}{|Just True|}$, and asserts that such constructor applications
-can't be $\bot$. Note that Equation (6) simply discards let bindings that
-cannot be expressed in $\nabla$; we'll see an extension in
+cannot be $\bot$. Note that Equation (6) simply discards let bindings that
+cannot be expressed in $\nabla$; we will see an extension in
 \Cref{ssec:extviewpat} that avoids this information loss.
 % The last case of $\!\addphi\!$
 % turns the syntactically and semantically identical subset of $\varphi$ into
@@ -1781,7 +1782,7 @@ to re-check: For example, we can exclude variables whose type is a non-GADT
 data type.
 
 Equation (14) of $\!\adddelta\!$ equates two variables ($x \termeq y$) by
-merging their equivalence classes. Consider the case where $x$ and $y$ aren't
+merging their equivalence classes. Consider the case where $x$ and $y$ are not
 in the same equivalence class. Then $\Delta(y)$ is arbitrarily chosen to be the
 new representative of the merged equivalence class. To uphold \inv{3}, all
 constraints mentioning $\Delta(x)$ have to be removed and renamed in terms of
@@ -1922,9 +1923,9 @@ accept unconditionally when its type is not a data type, \ie for $x : |Int ->
 Int|$.
 
 Note that the outlined approach is complete in the sense that
-$\inhabited{\nabla}{x}$ is derivable (if and) only if |x| is actually inhabited
-in $\nabla$, because that means we don't have any $\nabla$s floating around in
-the checking process that actually aren't inhabited and trigger false positive
+$\inhabited{\nabla}{x}$ is derivable if and only if |x| is actually inhabited
+in $\nabla$, because that means we do not have any $\nabla$s floating around in
+the checking process that actually are not inhabited and trigger false positive
 warnings. But that also means that the $\inhabited{}{}$ relation is
 undecidable! Consider the following example:
 \begin{code}
@@ -1938,9 +1939,9 @@ This is exhaustive, because |T| is an uninhabited type. Upon adding the constrai
 $x \ntermeq |SNothing|$ on the match variable |x| via $\!\adddelta\!$, we
 perform an inhabitation test, which tries to instantiate the $|SJust|$ constructor
 via \inhabitedinst. That implies adding (via $\!\adddelta\!$) the constraints
-$x \termeq |SJust y|, y \ntermeq \bot$, the latter of which leads to an
+$x \termeq |SJust y|, |y| \ntermeq \bot$, the latter of which leads to an
 inhabitation test on |y|. That leads to instantiation of the |MkT| constructor,
-which leads to constraints $y \termeq |MkT z|, z \ntermeq \bot$, and so on for
+which leads to constraints $|y| \termeq |MkT z|, z \ntermeq \bot$, and so on for
 |z| \etc. An infinite chain of fruitless instantiation attempts!
 
 In practice, we implement a fuel-based approach that conservatively assumes
@@ -1952,10 +1953,10 @@ in the future.
 \section{Extensions} \label{sec:extensions}
 
 \lyg is well equipped to handle the fragment of Haskell it was designed to
-handle. But GHC (and other languages, for that matter) extends Haskell in
-non-trivial ways. This section exemplifies easy accommodation of new language
-features and measures to increase precision of the checking process,
-demonstrating the modularity and extensibility of our approach.
+handle. But GHC extends Haskell in non-trivial ways. This section exemplifies
+easy accommodation of new language features and measures to increase precision
+of the checking process, demonstrating the modularity and extensibility of our
+approach.
 
 \subsection{Long-Distance Information}
 \label{ssec:ldi}
@@ -2034,7 +2035,7 @@ Our source syntax had support for view patterns to start with (\cf
 \Cref{fig:srcsyn}). And even the desugaring we gave as part of the definition
 of $\ds$ in \Cref{fig:desugar} is accurate. But this desugaring alone is
 insufficient for the checker to conclude that |safeLast| from
-\Cref{sssec:viewpat} is an exhaustive definition! To see why, let's look at its
+\Cref{sssec:viewpat} is an exhaustive definition! To see why, let us look at its
 guard tree:
 
 \begin{forest}
@@ -2050,7 +2051,7 @@ By making the connection between |y1| and |y2|, the checker could infer that
 the match was exhaustive.
 
 This can be fixed by maintaining equivalence classes of semantically equivalent
-expressions in $\Delta$, similar to what we already do for variables. We simply extend
+expressions in $\Delta$, similar to what we do for variables. We simply extend
 the syntax of $\delta$ and change the last |let| case of $\!\addphi\!$. Then we can
 handle the new constraint in $\adddelta$, as follows:
 \[
@@ -2154,8 +2155,8 @@ coverage checker already manages a single \extension{COMPLETE} set.
 
 We have \inhabitedinst from \Cref{fig:inh} currently making sure that this
 \extension{COMPLETE} set is in fact inhabited. We also have \inhabitednocpl
-that handles the case when we can't find \emph{any} \extension{COMPLETE} set
-for the given type (think |x :: Int -> Int|). The obvious way to generalise this
+that handles the case when we cannot find \emph{any} \extension{COMPLETE} set
+for the given type (think |x :: Int -> Int|). The prudent way to generalise this
 is by looking up all \extension{COMPLETE} sets attached to a type and check
 that none of them is completely covered:
 \[
@@ -2187,8 +2188,8 @@ that none of them is completely covered:
 \]
 
 $\cons$ was changed to return a list of all available \extension{COMPLETE} sets,
-and \inhabitedinst tries to find an inhabiting ConLike in each one of them in
-turn. Note that \inhabitednocpl is gone, because it coincides with
+and \inhabitedinst tries to find an inhabiting ConLike $C_j$ in each one of them
+in turn. Note that \inhabitednocpl is gone, because it coincides with
 \inhabitedinst for the case where the list returned by $\cons$ was empty. The
 judgment has become simpler and and more general at the same time!
 A worry is that checking against multiple \extension{COMPLETE} sets so
@@ -2199,25 +2200,25 @@ We will worry about that in \Cref{ssec:residual-complete}.
 
 The source syntax in \Cref{fig:newtypes} deliberately left out literal
 patterns $l$. Literals are very similar to nullary data constructors, with one
-caveat: they don't come with a builtin \texttt{COMPLETE} set. Before Section
-4.5, that would have meant quite a bit of hand waving and complication to the
-$\inhabited{}{}$ judgment. Now, literals can be handled like disjoint pattern
-synonyms (\ie $l_1 \cap l_2 = \emptyset$ for any two literals $l_1, l_2$)
-without a \texttt{COMPLETE} set!
+caveat: they do not come with a builtin \texttt{COMPLETE} set. Before
+\Cref{ssec:complete}, that would have meant quite a bit of hand waving and
+complication to the $\inhabited{}{}$ judgment. Now, literals can be handled like
+disjoint pattern synonyms (\ie $l_1 \cap l_2 = \emptyset$ for any two literals
+$l_1, l_2$) without a \texttt{COMPLETE} set!
 
-We can even handle overloaded literals, but we will find ourselves in a similar
-situation as with pattern synonyms:
+Overloaded literals can be supported as well, but we will find ourselves in a
+similar situation as with pattern synonyms:
 \begin{code}
 instance Num () where
   fromInteger _ = ()
-n = case (0 :: ()) of 1 -> 1; 0 -> 2
+n = case (0 :: ()) of 1 -> 1; 0 -> 2 -- returns 1
 \end{code}
 
 \noindent
 Considering overloaded literals to be disjoint would mean marking the first
-alternative as redundant, which is unsound. Hence we regard overloaded literals
-as possibly overlapping, so they behave exactly like nullary pattern synonyms
-without a \extension{COMPLETE} set.
+alternative as redundant, which is unsound. Hence overloaded literals are
+regarded as possibly overlapping, so they behave exactly like nullary pattern
+synonyms without a \extension{COMPLETE} set.
 
 \subsection{Newtypes}
 \label{ssec:newtypes}
@@ -2289,7 +2290,6 @@ In Haskell, a newtype declares a new type that is completely
 isomorphic to, but distinct from, an existing type. For example:
 \begin{code}
 newtype NT a = MkNT [a]
-
 dup :: NT a -> NT a
 dup (MkNT xs) = MkNT (xs ++ xs)
 \end{code}
@@ -2392,7 +2392,7 @@ Analogous subtle reasoning justifies the difference in warnings for |g2| and
   be $\repnt{\Delta'}{y}$ in the returned $\Delta'$.
 
   \item The new Equation $(11b)$ handles negative newtype constructor
-  constraints by immediately rejecting. The reason it doesn't consider $\bot$
+  constraints by immediately rejecting. The reason it does not consider $\bot$
   as an inhabitant is that for $\bot$ to be an inhabitant, it must be an
   inhabitant of the newtype's field. For that, we must have $x \termeq |K y|$
   for some |y|, which contradicts with the very constraint we want to add!
@@ -2435,7 +2435,7 @@ newtype constructor patterns visible in source syntax.
 
 \subsection{Strictness, Divergence and Other Side-Effects}
 
-Instead of extending the source language, let's discuss ripping out a language
+Instead of extending the source language, let us discuss ripping out a language
 feature for a change! So far, we have focused on Haskell as the source
 language, which is lazy by default. Although the difference in evaluation
 strategy of the source language becomes irrelevant after desugaring, it raises the
@@ -2447,7 +2447,7 @@ On first thought, it is tempting to simply drop all parts related to laziness
 from the formalism, such as $\grdbang{x}$ from $\Grd$ and
 $\antbang{}{\hspace{-0.6em}}$ from $\Ant$. Actually, $\Ant$ and $\red$ could
 vanish altogether and $\ann$ could just collect the redundant GRHS directly!
-Since there wouldn't be any bang guards, there is no reason to have $x
+Since there would not be any bang guards, there is no reason to have $x
 \termeq \bot$ and $x \ntermeq \bot$ constraints either. Most importantly, the
 \inhabitedbot judgment form has to go, because $\bot$ does not inhabit any types
 anymore.
@@ -2460,7 +2460,7 @@ and allow arbitrary side-effects in expressions. Here's an example in OCaml:
 \begin{code}
 let rec f p x =
   match x with
-    []                         -> []
+  | []                         -> []
   | hd::_ when p hd && x = []  -> [hd]
   | _::tl                      -> f p tl;;
 \end{code}
@@ -2505,20 +2505,19 @@ warnings in a lazy language.
 \begin{figure}
 \[
 \begin{array}{c}
-  \mathit{pat}   \Coloneqq ... \mid \highlight{\mathit{pat}_1;\, \mathit{pat}_2} \\
+  \mathit{pat}   \Coloneqq ... \mid \highlight{\mathit{pat}_1;\, \mathit{pat}_2}
 \end{array}
 \]
 \[
 \arraycolsep=2pt
 \begin{array}{rcrcll}
   t & \in & \Gdt &\Coloneqq& ... \mid \gdtguard{\highlight{d}}{t}         \\
-  d & \in & \GrdDag &\Coloneqq& \dagone{g} \mid \highlight{\dagpar{d_1}{d_2}} \mid \dagseq{d_1}{d_2} \\
+  d & \in & \GrdDag &\Coloneqq& \dagone{g} \mid \highlight{\dagpar{d_1}{d_2}} \mid \dagseq{d_1}{d_2}
 \end{array}
 \]
 \[
   \ds(x, (\mathit{pat}_1;\, \mathit{pat}_2)) = \dagpar{\ds(x, \mathit{pat}_1)}{\ds(x, \mathit{pat}_2)}
 \]
-
 \[ \ruleform{ \cov(\Theta, d) = \Theta } \]
 \[
 \begin{array}{lcl}
@@ -2603,7 +2602,6 @@ So one way to desugar Or-patterns would be to desugar
 patterns into full guard trees instead of lists of guards.
 That would be akin to \emph{exploding} each Or-pattern into two clauses.
 We would get the equality
-
 \[
 \ds(f \; (\mathit{pat}_a;\, \mathit{pat}_b) \, \mathit{pat}_c \; \mathtt{=} \; \mathit{rhs}) \; =
   \raisebox{10px}{\begin{forest}
@@ -2611,9 +2609,8 @@ We would get the equality
     grdtree,
     [ [{$\ds(x_1, \mathit{pat}_a),\; \ds(x_2, \mathit{pat}_c)$} [{$k_{\mathit{rhs}}$}] ]
       [{$\ds(x_1, \mathit{pat}_b),\; \ds(x_2, \mathit{pat}_c)$} [{$k_{\mathit{rhs}}$}] ] ]
-  \end{forest}},
+  \end{forest}}
 \]
-
 \noindent
 thus duplicating the desugaring of $\mathit{pat_c}$.
 It is easy to see how a sequence of Or-patterns may lead to an exponential number of
@@ -2859,7 +2856,7 @@ refinement predicate and for the time to prove it empty!
 % the implementation, but the problems for runtime performance remain.
 What we really want is to summarise a $\Theta$ into a more compact canonical
 form before doing these kinds of \emph{splits}. But that's exactly what
-$\nabla$ is! Therefore, in our implementation we don't pass around
+$\nabla$ is! Therefore, in our implementation we do not pass around
 and annotate refinement types, but the result of calling $\normalise$ on them
 directly.
 
@@ -2946,7 +2943,7 @@ is defined simply as
 \end{array}
 \]
 
-with $K$ being an arbitrary constant. We use 30 as an arbitrary limit in our
+with $K$ being an arbitrary constant. GHC uses 30 as the limit in the
 implementation (dynamically configurable via a command-line flag) without
 noticing any false positives in terms of exhaustiveness warnings outside of the
 test suite.
@@ -2988,7 +2985,7 @@ order to conclude that, our algorithm tries to instantiate |x| (via
 \inhabitedinst) to each of its 1000 constructors and try to add a positive
 constructor constraint! What a waste of time, given that we could just look at
 the negative constraints on |x| \emph{before} trying to instantiate |x|. But
-asymptotically it shouldn't matter much, since we're doing this only once at
+asymptotically it should not matter much, since we are doing this only once at
 the end.
 
 Except that is not true, because we also perform redundancy checking! At any
@@ -3010,7 +3007,7 @@ process.
 \label{ssec:report}
 
 The expansion function $\expand$ in \Cref{fig:gen} exists purely for presenting
-uncovered patterns to the user. It doesn't account for negative information,
+uncovered patterns to the user. It does not account for negative information,
 however, which can lead to surprising warnings. Consider a definition like |b
 True = ()|. The computed uncovered set of |b| is the normalised refinement type
 $\nabla_b = \nreft{x:|Bool|}{x \ntermeq \bot, x \ntermeq |True|}$, which crucially
@@ -3391,8 +3388,8 @@ Thus, whenever a vector of values $\rho$ is part of the set denoted by a
 refinement type $\Theta$, the inductive predicate must be provable.
 
 The definition of $\reftvalid{\rho}{\Theta}$ assumes that conjunction $\wedge$
-is associated to the right, $\varphi \wedge \Phi$, highlighting an unusual
-scoping semantics that was previously implicit:
+is associated to the right, $\varphi \wedge \Phi$, highlighting the unusual
+scoping semantics briefly mentioned in \Cref{sec:check}.
 Any binding constructs in the $\varphi$ to the left of $\wedge$, such as
 $\ctlet{x}{e}$ or $\ctcon{K \; \overline{y}}{x}$, introduce names that are
 subsequently in scope in the $\Phi$ to the right of $\wedge$.
@@ -3442,12 +3439,12 @@ Let $\red(\ann(\reft{\Gamma}{\true}, t)) = (a,i,r)$ and $\generate$ sound in the
 above sense.
 \begin{itemize}
 \item
-  If $\gdtsem{t}_\rho = \yes{k}$, then $k \in a$, \ie, clause $k$ is accessible
+  If $\gdtsem{t}_\rho = \yes{k}$, then $k \in a$, \ie clause $k$ is accessible
   according to $\ann$ and $\red$.
 
 \item
   If $k \in r$ is redundant, then removing clause $k$ from guard tree $t$
-  does not change the semantics of $t$, \ie, $\forall \rho.\ \gdtsem{t}_\rho =
+  does not change the semantics of $t$, \ie $\forall \rho.\ \gdtsem{t}_\rho =
   \gdtsem{\mathit{remove}(k,t)}_\rho$ (where $\mathit{remove}(k,t)$ is the
   implied removal operation).
 \end{itemize}
@@ -3455,7 +3452,7 @@ above sense.
 
 Perhaps unsurprisingly, proving correct the transformation in the second part of
 \Cref{thm:red} proved far more subtle than the proof for \Cref{thm:unc}.
-Fortunately, mechanisation provides confidence in its correctness.
+Fortunately, the mechanisation provides confidence in the proof's correctness.
 
 \section{Related Work} \label{sec:related}
 
@@ -3539,7 +3536,7 @@ with non-strict semantics such as Haskell. In a lazy setting, uselessness
 corresponds to our notion of unreachable clauses.
 \citeauthor{maranget:warnings} does not distinguish inaccessible clauses from
 redundant ones; thus clauses flagged as useless (such as the first two clauses
-of |u'| in \Cref{sssec:inaccessibility}) generally can't be deleted without
+of |u'| in \Cref{sssec:inaccessibility}) generally cannot be deleted without
 changing (lazy) program semantics.
 
 \subsubsection{Case Trees in Dependently Typed Languages}
@@ -3640,7 +3637,7 @@ same terms repeatedly. This insight is equally applicable to coverage checking
 and is one of the primary reasons for \lyg's efficiency.
 
 Besides efficiency, the accuracy of redundancy warnings involving \extension{COMPLETE} sets hinge
-on negative constraints. To see why this isn't possible in other checkers that
+on negative constraints. To see why this is not possible in other checkers that
 only track positive information, such as those of
 \citet{gadtpm} (\Cref{ssec:gmtm})
 and
@@ -3669,7 +3666,7 @@ f True   = 3
 \gmtm would have to commit to a particular \extension{COMPLETE} set when
 encountering the match on |False|, without any semantic considerations.
 Choosing $\{|True'|,|False|\}$ here will mark the third GRHS as redundant,
-while choosing $\{|True|,|False|\}$ won't. GHC's implementation used to try
+while choosing $\{|True|,|False|\}$ will not. GHC's implementation used to try
 each \extension{COMPLETE} set in turn and would disambiguate using a
 complicated metric based on the number and kinds of warnings the choice of each
 set would generate \citep{complete-users-guide}, which was broken still
@@ -3791,7 +3788,7 @@ In this paper, we describe Lower Your Guards, a coverage checking algorithm that
 distills rich pattern matching into simple guard trees. Guard trees are
 amenable to analyses that are not easily expressible in coverage checkers
 that work over structural pattern matches.
-The last 4 years of continued maintenance of GHC's implementation offer a
+The last four years of continued maintenance of GHC's implementation offer a
 compelling retrospective: the approach scales well to new language features,
 causes very few functional bug reports in practice, and offers robust
 performance.
