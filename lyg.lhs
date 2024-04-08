@@ -1040,6 +1040,7 @@ time to come up with the language of guard trees.  We recommend it!
 \]
 \[ \ruleform{ \ann(\Theta, t) = u } \]
 \[
+\hfuzz=2em
 \begin{array}{lcl}
 \ann(\Theta,\gdtrhs{n}) &=& \antrhs{\Theta}{n} \\
 \ann(\Theta, \gdtpar{t_1}{t_2}) &=& \antpar{\ann(\Theta, t_1)}{\ann(\unc(\Theta, t_1), t_2)} \\
@@ -1312,10 +1313,10 @@ missing equations.  Consider the following definition
 If $t$ is the guard tree obtained from $f$, the expression
 $\unc(\reft{x:|Maybe T|}{\true},t)$ will produce this refinement type
 describing values that are not matched:
-\[
+\[\begin{array}{l}
 \Theta_f = \reft{ x{:}|Maybe T| }
-  {\begin{array}[t]{l}x \ntermeq \bot \wedge (x \ntermeq |Just| \vee (\ctcon{|Just y|}{x} \\ {} \wedge |y| \ntermeq \bot \wedge (|y| \ntermeq |A| \vee (\ctcon{|A|}{|y|} \wedge \false))))\end{array}}
-\]
+  {x \ntermeq \bot \wedge (x \ntermeq |Just| \vee (\ctcon{|Just y|}{x} \\ \hspace{8em} {} \wedge |y| \ntermeq \bot \wedge (|y| \ntermeq |A| \vee (\ctcon{|A|}{|y|} \wedge \false))))}
+\end{array}\]
 \noindent
 This is not very helpful to report to the user. It would be far preferable
 to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, something like this:
@@ -1353,7 +1354,7 @@ To illustrate the second case, consider |u'| from \Cref{sssec:inaccessibility} a
          | False  = 2
   u' _            = 3
 \end{code} &
-\leadsto &
+\hspace{0.5em}\leadsto &
 \raisebox{3px}{\begin{forest}
   anttree
   [
@@ -1480,10 +1481,12 @@ information into account.
   \nabla &\addphi& \false &=& \false & (1)\\
   \nabla &\addphi& \true &=& \nabla & (2) \\
   \nreft{\Gamma}{\Delta} &\addphi& \ctcon{\genconapp{K}{a}{\gamma}{y{:}\tau}}{x} &=&
-    \nreft{\Gamma,\overline{a},\overline{y{:}\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta \overline{y' \ntermeq \bot} \adddelta x \termeq \deltaconapp{K}{a}{y} & (3) \\
+    \nreft{\Gamma,\overline{a},\overline{y{:}\tau}}{\Delta} \adddelta \overline{\gamma} \adddelta \overline{y' \ntermeq \bot} & (3) \\
+  &&&& \quad  \adddelta x \termeq \deltaconapp{K}{a}{y} \\
   &&&& \quad \text{where $\overline{y'} \subseteq \overline{y}$ bind strict fields} \\
-  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \nreft{\Gamma,x{:}\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \ntermeq \bot \adddelta x \termeq \deltaconapp{K}{a}{y} & (4) \\
-  &&&& \quad \addphi \overline{\ctlet{y{:}\tau'}{e}} \qquad \text{where $\overline{a}\,\overline{y}$ fresh, $\overline{e{:}\tau'}$} \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \nreft{\Gamma,x{:}\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \ntermeq \bot & (4) \\
+  &&&& \quad \adddelta x \termeq \deltaconapp{K}{a}{y} \addphi \overline{\ctlet{y{:}\tau'}{e}} \\
+  &&&& \quad \text{where $\overline{a}\,\overline{y}$ fresh, $\overline{e{:}\tau'}$} \\
   \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{y} &=& \nreft{\Gamma,x{:}\tau}{\Delta} \adddelta x \termeq y & (5) \\
   \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{e} &=& \nreft{\Gamma,x{:}\tau}{\Delta} & (6) \\
   % TODO: Somehow make the coercion from delta to phi less ambiguous
@@ -1492,26 +1495,31 @@ information into account.
 \end{array}
 \]
 
+\caption{Adding a formula literal to the normalised refinement type $\nabla$}
+\label{fig:add-phi}
+\end{figure}
+
+\begin{figure}
 \[ \textbf{Add a constraint to $\nabla$} \quad
  \ruleform{ \nabla \adddelta \delta = \nabla } \]
 \[
+\hfuzz=5em
 \begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}ll}
-
   \false &\adddelta& \delta &=& \false & (8)\\
   \nreft{\Gamma}{\Delta} &\adddelta& \gamma &=& \begin{cases}
-    \nreft{\Gamma}{(\Delta,\gamma)} & \parbox[t]{6cm}{if type checker deems $\gamma$ compatible with $\Delta$ \\ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\nreft{\Gamma}{(\Delta,\gamma)}}{x}$} \\
+    \nreft{\Gamma}{(\Delta,\gamma)} & \parbox[t]{5.7cm}{if type checker deems $\gamma$ compatible with $\Delta$ and $\forall x \in \mathsf{dom}(\Gamma): \inhabited{\nreft{\Gamma}{(\Delta,\gamma)}}{x}$} \\
     \false & \text{otherwise} \\
   \end{cases} & (9)\\
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{K}{a}{y} &=& \begin{cases}
     \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{b}{z} \in \Delta$ } \\
-    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K'}{b}{z} \in \Delta$ and $K \not= K'$} \\
+    \false & \parbox[t]{3cm}{if $\rep{\Delta}{x} \termeq \deltaconapp{K'}{b}{z} \in \Delta$ and $K \not= K'$} \\
     \false & \text{if $\rep{\Delta}{x} \ntermeq K \in \Delta$} \\
     \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y})} & \text{otherwise} \\
   \end{cases} & (10) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq K &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{K}{a}{y} \in \Delta$} \\
-    \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{x}$} \\
-    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{otherwise} \\
+    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq K)} & \text{if $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq K)}}{x}$} \\
+    \false & \text{otherwise} \\
   \end{cases} & (11) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \bot &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \ntermeq \bot \in \Delta$} \\
@@ -1519,8 +1527,8 @@ information into account.
   \end{cases} & (12) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
     \false & \text{if $\rep{\Delta}{x} \termeq \bot \in \Delta$} \\
-    \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{x}$} \\
-    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{otherwise} \\
+    \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \ntermeq \bot)} & \text{if $\inhabited{\nreft{\Gamma}{(\Delta,\rep{\Delta}{x}\ntermeq\bot)}}{x}$} \\
+    \false & \text{otherwise} \\
   \end{cases} & (13) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq y &=&
     \begin{cases}
@@ -1533,8 +1541,10 @@ information into account.
 \]
 
 \[
+\hfuzz=1em
 \begin{array}{cc}
 \ruleform{ \Delta \setminus x = \Delta } & \ruleform{ \restrict{\Delta}{x} = \Delta } \\
+\\[-0.5em]
 \begin{array}{r@@{\,}c@@{\,}lcl}
   \varnothing &\setminus& x &=& \varnothing \\
   (\Delta,x \termeq \deltaconapp{K}{a}{y}) &\setminus& x &=& \Delta \setminus x \\
@@ -1555,16 +1565,16 @@ information into account.
 \]
 
 \caption{Adding a constraint to the normalised refinement type $\nabla$}
-\label{fig:add}
+\label{fig:add-delta}
 \end{figure}
 
 $\normalise$ormalisation, carried out by $\normalise$ in \Cref{fig:gen},
 is largely a matter of repeatedly adding a literal $\varphi$ to a
 normalised type, thus $\nabla \addphi \varphi$.  This function
-is where all the work is done, in \Cref{fig:add}.
+is where all the work is done, in \Cref{fig:add-phi,fig:add-delta}.
 %
 It does so by expressing a literal $\varphi$ in terms of simpler constraints
-$\delta$, and calling out to $\!\adddelta\!$ to add the simpler constraints to $\nabla$.
+$\delta$, and calling out to $\!\adddelta\!$ to add the simpler constraints to $\nabla$ (\Cref{fig:add-delta}).
 $\normalise$, $\addphi$ and $\adddelta$ all work on the principle that if the
 incoming $\nabla$ satisfies the Invariants \inv{1} to \inv{4} from
 \Cref{sec:generate}, then either the resulting $\nabla$ is $\false$ or it
@@ -1705,10 +1715,11 @@ contradiction.
 \[ \textbf{Find data constructors of $\tau$} \quad
  \ruleform{ \cons(\nreft{\Gamma}{\Delta}, \tau) = \overline{K}} \]
 \[
+\hfuzz=1em
 \begin{array}{c}
 
   \cons(\nreft{\Gamma}{\Delta}, \tau) = \begin{cases}
-    \overline{K} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ data type with constructors $\overline{K}$ \\ (after normalisation according to the type constraints in $\Delta$)} \\
+    \overline{K} & \parbox[t]{0.675\textwidth}{$\tau = T \; \overline{\sigma}$ and $T$ data type with constructors $\overline{K}$ (after normalisation according to the type constraints in $\Delta$)} \\
     % TODO: We'd need a cosntraint like \delta's \false here... Or maybe we
     % just omit this case and accept that the function is partial
     \bot & \text{otherwise} \\
@@ -1721,6 +1732,7 @@ contradiction.
 \[ \textbf{Instantiate $x$ to data constructor $K$} \quad
  \ruleform{ \inst(\nabla, x, K) = \nabla } \]
 \[
+\hfuzz=1em
 \begin{array}{c}
 
   \inst(\nreft{\Gamma}{\Delta}, x, K) =
@@ -1729,7 +1741,7 @@ contradiction.
       \adddelta \overline{\gamma}
       \adddelta x \termeq \deltaconapp{K}{a}{y}
       \adddelta \overline{y' \ntermeq \bot} \\
-  \qquad \qquad
+  \qquad \quad
     \text{where $K : \forall \overline{a}. \overline{\gamma} \Rightarrow \overline{\sigma} \rightarrow \tau$, $\overline{a}\,\overline{y}$ fresh, $x:\tau_x \in \Gamma$, $\overline{y'} \subseteq \overline{y}$ bind strict fields} \\
 
 \end{array}
@@ -1777,11 +1789,17 @@ inhabitation test on |y|. That leads to instantiation of the |MkT| constructor,
 which leads to constraints $|y| \termeq |MkT z|, z \ntermeq \bot$, and so on for
 |z| \etc. An infinite chain of fruitless instantiation attempts!
 
-In practice, we implement a fuel-based approach that conservatively assumes
-that a variable is inhabited after $n$ such iterations (we have $n=100$ for
-list-like constructors and $n=1$ otherwise) and consider supplementing that
-with a simple termination analysis to detect uninhabited data types like |T|
-in the future.
+This situation is a lot like deciding equality of equirecursive
+types~\citep[Chapter 21]{tapl}, in that we could break out of the infinite,
+coinductive proof chain by assuming that |T| is uninhabited for any recursive
+occurrences of |T| beyond the first.
+
+Unfortunately, GADTs might still recurse endlessly through the type index.
+So in practice, our implementation adtops a fuel-based approach that
+conservatively assumes that a variable is inhabited after $n$ such
+instantiations (we have $n=100$ for list-like constructors and $n=1$ otherwise)
+and consider supplementing that with a simple termination analysis to detect
+simple uninhabited data types like |T| in the future.
 
 \section{Extensions} \label{sec:extensions}
 
@@ -1952,10 +1970,11 @@ Our solution is a conservative one: we weaken the test that sends $\nabla$ to $\
 of Equation (10) in the definition of $\!\adddelta\!$ dealing with positive
 ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
 \[
+\hfuzz=1em
 \begin{array}{r@@{\,}c@@{\,}lcl}
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq \deltaconapp{C}{a}{y} &=& \begin{cases}
     \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta \overline{y \termeq z} & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C}{b}{z} \in \Delta$ } \\
-    \false & \text{if $\rep{\Delta}{x} \termeq \deltaconapp{C'}{b}{z} \in \Delta$ and \highlight{C \cap C' = \emptyset}} \\
+    \false & \parbox[t]{8.5em}{if $\rep{\Delta}{x} \termeq \deltaconapp{C'}{b}{z} \in \Delta$ and \highlight{C \cap C' = \emptyset}} \\
     \false & \text{if $\rep{\Delta}{x} \ntermeq C \in \Delta$} \\
     \nreft{\Gamma}{(\Delta,\rep{\Delta}{x} \termeq \deltaconapp{C}{a}{y})} & \text{otherwise} \\
   \end{cases}
@@ -2003,9 +2022,9 @@ that none of them is completely covered:
   &
 
   \inferrule*[right=\inhabitedinst]{
-    {x:\tau \in \Gamma \quad \cons(\nreft{\Gamma}{\Delta}, \tau)=\highlight{\overline{C_1,...,C_{n_i}}^i}}
+    \cons(\nreft{\Gamma}{\Delta}, \tau)=\highlight{\overline{C_1,...,C_{n}}}
     \\\\
-    {\highlight{\overline{\inst(\nreft{\Gamma}{\Delta}, x, C_j) \not= \false}^i}}
+    x:\tau \in \Gamma \\ \highlight{\overline{\inst(\nreft{\Gamma}{\Delta}, x, C_j) \not= \false}}
   }{
     \inhabited{\nreft{\Gamma}{\Delta}}{x}
   }
@@ -2014,7 +2033,7 @@ that none of them is completely covered:
 \[
 \begin{array}{c}
   \cons(\nreft{\Gamma}{\Delta},\tau) = \begin{cases}
-    \highlight{\overline{C_1,...,C_{n_i}}^i} & \parbox[t]{0.8\textwidth}{$\tau = T \; \overline{\sigma}$; \, \highlight{$T$ \text{ type constructor with \extension{COMPLETE} sets $\overline{C_1,...,C_{n_i}}^i$}} \\ (after normalisation according to the type constraints in $\Delta$)} \\
+    \highlight{\overline{C_1,...,C_{n}}} & \parbox[t]{0.55\textwidth}{$\tau = T \; \overline{\sigma}$; \, $T$ type constructor with \extension{COMPLETE} sets $\overline{C_1,...,C_{n}}$ (after normalisation according to the type constraints in $\Delta$)} \\
     \highlight{\epsilon} & \text{otherwise} \\
   \end{cases}
 \end{array}
@@ -2084,20 +2103,21 @@ synonyms without a \extension{COMPLETE} set.
 \[
 \begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}ll}
   \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\genconapp{K}{\sigma}{\gamma}{e}} &=& \ldots \text{as before} \ldots & (4a) \\
-  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\ntconapp{N}{\sigma}{e}} &=& \nreft{\Gamma,x{:}\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \ntconapp{N}{a}{y} \addphi \ctlet{y{:}\tau'}{e} & (4b) \\
-  &&&& \quad \text{where $\overline{a}\,y \freein \Gamma$, $e{:}\tau'$} \\
+  \nreft{\Gamma}{\Delta} &\addphi& \ctlet{x{:}\tau}{\ntconapp{N}{\sigma}{e}} &=& \nreft{\Gamma,x{:}\tau,\overline{a}}{\Delta} \adddelta \overline{a \typeeq \sigma} \adddelta x \termeq \ntconapp{N}{a}{y} & (4b) \\
+  &&&& \quad \addphi \ctlet{y{:}\tau'}{e} \quad \text{where $\overline{a}\,y$ fresh} \\
 \end{array}
 \]
 
 \[
+\hfuzz=3em
 \begin{array}{r@@{\,}c@@{\,}l@@{\;}c@@{\;}ll}
   \nreft{\Gamma}{\Delta} &\adddelta& x \termeq  \deltaconapp{K}{a}{y} &=& \ldots \text{as before} \ldots & (10a) \\
   \nreft{\Gamma}{\Delta} &\adddelta& \highlight{x \termeq \ntconapp{N}{a}{y}} &=&
     \begin{cases}
       \nreft{\Gamma}{\Delta} \adddelta \overline{a \typeeq b} \adddelta y \termeq z & \text{if $x' \termeq \ntconapp{N}{b}{z} \in \Delta$} \\
       \nreft{\Gamma}{\Delta} & \text{if $x' = \repnt{\Delta}{y'}$} \\
-      \nreft{\Gamma}{((\Delta\!\setminus\!x'), x'\!\termeq\!\ntconapp{N}{a}{y'})} \adddelta (\restrict{\Delta}{x'}\![y'\!/\!x'])
-        & \text{otherwise} \\
+      \nreft{\Gamma}{((\Delta\!\setminus\!x'), x'\!\termeq\!\ntconapp{N}{a}{y'})} \\
+         \quad \adddelta (\restrict{\Delta}{x'}\![y'\!/\!x']) & \text{otherwise} \\
     \end{cases} & (10b)\\
     &&&&\text{where}~x' = \rep{\Delta}{x} \; \text{and} \; y' = \rep{\Delta}{y} \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq |K| &=& \ldots \text{as before} \ldots & (11a) \\
@@ -2108,10 +2128,10 @@ synonyms without a \extension{COMPLETE} set.
   \end{cases} & (12) \\
   \nreft{\Gamma}{\Delta} &\adddelta& x \ntermeq \bot &=& \begin{cases}
     \false & \text{if $\highlight{\repnt{\Delta}{x}} \termeq \bot \in \Delta$} \\
-    \false & \text{if not $\inhabited{\nreft{\Gamma}{(\Delta,\highlight{\repnt{\Delta}{x}}\ntermeq\bot)}}{x}$} \\
-    \nreft{\Gamma}{(\Delta,\highlight{\repnt{\Delta}{x}} \ntermeq \bot)} & \text{otherwise} \\
+    \nabla' & \text{if $\inhabited{\nabla'}{x}$} \\
+    \false & \text{otherwise} \\
   \end{cases} & (13) \\
-
+  &&&&\text{where $\nabla' = \nreft{\Gamma}{(\Delta,\highlight{\repnt{\Delta}{x}}\ntermeq\bot)}$}
 \end{array}
 \]
 
@@ -2135,10 +2155,10 @@ But the pattern-matching semantics of newtypes are different!
 Here are three key examples that distinguish newtypes from data types.
 Functions |g1|, |g2| match on a \emph{newtype} |N|, while functions
 |h1|, |h2| match on a \emph{data type} |D|:
-
-\begin{minipage}{\textwidth}
-\begin{minipage}[b]{0.5\textwidth}
-\centering
+\[
+\hfuzz=2em
+\mathhs
+\begin{array}{cc}
 \begin{code}
 newtype N a = MkN a
 g1 :: N Void -> Bool -> Int
@@ -2146,18 +2166,15 @@ g1 _        True   = 1
 g1 (MkN _)  True   = 2  -- Redundant
 g1 !_       True   = 3  -- Inaccessible
 \end{code}
-\end{minipage}%
-\begin{minipage}[b]{0.5\textwidth}
-\centering
+&
 \begin{code}
+^^
 g2 :: N () -> Bool -> Int
 g2 !!(MkN _)   True  = 1
 g2   (MkN !_)  True  = 2  -- Redundant
 g2         _   _     = 3
 \end{code}
-\end{minipage}
-\begin{minipage}[b]{0.5\textwidth}
-\centering
+\\
 \begin{code}
 data D a = MkD a
 h1 :: D Void -> Bool -> Int
@@ -2165,17 +2182,17 @@ h1 _        True   = 1
 h1 (MkD _)  True   = 2  -- Inaccessible
 h1 !_       True   = 3  -- Redundant
 \end{code}
-\end{minipage}%
-\begin{minipage}[b]{0.5\textwidth}
-\centering
+&
 \begin{code}
+^^
 h2 :: D () -> Bool -> Int
 h2 !!(MkD _)   True  = 1
 h2   (MkD !_)  True  = 2  -- Inaccessible
 h2         _   _     = 3
 \end{code}
-\end{minipage}
-\end{minipage}
+\end{array}
+\plainhs
+\]
 \noindent
 If the first equation of |h1| fails to match (because the second argument is |False|),
 the second equation may diverge when matching against |(MkD _)|
@@ -2391,7 +2408,7 @@ warnings in a lazy language.
 \ann(\reft{\Gamma}{\Phi}, \grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}) &=& \reft{\Gamma}{\false} \\
 \end{array}
 \]
-
+\\[-1.5\baselineskip]
 \caption{Extending coverage checking to handle Or-patterns}
 \label{fig:orpats}
 \end{figure}
@@ -2464,6 +2481,7 @@ f _         _         = 2
 The desugaring to guard trees according to \Cref{fig:orpats} is
 
 \vskip\abovedisplayskip
+\hfuzz=2em
 \begin{forest}
   grdtree,
   [
@@ -2655,17 +2673,23 @@ checking in the same tree traversal as desugaring.
 \]
 \[ \ruleform{ \uncann(\overline{\nabla}, t) = (\overline{\nabla}, u) } \]
 \[
+\hfuzz=2em
 \begin{array}{lcl}
 \uncann(\overline{\nabla}, \gdtrhs{n}) &=& (\epsilon, \antrhs{\overline{\nabla}}{n}) \\
-\uncann(\overline{\nabla}, \gdtpar{t_1}{t_2}) &=& (\overline{\nabla}_2, \antpar{u_1}{u_2}) \hspace{0.5em} \text{where} \begin{array}{l@@{\,}c@@{\,}l}
+\uncann(\overline{\nabla}, \gdtpar{t_1}{t_2}) &=& (\overline{\nabla}_2, \antpar{u_1}{u_2}) \hspace{0.5em} \\
+  && \quad \text{where} \begin{array}[t]{l@@{\,}c@@{\,}l}
     (\overline{\nabla}_1, u_1) &=& \uncann(\overline{\nabla}, t_1) \\
     (\overline{\nabla}_2, u_2) &=& \uncann(\overline{\nabla}_1, t_2)
   \end{array} \\
 \uncann(\overline{\nabla}, \gdtguard{\grdbang{x}}{t}) &=& \antbang{\overline{\nabla} \addphiv (x \termeq \bot)}{u} \\
   && \quad \text{where } (\overline{\nabla}', u) = \uncann(\overline{\nabla} \addphiv (x \ntermeq \bot), t) \\
 \uncann(\overline{\nabla}, \gdtguard{\grdlet{x}{e}}{t}) &=& \uncann(\overline{\nabla} \addphiv (\ctlet{x}{e}), t) \\
-\uncann(\overline{\nabla}, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& ((\overline{\nabla} \addphiv (x \ntermeq K)) \, \overline{\nabla}', u) \\
-  && \quad \text{where } (\overline{\nabla}', u) = \uncann(\overline{\nabla} \addphiv (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t) \\
+\uncann(\overline{\nabla}, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& ((\overline{\nabla} \addphiv (x \ntermeq K)) \, \overline{\nabla_u}, u) \\
+  && \quad \text{where} \begin{array}[t]{l}
+    \overline{\nabla_c} = \overline{\nabla} \addphiv (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}) \\
+    (\overline{\nabla_u}, u) = \uncann(\overline{\nabla_c}, t) \\
+    \end{array} \\
+
 \end{array}
 \]
 
@@ -2706,29 +2730,20 @@ matches remains NP-hard \citep{adaptivepm}. Naturally, there will be cases
 where we have to conservatively approximate in order not to slow down
 compilation too much. Consider the following example and its corresponding
 guard tree:
-\\
-\begin{minipage}[t]{0.32\textwidth}
 \begin{code}
-data T = A | B; f1, f2 :: Int -> T
-g _
-  | A <- f1 1,  A <- f2 1  = ()
-  | A <- f1 2,  A <- f2 2  = ()
-  ...
-  | A <- f1 N,  A <- f2 N  = ()
+g _  | True <- f1 1,  True <- f2 1  = ()
+     ...
+     | True <- f1 {-"\; N "-},  True <- f2 {-"\; N "-}  = ()
 \end{code}
-\end{minipage}%
-\begin{minipage}[t][][b]{0.68\textwidth}
-\vspace{2em}
+\vskip\abovedisplayskip
 \begin{forest}
   grdtree,
   [
-    [{$\grdlet{a_1}{|f1 1|}, \grdbang{a_1}, \grdcon{|A|}{a_1}, \grdlet{b_1}{|f2 1|}, \grdbang{b_1}, \grdcon{|A|}{b_1}$} [1]]
-    [{$\grdlet{a_2}{|f1 2|}, \grdbang{a_2}, \grdcon{|A|}{a_2}, \grdlet{b_2}{|f2 2|}, \grdbang{b_2}, \grdcon{|A|}{b_2}$} [2]]
+    [{$\grdlet{a_1}{|f1 1|}, \grdbang{a_1}, \grdcon{|True|}{a_1}, \grdlet{b_1}{|f2 1|}, \grdbang{b_1}, \grdcon{|True|}{b_1}$} [1]]
     [... [...]]
-    [{$\grdlet{a_{N}}{|f1 N|}, \grdbang{a_{N}}, \grdcon{|A|}{a_{N}}, \grdlet{b_{N}}{|f2 N|}, \grdbang{b_{N}}, \grdcon{|A|}{b_{N}}$} [N]]]
+    [{$\grdlet{a_{N}}{|f1 {-"\; N "-}|}, \grdbang{a_{N}}, \grdcon{|True|}{a_{N}}, \grdlet{b_{N}}{|f2 {-"\; N "-}|}, \grdbang{b_{N}}, \grdcon{|True|}{b_{N}}$} [N]]]
 \end{forest}
-\end{minipage}
-
+\vskip\belowdisplayskip
 Each of the $N$ GRHS can fall through in two distinct ways: By failure of
 either pattern guard involving |f1| or |f2|. Initially, we start out with
 a single input $\nabla$. After the first equation it will split into two
@@ -2737,7 +2752,7 @@ repeats $N$ times, and leads to horrible performance!
 
 Instead of \emph{refining} $\nabla$ with the pattern guard, leading to a split,
 we could just continue with the original $\nabla$, thus forgetting about the
-$a_1 \ntermeq |A|$ or $b_1 \ntermeq |A|$ constraints. In terms of the modeled
+$a_1 \ntermeq |True|$ or $b_1 \ntermeq |True|$ constraints. In terms of the modeled
 refinement type, $\nabla$ is still a superset of both refinements, and thus a
 sound overapproximation.
 
@@ -2760,11 +2775,13 @@ that particular subtree. Throttling is refreshingly easy to implement! Only the
 last clause of $\uncann$, where splitting is performed, needs to change:
 \[
 \begin{array}{r@@{\,}c@@{\,}lcl}
-\uncann(\overline{\nabla}, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& (\throttle{\overline{\nabla}}{(\overline{\nabla} \addphiv (x \ntermeq K)) \, \overline{\nabla}'}, u) \\
-  && \quad \text{where } (\overline{\nabla}', u) = \uncann(\overline{\nabla} \addphiv (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}), t)
+\uncann(\overline{\nabla}, \gdtguard{\grdcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}}{t}) &=& (\throttle{\overline{\nabla}}{(\overline{\nabla} \addphiv (x \ntermeq K)) \, \overline{\nabla_u}}, u) \\
+  && \quad \text{where} \begin{array}[t]{l}
+       \overline{\nabla_c} = \overline{\nabla} \addphiv (\ctcon{\genconapp{K}{a}{\gamma}{y:\tau}}{x}) \\
+       (\overline{\nabla_u}, u) = \uncann(\overline{\nabla_c}, t) \\
+     \end{array}
 \end{array}
 \]
-
 where the new throttling operator $\throttle{\mathunderscore}{\mathunderscore}$
 is defined simply as
 \[
@@ -3390,7 +3407,7 @@ support dependent types. Our implementation of \lyg in GHC can already handle
 quasi-dependently typed code, such as the \texttt{singletons} library
 \citep{singletons,singletons-promotion}, so we expect that it can be adapted to
 full dependent types. One key change that would be required is extending equation
-(9) in \Cref{fig:add} to reason about term constraints in addition to type
+(9) in \Cref{fig:add-delta} to reason about term constraints in addition to type
 constraints. GHC's constraint solver already has limited support for term-level
 reasoning as part of its \texttt{DataKinds} language extension
 \citep{hspromoted}, so the groundwork is present.
@@ -3431,7 +3448,7 @@ arguments |0| or |1|.
 \lyg represents $\Phi$ constraints using logical predicates that are
 tailor-made for \lyg's purposes. One could instead imagine encoding $\Phi$
 constraints in a more standard logic and then using an ``off-the-shelf''
-constraint solver to check them. This would render \Cref{fig:add} and the
+constraint solver to check them. This would render \Cref{fig:add-phi,fig:add-delta} and the
 arguably rather intricate \Cref{sec:normalise,sec:inhabitation} unnecessary,
 and it allows the checker to benefit from improvements to the solver without
 any further maintenance burden.
