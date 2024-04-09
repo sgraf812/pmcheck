@@ -27,12 +27,11 @@
 %checker, both in accuracy and performance.
 %\end{abstract}
 
-\section{Introduction}
+%\section{Introduction}
 
-Pattern matching is a tremendously useful feature in Haskell and many other
-programming languages, but it must be used with care. Consider this
-example of pattern matching gone wrong:
-
+Program definition by pattern matching is a tremendously useful feature in
+Haskell and many other programming languages, but it must be used with care.
+Consider this example of a function defined by pattern matching:
 \begin{code}
 f :: Int -> Bool
 f 0 = True
@@ -42,14 +41,14 @@ f 0 = False
 The function |f| has two serious flaws. One obvious problem is that there
 are two clauses that match on |0|, and due to the top-to-bottom semantics of
 pattern matching, this makes the |f 0 = False| clause completely unreachable.
-Even worse is that |f| never matches on any patterns besides |0|, making it not fully
-defined. Attempting to invoke |f 1|, for instance, will fail.
+Even worse is that |f| never matches on any patterns besides |0|, rendering its definition incomplete.
+Attempting to invoke |f 1|, for instance, will fail.
 
 To avoid these mishaps, compilers for languages with pattern matching often
 emit warnings (or errors) if a function is missing clauses (i.e., if it is
 \emph{non-exhaustive}), if one of its right-hand sides will never be entered
 (i.e., if it is \emph{inaccessible}), or if one of its equations can be deleted
-altogether (i.e., if it is \emph{redundant}). We refer to the combination of
+altogether (i.e., if it is \emph{redundant}). Let us refer to the combination of
 checking for exhaustivity, redundancy, and accessibility as \emph{pattern-match
 coverage checking}. Coverage checking is the first line of defence in catching
 programmer mistakes when defining code that uses pattern matching.
@@ -74,29 +73,31 @@ scope by pattern matching \citep{outsideinx}.
 % pattern-related language extensions. Designing a coverage checker that can cope
 % with all of these features is no small task.
 
-The current state of the art for coverage checking in a richer language of this
-sort is \emph{GADTs Meet Their Match} \citep{gadtpm}, or \gmtm{} for short. It
+The state of the art\footnote{Before this work appeared at ICFP 2020, that is}
+for coverage checking in a richer language of this
+sort was \emph{GADTs Meet Their Match} \citep{gadtpm}, or \gmtm{} for short. It
 presents an algorithm that handles the intricacies of checking GADTs, lazy
-patterns, and pattern guards. However \gmtm{} is monolithic and does not
+patterns, and pattern guards. However, \gmtm{} is monolithic and does not
 account for a number of important language features; it gives incorrect results
 in certain cases; its formulation in terms of structural pattern matching makes
 it hard to avoid some serious performance problems; and its implementation in
-GHC, while a big step forward over its predecessors, has proved complex and
-hard to maintain.
+the Glasgow Haskell Compiler (GHC), while a big step forward over its
+predecessors, has proved complex and hard to maintain.
 
-In this paper we propose a new, compositional coverage-checking algorithm,
+\paragraph{Contributions.}
+In this chapter, I propose a new, compositional coverage-checking algorithm,
 called Lower Your Guards (\lyg), that is simpler, more modular, \emph{and}
 more powerful than \gmtm (see \Cref{ssec:gmtm}). Moreover, it avoids \gmtm's
-performance pitfalls. We make the following contributions:
+performance pitfalls.
 
 \begin{itemize}
 \item
-  We characterise some nuances of coverage checking that not even
-  \gmtm handles (\Cref{sec:problem}). We also identify issues in GHC's
+  I characterise some nuances of coverage checking that not even
+  \gmtm handles (\Cref{sec:problem}). I also identify issues in GHC's
   implementation of \gmtm.
 
 \item
-  We describe a new, compositional coverage checking algorithm, \lyg{}, in \Cref{sec:overview}.
+  I describe a new, compositional coverage checking algorithm, \lyg{}, in \Cref{sec:overview}.
   The key insight is to abandon the notion of structural pattern
   matching altogether, and instead desugar all
   the complexities of pattern matching into a very simple language
@@ -104,30 +105,30 @@ performance pitfalls. We make the following contributions:
   Coverage checking on these guard trees becomes remarkably simple,
   returning an \emph{annotated tree} (\Cref{sec:check}) decorated with
   \emph{refinement types}.
-  Finally, provided we have access to a suitable way to find inhabitants
-  of a refinement type, we can report accurate coverage errors (\Cref{sec:inhabitants}).
+  Finally, provided there is a suitable way to find inhabitants
+  of a refinement type, one can report accurate coverage errors (\Cref{sec:inhabitants}).
 
 \item
-  We demonstrate the compositionality of \lyg by augmenting it with
+  I demonstrate the compositionality of \lyg by augmenting it with
   several language extensions (\Cref{sec:extensions}). Although these extensions can change the source
   language in significant ways, the effort needed to incorporate them into the
   algorithm is comparatively small.
 
 \item
-  We discuss how to optimize the performance of \lyg (\Cref{sec:impl}) and
+  I discuss how to optimize the performance of \lyg (\Cref{sec:impl}) and
   implement a proof of concept in GHC (\Cref{sec:eval}).
 
 \item
   The evaluation against a large number of Haskell packages
   (\Cref{sec:eval}) provides evidence that \lyg is sound.
-  In order to discuss soundness formally in \Cref{sec:soundness}, we turn the
+  In order to discuss soundness formally in \Cref{sec:soundness}, I turn the
   informal semantics of guard trees and refinement types in \Cref{sec:overview}
   into formal semantics.
-  We also list mechanisms that render \lyg incomplete in order to guarantee good
+  I also list mechanisms that render \lyg incomplete in order to guarantee good
   performance.
 
 \item
-  We discuss the wealth of related work in \Cref{sec:related}.
+  The wealth of related work is discussed in \Cref{sec:related}.
 \end{itemize}
 
 % Contributions from our call:
@@ -148,8 +149,26 @@ performance pitfalls. We make the following contributions:
 %
 % \end{itemize}
 
+\paragraph{Acknowledgements.}
+The work in this chapter is an extended version of~\citet{lyg2020}.
+It is the result of a research internship with Simon Peyton Jones at Microsoft
+Research Cambridge in 2019, in which I completely overhauled GHC's neglected
+pattern-match coverage checker, following ideas that Simon and I developed and
+which I implemented.
+Our third author, Ryan Scott, had previously improved parts of the coverage
+checker and was of great help in improving the technical writing, as well as
+contributing the evaluation (\Cref{sec:eval}), Related Work (\Cref{sec:related})
+and introductory examples.
 
-\section{The Problem We Want to Solve} \label{sec:problem}
+Since this work appeared at ICFP 2020, its implementation in GHC evolved as well.
+I describe how \lyg accommodates a new, unanticipated language extension for
+\emph{Or-patterns} (\Cref{ssec:orpats}) and report a useful structural pattern
+to model guard trees from the trenches (\Cref{ssec:gdt-types}).
+Furthermore, \Cref{sec:soundness} summarises a formalisation of significant
+parts of \lyg that have been formalised by \citet{dieterichs:thesis}, a thesis
+supervised by Sebastian Ullrich and me.
+
+\section{Problem Statement} \label{sec:problem}
 
 What makes coverage checking so difficult in a language like Haskell? At first
 glance, implementing a coverage checking algorithm might appear simple: just
@@ -174,9 +193,9 @@ challenging.
 
 Prior work on coverage checking (discussed in
 \Cref{sec:related}) accounts for some of these nuances, but
-not all of them. In this section we identify some key language features that
+not all of them. In this section I identify some key language features that
 make coverage checking difficult. While these features may seem disparate at first,
-we will later show in \Cref{sec:overview} that these ideas can all fit
+I will later show in \Cref{sec:overview} that these ideas can all fit
 into a unified framework.
 
 \subsection{Guards} \label{ssec:guards}
@@ -201,9 +220,9 @@ The next line illustrates that each GRHS may have multiple guards,
 and that guards include |let| bindings, such as |let c1' = c2|.
 The fourth GRHS uses |otherwise|, which is simply defined as |True|.
 
-Guards can be thought of as a generalization of patterns, and we would like to
-include them as part of coverage checking. Checking guards is significantly more
-complicated than checking ordinary structural pattern matches, however, since guards can
+Guards can be thought of as a generalisation of patterns, and a useful coverage
+checker should include them. Checking guards is significantly more complicated
+than checking ordinary structural pattern matches, however, since guards can
 contain arbitrary expressions. Consider this implementation of the |signum|
 function:
 
@@ -243,7 +262,7 @@ not3 True            = False
 \plainhs
 \]
 \noindent
-Clearly all are equivalent.  Our coverage checking algorithm should find that all three
+Clearly all are equivalent.  A coverage checking algorithm should find that all three
 are exhaustive, and indeed, \lyg does so.
 % We explore the subset of guards that
 % \lyg can check in more detail in \ryan{Cite relevant section}\sg{I think
@@ -315,7 +334,7 @@ length :: Text -> Int
 length (Text.null -> True)            = 0
 length (Text.uncons -> Just (_, xs))  = 1 + length xs
 \end{code}
-% View patterns can be thought of as a generalization of overloaded literals. For
+% View patterns can be thought of as a generalisation of overloaded literals. For
 % example, the |isZero| function in \ryan{cite section} can be rewritten to
 % use view patterns like so:
 %
@@ -698,7 +717,7 @@ Stardust \citep{dunfieldthesis}.
 \label{fig:syn}
 \end{figure}
 
-In this section, we describe our new coverage checking algorithm, \lyg.
+In this section, I describe the new coverage checking algorithm, \lyg.
 \Cref{fig:pipeline} depicts a high-level overview, which divides into three steps:
 \begin{itemize}
 \item First, we desugar the complex source Haskell syntax (\cf \Cref{fig:srcsyn})
@@ -852,7 +871,7 @@ This desugars to the following guard tree (where the $x_i$ represent |f|'s argum
 \\
 The first line says ``evaluate $x_1$; then match $x_1$ against |Just t1|;
 then evaluate $t_1$; then match $t_1$ against $(t_2,t_3)$'' and so on. If any
-of those matches fail, we fall through into the second line. Note that we write
+of those matches fail, we fall through into the second line. Note that I write
 $\gdtguard{g_1, ..., g_n}{t}$ instead of
 $\vcenter{\hbox{\begin{forest}
     grdtree,
@@ -932,8 +951,8 @@ From this point onwards, then, strictness is expressed \emph{only} through bang
 guards $!x$, while constructor guards $\grdcon{|K a b|}{y}$ are not considered
 strict.
 
-In a way there is nothing very deep here, but it took us a surprisingly long
-time to come up with the language of guard trees.  We recommend it!
+In a way there is nothing very deep here, but it took Simon and me a
+surprisingly long time to come up with the language of guard trees.
 
 %
 % To understand what language we should desugar to, consider the following
@@ -1057,7 +1076,7 @@ time to come up with the language of guard trees.  We recommend it!
 The next step in \Cref{fig:pipeline} is to transform the guard tree into an \emph{annotated tree}, $\Ant$, and
 an \emph{uncovered set}, $\Theta$.
 Taking the latter first, the uncovered set describes all the input
-values of the match that are not covered by the match.  We use the
+values of the match that are not covered by the match.  I use the
 language of \emph{refinement types} to describe this set (see \Cref{fig:syn}).
 A refinement type $\Theta = \reft{x_1{:}\tau_1, \ldots, x_n{:}\tau_n}{\Phi}$
 denotes the vector of values $x_1 \ldots x_n$ that satisfy the predicate $\Phi$.
@@ -1074,7 +1093,7 @@ The syntax of $\Phi$ is given in \Cref{fig:syn}. It consists of a collection
 of \emph{literals} $\varphi$, combined with conjunction and disjunction.
 Unconventionally, however, a literal may bind one or more variables, and those
 bindings are in scope in conjunctions to the right. This can be formalised
-by giving a type system for $\Phi$, and we do so in \Cref{ssec:sem}, where we
+by giving a type system for $\Phi$, and I do so in \Cref{ssec:sem}, where I
 define satisfiability of $\Phi$ in formal detail.
 The literal $\true$ means ``true'', as illustrated above; while
 $\false$ means ``false'', so that $\reft{\Gamma}{\false}$ denotes the empty set $\emptyset$.
@@ -1099,7 +1118,7 @@ side; and each $\antbang{\Theta}{\hspace{-0.6em}}$ node is annotated with a
 refinement type that describes the input values on which matching will diverge.
 Once again, $\ann$ can be defined by a simple recursive descent over the guard
 tree (\Cref{fig:check}), but note that the second equation uses $\unc$ as an
-auxiliary function\footnote{ Our implementation avoids this duplicated work --
+auxiliary function\footnote{The implementation avoids this duplicated work --
 see \Cref{ssec:interleaving} -- but the formulation in \Cref{fig:check}
 emphasises clarity over efficiency.}.
 
@@ -1329,11 +1348,11 @@ to produce one or more concrete \emph{inhabitants} of $\Theta_f$ to report, some
 $\generate$enerating these inhabitants is the main technical challenge in this
 work.
 It is done by $\generate(\Theta)$ in \Cref{fig:gen},
-which we discuss next in \Cref{sec:generate}.
+which I discuss next in \Cref{sec:generate}.
 But first notice that, by calling the very same function $\generate$,
 we can readily define the function $\red$, which reports a triple
 of (accessible, inaccessible, $\red$edundant) GRHSs,
-as needed in our overall pipeline (\Cref{fig:pipeline}).
+as needed in the overall pipeline (\Cref{fig:pipeline}).
 $\red$ is defined in \Cref{fig:collect}:
 \begin{itemize}
 \item Having reached a leaf $\antrhs{\Theta}{k}$, if the refinement type $\Theta$ is
@@ -1375,14 +1394,14 @@ inaccessible, leaving all the others as redundant.
 
 \subsection{Generating Inhabitants of a Refinement Type} \label{sec:generate}
 
-Thus far, all our functions have been very simple, syntax-directed
+Thus far, all functions have been very simple, syntax-directed
 transformations, but they all ultimately depend on the single function
 $\generate$, which does the real work.  That is our new focus.
 As \Cref{fig:gen} shows, $\generate(\Theta)$ takes a refinement
 type $\Theta = \reft{\Gamma}{\Phi}$
 and returns a (possibly-empty) set of patterns $\overline{p}$ (syntax in \Cref{fig:syn})
 that give the shape of values that inhabit $\Theta$.
-We do this in two steps:
+This is done in two steps:
 \begin{itemize}
 \item Flatten $\Theta$ into a disjunctive union of \emph{normalised refinement types} $\nabla$,
   by the call $\normalise(\nreft{\Gamma}{\varnothing}, \Phi)$; see \Cref{sec:normalise}.
@@ -1397,7 +1416,7 @@ as in $\varphi$.
 Instead, disjunction reflects in the fact that $\normalise$ returns a \emph{set}
 of normalised refinement types.
 
-Beyond these syntactic differences, we enforce the following
+Beyond these syntactic differences, I enforce the following
 invariants on a $\nabla = \nreft{\Gamma}{\Delta}$:
 \begin{enumerate}
   \item[\inv{1}] \emph{Mutual compatibility}: No two constraints in $\Delta$
@@ -1416,7 +1435,7 @@ invariants on a $\nabla = \nreft{\Gamma}{\Delta}$:
 \noindent
 Invariants \inv{1} and \inv{2} prevent $\Delta$ being self-contradictory,
 so that $\nabla$ (which denotes a set of values) is uninhabited.
-We use $\nabla = \false$ to represent an uninhabited refinement type, canonically.
+I use $\nabla = \false$ to represent an uninhabited refinement type, canonically.
 Invariants \inv{3} and \inv{4} require $\Delta$ to be in solved form,
 from which it is easy to ``read off'' a value that inhabits it --- this
 reading-off step is performed by $\expand$ (\Cref{sec:expand}).
@@ -1425,10 +1444,10 @@ The setup here is directly analogous to the setup of standard unification
 algorithms. In unification, we start with a set of equalities between types
 (analogous to $\Theta$) and, by unification, normalise it to a substitution
 (analogous to $\nabla$).  That substitution can itself be regarded as a set of
-equalities, but in a restricted form.  And indeed our normalisation algorithm
+equalities, but in a restricted form.  And indeed the normalisation algorithm
 (described in \Cref{sec:normalise}) is a form of generalised unification.
 
-Notice that we allow $\Delta$ to contain variable/variable equalities
+Notice that I allow $\Delta$ to contain variable/variable equalities
 $x \termeq y$, providing a function $\Delta(x)$ (defined in
 \Cref{fig:gen}) that follows these indirections to find the
 ``representative'' of $x$ in $\Delta$.  A perfectly viable alternative
@@ -1465,7 +1484,7 @@ similarly on multiple match variables. When there is a solution like $\Delta(x)
 \termeq |Just y|$ in $\Delta$ for the match variable $x$ of interest,
 recursively expand |y| and wrap it in a |Just|. Invariant \inv{4} guarantees
 that there is at most one such solution and $\expand$ is well-defined. When
-there is no solution for $x$, return $\_$. See \Cref{ssec:report} for how we
+there is no solution for $x$, return $\_$. See \Cref{ssec:report} for how I
 improve on that in the implementation by taking negative
 information into account.
 
@@ -1795,7 +1814,7 @@ coinductive proof chain by assuming that |T| is uninhabited for any recursive
 occurrences of |T| beyond the first.
 
 Unfortunately, GADTs might still recurse endlessly through the type index.
-So in practice, our implementation adtops a fuel-based approach that
+So in practice, the implementation adopts a fuel-based approach that
 conservatively assumes that a variable is inhabited after $n$ such
 instantiations (we have $n=100$ for list-like constructors and $n=1$ otherwise)
 and consider supplementing that with a simple termination analysis to detect
@@ -1806,7 +1825,7 @@ simple uninhabited data types like |T| in the future.
 \lyg is well equipped to handle the fragment of Haskell it was designed to
 handle. But GHC extends Haskell in non-trivial ways. This section exemplifies
 easy accommodation of new language features and measures to increase precision
-of the checking process, demonstrating the modularity and extensibility of our
+of the checking process, demonstrating the modularity and extensibility of the
 approach.
 
 \subsection{Long-Distance Information}
@@ -1882,8 +1901,8 @@ $\unc(\reft{\Gamma}{x \ntermeq \bot}, \gdtempty)$.
 \subsection{View Patterns}
 \label{ssec:extviewpat}
 
-Our source syntax had support for view patterns to start with (\cf
-\Cref{fig:srcsyn}). And even the desugaring we gave as part of the definition
+The source syntax had support for view patterns to start with (\cf
+\Cref{fig:srcsyn}). And even the desugaring I gave as part of the definition
 of $\ds$ in \Cref{fig:desugar} is accurate. But this desugaring alone is
 insufficient for the checker to conclude that |safeLast| from
 \Cref{sssec:viewpat} is an exhaustive definition! To see why, let us look at its
@@ -1926,8 +1945,8 @@ handle the new constraint in $\adddelta$, as follows:
 
 Where $\equiv_{\Delta}$ is (an approximation to) semantic equivalence modulo
 substitution under $\Delta$. A clever data structure is needed to answer
-queries of the form $e \termeq \mathunderscore \in \Delta$, efficiently. In our
-implementation, we use a trie to index expressions rapidly~\citep{triemaps} and
+queries of the form $e \termeq \mathunderscore \in \Delta$, efficiently. In the
+implementation, I use a trie to index expressions rapidly~\citep{triemaps} and
 sacrifice reasoning modulo $\Delta$ in doing so. Plugging in an SMT solver to
 decide $\equiv_{\Delta}$ would be more precise, but certainly less efficient.
 
@@ -1966,7 +1985,7 @@ If |P| and |Q| were data constructors, the first alternative of the
 are quite different: a value produced by |P| might match a pattern |Q|, as indeed
 is the case in this example.
 
-Our solution is a conservative one: we weaken the test that sends $\nabla$ to $\false$
+My solution is a conservative one: I weaken the test that sends $\nabla$ to $\false$
 of Equation (10) in the definition of $\!\adddelta\!$ dealing with positive
 ConLike constraints $x \termeq \deltaconapp{C}{a}{y}$:
 \[
@@ -1992,10 +2011,10 @@ of them for the purposes of reporting warnings. Fixing that requires a bit of
 boring engineering.
 
 Another subtle point appears in rule $(\dagger)$ in \Cref{fig:desugar}: should
-we or should we not add a bang guard for pattern synonyms?  There is no way to
+I or should I not add a bang guard for pattern synonyms?  There is no way to
 know without breaking the abstraction offered by the synonym.  In effect, its
-strictness or otherwise is part of its client-visible semantics.  In our implementation,
-we have (thus far) compromised by assuming that all pattern synonyms are strict for the
+strictness or otherwise is part of its client-visible semantics.  In the implementation,
+I have compromised by assuming that all pattern synonyms are strict for the
 purposes of coverage checking \citep{gitlab:17357}.
 
 \subsection{\extension{COMPLETE} Pragmas}
@@ -2005,13 +2024,14 @@ In a sense, every algebraic data type defines its own builtin
 \extension{COMPLETE} set, consisting of all its data constructors, so the
 coverage checker already manages a single \extension{COMPLETE} set.
 
-We have \inhabitedinst from \Cref{fig:inh} currently making sure that this
-\extension{COMPLETE} set is in fact inhabited. We also have \inhabitednocpl
-that handles the case when we cannot find \emph{any} \extension{COMPLETE} set
-for the given type (think |x :: Int -> Int|). The prudent way to generalise this
+Judgment form \inhabitedinst from \Cref{fig:inh} currently makes sure that this
+\extension{COMPLETE} set is in fact inhabited. Furthermore, \inhabitednocpl
+handles the case when \emph{no} \extension{COMPLETE} set
+for the given type (think |x :: Int -> Int|) can be found. The prudent way to generalise this
 is by looking up all \extension{COMPLETE} sets attached to a type and check
 that none of them is completely covered:
 \[
+\hfuzz=1em
 \begin{array}{cc}
   \inferrule*[right=\inhabitedbot]{
     (\nreft{\Gamma}{\Delta} \adddelta x \termeq \bot) \not= \false
@@ -2289,7 +2309,7 @@ Instead of extending the source language, let us discuss ripping out a language
 feature for a change! So far, we have focused on Haskell as the source
 language, which is lazy by default. Although the difference in evaluation
 strategy of the source language becomes irrelevant after desugaring, it raises the
-question of how much our approach could be simplified if we targeted a source
+question of how much my approach could be simplified if we targeted a source
 language that was strict by default, such as OCaml, Lean, Idris, Rust, Python or
 C\#.
 
@@ -2338,19 +2358,74 @@ match above to the following guard tree:
 Compared to Haskell, note the lack of a bang guard on the match variable |x|.
 Instead, there's now a bang guard on |t|, the new temporary that stands for
 |p hd|. The bang guard will keep alive the second clause of the guard tree and
-our algorithm would not classify the second clause as redundant, although it
+\lyg would not classify the second clause as redundant, although it
 will be flagged as inaccessible. Since the RHS of a |let| guard, such as
 |p hd|, might have arbitrary side-effects, equational reasoning is lost and we
 may no longer identify $|p hs| \termeq |t|$ as in \Cref{ssec:extviewpat}.
 
 Zooming out a bit more, desugaring of Haskell pattern matches using bang guards
 $\grdbang{|x|}$ can be understood as forcing \emph{one
-specific effect}, namely divergence. In this work, we have given this side-effect
-a first-class treatment in our formalism in order to get accurate coverage
+specific effect}, namely divergence. In this work, I have given this side-effect
+a first-class treatment in the formalism in order to get accurate coverage
 warnings in a lazy language.
 
 \subsection{Or-patterns}
 \label{ssec:orpats}
+
+Since this work appeared at ICFP in 2020, GHC 9.12 accumulated a new extension
+to the pattern language: \extension{OrPatterns}%
+\footnote{\mbox{\url{https://github.com/ghc-proposals/ghc-proposals/blob/master/proposals/0522-or-patterns.rst}}}.
+Or-patterns are an established language feature in many other languages such as
+OCaml and Python, and can be used as follows:
+
+\begin{code}
+data LogLevel = Debug | Info | Error
+notifyAdmin :: LogLevel -> Bool
+notifyAdmin Error          = True
+notifyAdmin (Debug; Info)  = False
+\end{code}
+
+\noindent
+Here, the second clause matches when either |Debug| or |Info| matches the
+parameter.
+When the programmer later adds a new data constructor |Warning| to |LogLevel|,
+\lyg should report the match in |notifyAdmin| as inexhaustive.
+This coverage warning prompts the programmer to make a conscious decision about
+which value should be returned for |notifyAdmin Warning|.
+That is far better than the alternative of using a wildcard match for the last
+clause: doing so would silently define |notifyAdmin Warning = False|.
+
+Or-patterns were an interesting real-world benchmark to see how well \lyg
+scales to new language features.
+Previously in \Cref{fig:desugar}, if one part of a pattern failed to match, the
+whole pattern would fail.
+As a result, the desugaring function $\ds$ could map a pattern into a
+(conjunctive) list of guards ($\overline{\Grd}$), which was then exploded into
+a nesting of $\gdtguard{g}{t}$ forms, suitable for a single recursive definition
+of $\unc$ and $\ann$.
+However, with Or-patterns, we need a way to encode (disjunctive) first-match
+semantics in the result of $\ds(x, |pat|)$.
+Such first-match semantics is currently exclusive to the
+$\gdtpar{\makebox(3pt,2pt){$t_1$}}{\makebox(3pt,2pt){$t_2$}}$ guard tree form.
+So one way to desugar Or-patterns would be to desugar
+patterns into full guard trees instead of lists of guards.
+That would be akin to \emph{exploding} each Or-pattern into two clauses.
+We would get the equality
+\[
+\ds(f \; (|pat|_a;\, |pat|_b) \, |pat|_c \; \mathtt{=} \; |rhs|) \; =
+  \raisebox{10px}{\begin{forest}
+    baseline,
+    grdtree,
+    [ [{$\ds(x_1, |pat|_a),\; \ds(x_2, |pat|_c)$} [{$k_{|rhs|}$}] ]
+      [{$\ds(x_1, |pat|_b),\; \ds(x_2, |pat|_c)$} [{$k_{|rhs|}$}] ] ]
+  \end{forest}}
+\]
+\noindent
+thus duplicating the desugaring of $|pat_c|$.
+It is easy to see how a sequence of Or-patterns may lead to an exponential number of
+duplications of $|pat|_c$, leading to unacceptable checking performance.
+Hence I propose a different solution: \emph{Guard DAGs} (directed-acyclic
+graphs).
 
 \begin{figure}
 \[
@@ -2413,61 +2488,6 @@ warnings in a lazy language.
 \label{fig:orpats}
 \end{figure}
 
-Since this work appeared at ICFP in 2020, GHC 9.12 accumulated a new extension
-to the pattern language: \emph{Or-patterns}%
-\footnote{\url{https://github.com/ghc-proposals/ghc-proposals/blob/master/proposals/0522-or-patterns.rst}}.
-Or-patterns are an established language feature in many other languages such as
-OCaml and Python, and can be used as follows:
-
-\begin{code}
-data LogLevel = Debug | Info | Error
-notifyAdmin :: LogLevel -> Bool
-notifyAdmin Error          = True
-notifyAdmin (Debug; Info)  = False
-\end{code}
-
-\noindent
-Here, the second clause matches when either |Debug| or |Info| matches the
-parameter.
-When the programmer later adds a new data constructor |Warning| to |LogLevel|,
-\lyg should report the match in |notifyAdmin| as inexhaustive.
-This coverage warning prompts the programmer to make a conscious decision about
-which value should be returned for |notifyAdmin Warning|.
-That is far better than the alternative of using a wildcard match for the last
-clause: doing so would silently define |notifyAdmin Warning = False|.
-
-Or-patterns were an interesting real-world benchmark to see how well \lyg
-scales to new language features.
-Previously in \Cref{fig:desugar}, if one part of a pattern failed to match, the
-whole pattern would fail.
-As a result, the desugaring function $\ds$ could map a pattern into a
-(conjunctive) list of guards ($\overline{\Grd}$), which was then exploded into
-a nesting of $\gdtguard{g}{t}$ forms, suitable for a single recursive definition
-of $\unc$ and $\ann$.
-However, with Or-patterns, we need a way to encode (disjunctive) first-match
-semantics in the result of $\ds(x, |pat|)$.
-Such first-match semantics is currently exclusive to the
-$\gdtpar{\makebox(3pt,2pt){$t_1$}}{\makebox(3pt,2pt){$t_2$}}$ guard tree form.
-So one way to desugar Or-patterns would be to desugar
-patterns into full guard trees instead of lists of guards.
-That would be akin to \emph{exploding} each Or-pattern into two clauses.
-We would get the equality
-\[
-\ds(f \; (|pat|_a;\, |pat|_b) \, |pat|_c \; \mathtt{=} \; |rhs|) \; =
-  \raisebox{10px}{\begin{forest}
-    baseline,
-    grdtree,
-    [ [{$\ds(x_1, |pat|_a),\; \ds(x_2, |pat|_c)$} [{$k_{|rhs|}$}] ]
-      [{$\ds(x_1, |pat|_b),\; \ds(x_2, |pat|_c)$} [{$k_{|rhs|}$}] ] ]
-  \end{forest}}
-\]
-\noindent
-thus duplicating the desugaring of $|pat_c|$.
-It is easy to see how a sequence of Or-patterns may lead to an exponential number of
-duplications of $|pat|_c$, leading to unacceptable checking performance.
-Hence we propose a different solution: \emph{Guard DAGs} (directed-acyclic
-graphs).
-
 \Cref{fig:orpats} defines the stucture of guard DAGs ($\GrdDag$) inductively.
 Now consider the function
 
@@ -2494,7 +2514,7 @@ The desugaring to guard trees according to \Cref{fig:orpats} is
 \vskip\belowdisplayskip
 
 \noindent
-We define matching as follows:
+Matching is defined as follows:
 \begin{itemize}
   \item Matching $\dagone{g}$ means matching a single guard $g \in \Grd$, which was done by $\gdtguard{g}{t}$ previously.
     However, the new $\gdtguard{d}{t}$ form stores a guard DAG $d$ instead of a single guard $g$.
@@ -2602,7 +2622,7 @@ There is a new function $\cov$ that computes the \emph{covered} set of a guard d
 This function was previously inlined into the recursive call sites of $\unc$ and
 $\ann$; it computes the set of $\Theta$ reaching $t$ in $\gdtguard{g}{t}$.
 It is no longer possible to inline it because the $\gdtguard{d}{t}$ form now
-carries a guard DAG $d$ with nested structure; hence we need a separate function
+carries a guard DAG $d$ with nested structure; hence I needed a separate function
 and a small refactor.
 
 As expected, computing the uncovered set of parallel composition $\dagpar{d_1}{d_2}$
@@ -2611,9 +2631,9 @@ $\gdtpar{\makebox(3pt,2pt){$t_1$}}{\makebox(3pt,2pt){$t_2$}}$ form, and similarl
 for sequential composition $\dagseq{d_1}{d_2}$ and the $\gdtguard{d}{t}$ form.
 Similarly, the uncovered set for the $\gdtrhs{n}$ form is the same as that of
 the irrefutable guards $\grdbang{x}$ and $\grdlet{x}{e}$.
-For the purposes of $\unc$, we could have written a small function from $\Gdt$
+For the purposes of $\unc$, I could have written a small function from $\Gdt$
 to $\GrdDag$ to share this duplicate code.
-Our actual implementation in GHC (\Cref{sec:impl}) simply re-uses polymorphic
+The actual implementation in GHC (\Cref{sec:impl}) simply re-uses polymorphic
 combinators.
 
 The changes to $\ann$ are similar in nature.
@@ -2637,16 +2657,16 @@ with Or-patterns is derivative and compatible with all the other proposed
 extensions, although it takes a slight refactoring.
 On the other hand, years of maintaining \lyg have shown that the entire
 complexity rests in the inhabitation test (\Cref{fig:inh}).
-We did not need to touch that; and neither did we need to adjust \Cref{fig:collect}
-or later: this is compelling evidence that the core of our approach is quite
+I did not need to touch that; and neither did I need to adjust \Cref{fig:collect}
+or later: this is compelling evidence that the core of my approach is quite
 extensible and robust.
 
 \section{Implementation}
 \label{sec:impl}
 
-Our implementation of \lyg has been part of GHC since the 8.10 release in 2020,
+My implementation of \lyg has been part of GHC since the 8.10 release in 2020,
 including all extensions in \Cref{sec:extensions} (except for strict-by-default
-source syntax). Our implementation accumulates quite a few tricks
+source syntax). The implementation accumulates quite a few tricks
 that go beyond the pure formalism. This section is dedicated to describing
 these.
 
@@ -2654,7 +2674,7 @@ Warning messages need to reference source syntax in order to be comprehensible
 by the user. At the same time, coverage checks involving GADTs need a
 type checked program, so the only reasonable design is to run the coverage checker
 between type checking and desugaring to GHC Core, a typed intermediate
-representation lacking the connection to source syntax. We perform coverage
+representation lacking the connection to source syntax. GHC performs coverage
 checking in the same tree traversal as desugaring.
 
 \subsection{Interleaving $\unc$ and $\ann$}
@@ -2705,7 +2725,7 @@ together, if only for not having to recompute the results of $\unc$ again in
 $\ann$.
 
 But there's more: Looking at the last clause of $\unc$ in \Cref{fig:check},
-we can see that we syntactically duplicate $\Theta$ every time we have a
+we can see that I syntactically duplicate $\Theta$ every time we check a
 pattern guard. In the worst case, that can amount to exponential growth of the
 refinement predicate and for the time to prove it empty!
 
@@ -2713,11 +2733,11 @@ refinement predicate and for the time to prove it empty!
 % the implementation, but the problems for runtime performance remain.
 What we really want is to summarise a $\Theta$ into a more compact canonical
 form before doing these kinds of \emph{splits}. But that's exactly what
-$\nabla$ is! Therefore, in our implementation we do not pass around
+$\nabla$ is! Therefore, in the implementation I do not pass around
 and annotate refinement types, but the result of calling $\normalise$ on them
 directly.
 
-You can see the resulting definition in \Cref{fig:fastcheck}. The readability
+We can see the resulting definition in \Cref{fig:fastcheck}. The readability
 is clouded by unwrapping of pairs. $\uncann$ requires that each $\nabla$
 individually is non-empty, \ie not $\false$. This invariant is maintained by
 adding $\varphi$ constraints through $\addphiv$, which filters out any $\nabla$
@@ -2732,14 +2752,15 @@ compilation too much. Consider the following example and its corresponding
 guard tree:
 \begin{code}
 g _  | True <- f1 1,  True <- f2 1  = ()
-     ...
+     | True <- f1 2,  True <- f2 2  = ()
+     | ...
      | True <- f1 {-"\; N "-},  True <- f2 {-"\; N "-}  = ()
 \end{code}
-\vskip\abovedisplayskip
 \begin{forest}
   grdtree,
   [
     [{$\grdlet{a_1}{|f1 1|}, \grdbang{a_1}, \grdcon{|True|}{a_1}, \grdlet{b_1}{|f2 1|}, \grdbang{b_1}, \grdcon{|True|}{b_1}$} [1]]
+    [{$\grdlet{a_2}{|f1 2|}, \grdbang{a_2}, \grdcon{|True|}{a_2}, \grdlet{b_2}{|f1 2|}, \grdbang{b_2}, \grdcon{|True|}{b_2}$} [2]]
     [... [...]]
     [{$\grdlet{a_{N}}{|f1 {-"\; N "-}|}, \grdbang{a_{N}}, \grdcon{|True|}{a_{N}}, \grdlet{b_{N}}{|f2 {-"\; N "-}|}, \grdbang{b_{N}}, \grdcon{|True|}{b_{N}}$} [N]]]
 \end{forest}
@@ -2767,7 +2788,7 @@ sound overapproximation.
 % through from the |f2| match (which could additionally diverge when calling
 % |f2|). This approach seemed far to complicated for us to pursue.
 
-In our implementation, we call this \emph{throttling}: We limit the number of
+In the implementation, I call this \emph{throttling}: limiting the number of
 reaching $\nabla$s to a constant. Whenever a split would exceed this limit, we
 continue with the original reaching $\nabla$s, a conservative estimate, instead.
 Intuitively, throttling corresponds to \emph{forgetting} what we matched on in
@@ -2800,38 +2821,39 @@ test suite.
 
 It is worth noting that Or-patterns (\Cref{ssec:orpats}) introduce a function
 $\cov$ to compute the covered set of a guard DAG $d$, and its case for
-$\dagpar{d_1}{d_2}$ splits the incoming $\Theta$ as well; hence we throttle
-there as well to ensure graceful degradation.
+$\dagpar{d_1}{d_2}$ splits the incoming $\Theta$, much the same as the pattern
+guard case splits the uncovered set; hence I throttle there as well to ensure
+graceful degradation.
 
 \subsection{Maintaining Residual \extension{COMPLETE} Sets}
 \label{ssec:residual-complete}
 
-Our implementation tries hard to make the inhabitation test as efficient as
-possible. For example, we represent $\Delta$s by a mapping from variables to
+The implementation tries hard to make the inhabitation test as efficient as
+possible. For example, I represent $\Delta$s by a mapping from variables to
 their positive and negative constraints for easier indexing. But there are also
 asymptotical improvements. Consider the following function:
-\begin{minipage}{\textwidth}
-\begin{minipage}[t]{0.33\textwidth}
+\[
+\mathhs
+\begin{array}[t]{cc}
 \begin{code}
 data T = A1 | ... | A1000
 pattern P = ...
 {-# COMPLETE A1, P #-}
-\end{code}
-\end{minipage}
-\begin{minipage}[t]{0.22\textwidth}
+\end{code} &
 \begin{code}
 f A1     = 1
 f A2     = 2
 ...
 f A1000  = 1000
 \end{code}
-\end{minipage}
-\end{minipage}
-
+\end{array}
+\plainhs
+\]
+\noindent
 |f| is exhaustively defined. To see that we need to perform an inhabitation
 test for the match variable |x| after the last clause. The test will conclude
 that the builtin \extension{COMPLETE} set was completely overlapped. But in
-order to conclude that, our algorithm tries to instantiate |x| (via
+order to conclude that, the algorithm tries to instantiate |x| (via
 \inhabitedinst) to each of its 1000 constructors and try to add a positive
 constructor constraint! What a waste of time, given that we could just look at
 the negative constraints on |x| \emph{before} trying to instantiate |x|. But
@@ -2844,13 +2866,13 @@ remaining clauses would be redundant by the user-supplied \extension{COMPLETE}
 set. Therefore, we have to perform the expensive inhabitation test \emph{after
 every clause}, involving $\mathcal{O}(n)$ instantiations each.
 
-Clearly, we can be smarter about that! Indeed, we cache \emph{residual
-\extension{COMPLETE} sets} in our implementation: Starting from the full
-\extension{COMPLETE} sets, we delete ConLikes from them whenever we add a new
+Clearly, we can be smarter about that! Indeed, I cache \emph{residual
+\extension{COMPLETE} sets} in the implementation: Starting from the full
+\extension{COMPLETE} sets, I delete ConLikes from them whenever I add a new
 negative constructor constraint, maintaining the invariant that each of the
-sets is inhabited by at least one constructor. Note how we never need to check
-the same constructor twice (except after adding new type constraints), thus we
-have an amortised $\mathcal{O}(n)$ instantiations for the whole checking
+sets is inhabited by at least one constructor. Note how this trick never needs
+to check the same constructor twice (except after adding new type constraints),
+thus we have an amortised $\mathcal{O}(n)$ instantiations for the whole checking
 process.
 
 \subsection{Reporting Uncovered Patterns}
@@ -2864,7 +2886,7 @@ $\nabla_b = \nreft{x:|Bool|}{x \ntermeq \bot, x \ntermeq |True|}$, which crucial
 contains no positive information on |x|! As a result, $\expand(\nabla_b) = \_$
 and only the very unhelpful wildcard pattern |_| will be reported as uncovered.
 
-Our implementation does better and shows that this is just a presentational
+My implementation does better and shows that this is just a presentational
 matter. It splits $\nabla_b$ on all possible constructors of |Bool|, immediately
 rejecting the refinement $\nabla_b \adddelta x \termeq |True|$ due to $x \ntermeq
 |True| \in \nabla_b$. What remains is the refinement $\nabla_b \adddelta x
@@ -2872,7 +2894,7 @@ rejecting the refinement $\nabla_b \adddelta x \termeq |True|$ due to $x \nterme
 |False|}$, which has the desired positive information for which $\expand$ will
 happily report |False| as the uncovered pattern.
 
-Additionally, our implementation formats negative information on opaque data
+Additionally, my implementation formats negative information on opaque data
 types such as |Int| and |Char|, since idiomatic use would match on literals
 rather than on GHC-specific data constructors. For example, coverage checking
 |f 0 = ()| will report something like this:
@@ -2882,9 +2904,10 @@ rather than on GHC-specific data constructors. For example, coverage checking
       f x = ... where 'x' is not one of {0}
 \end{Verbatim}
 
-\subsection{Syntax-specific Guard Tree Types}
+\subsection{Structured Guard Tree Types}
+\label{ssec:gdt-types}
 
-Since we submitted our work to ICFP in 2020, we continued to improve and
+Since we submitted our work to ICFP in 2020, I continued to improve and
 refactor the implementation of \lyg in GHC.
 Many of the changes were incremental improvements and bug fixes that are
 not easy to present without a lot of context, but one particularly important
@@ -2899,30 +2922,29 @@ data PmGRHS p   = PmGRHS   { pg_grds :: p, pg_rhs :: SrcInfo }
 These types are in structural correspondence to the $|match|$ and
 $|grhs|$ constructs in \Cref{fig:srcsyn} from whence they desugar.
 Prior to coverage checking, type parameter |p| is instantiated to lists
-of guards $\overline{Grd}$ (resp.\ $\GrdDag$ after Or-patterns were
+of guards $\overline{\Grd}$ (resp.\ $\GrdDag$ after Or-patterns were
 introduced, \Cref{ssec:orpats}), and coverage checking elaborates this list
-into |RedSets|, carrying $\Theta$s encoding covered and diverging input
-values.
+into so-called |RedSets|, carrying $\Theta$s encoding covered and diverging
+input values.
 
 Of course, the meaning of |PmMatch| and |PmGRHS| is in terms of the
 desugaring into unrestricted guard trees $\Gdt$, as before.
 However, with the new encoding it became much easier to extract covered sets
 for long-distance information (\Cref{ssec:ldi}), because the |pm_grhss| field
-has the same number of elements as there are $\overline{|grhs|}$ in a
-$|match|$ and simple |Data.List.zip| suffices to bring covered sets and
-$|grhs|$ together.
+has the same number of elements as there are |grhs| in a |match|, so a simple
+|Data.List.zip| suffices to bring covered sets and |grhs| together.
 
 \section{Evaluation}
 \label{sec:eval}
 
-To put the new coverage checker to the test, we performed a survey of
+To put the new coverage checker to the test, Ryan Scott performed a survey of
 real-world Haskell code using the \texttt{head.hackage} repository
 \footnote{\url{https://gitlab.haskell.org/ghc/head.hackage/commit/30a310fd8033629e1cbb5a9696250b22db5f7045}}.
 \texttt{head.hackage} contains a sizable collection of libraries and minimal
 patches necessary to make them build with a development version of GHC.
-We identified those libraries which compiled without coverage warnings using
+Ryan identified those libraries which compiled without coverage warnings using
 GHC 8.8.3 (which uses \gmtm as its checking algorithm) but emitted warnings
-when compiled using our \lyg version of GHC.
+when compiled using the \lyg version of GHC.
 
 Of the 361 libraries in \texttt{head.hackage}, seven of them revealed coverage
 issues that only \lyg warned about. Two of the libraries, \texttt{pandoc} and
@@ -2983,18 +3005,21 @@ caliber and could benefit from |considerAccessible| as well.
 \label{fig:perf}
 \end{table}
 
-To compare the efficiency of \gmtm and \lyg quantitatively, we
+To compare the efficiency of \gmtm and \lyg quantitatively, Ryan Scott
 collected a series of test cases from GHC's test suite that are designed to test
-the compile-time performance of coverage checking. \Cref{fig:perf} lists each of these 11 test
+the compile-time performance of coverage checking%
+\footnote{These measurements were validated as part of the artifact evaluation
+process during the ICFP 2020 publication.}.
+\Cref{fig:perf} lists each of these 11 test
 cases. Test cases with a \texttt{T} prefix are taken from user-submitted bug reports
 about the poor performance of \gmtm. Test cases with a
 \texttt{PmSeries} prefix are adapted from \citet{maranget:warnings},
 which presents several test cases that caused GHC to exhibit exponential running times
 during coverage checking.
 
-We compiled each test case with GHC 8.8.3, which uses \gmtm as its checking
+Ryan compiled each test case with GHC 8.8.3, which uses \gmtm as its checking
 algorithm, and GHC HEAD (a pre-release of GHC 8.10), which uses \lyg.
-We measured (1) the time spent in the desugarer, the phase of compilation in
+He measured (1) the time spent in the desugarer, the phase of compilation in
 which coverage checking occurs, and (2) how many megabytes were allocated during
 desugaring. \Cref{fig:perf} shows these figures as well as the percent change
 going from 8.8.3 to HEAD. Most cases exhibit a noticeable improvement under
@@ -3048,6 +3073,52 @@ to coverage checking. These include:
 
 \section{Soundness} \label{sec:soundness}
 
+The evaluation in \Cref{sec:eval} yields compelling evidence that \lyg is \emph{sound}.
+That is, in terms of the formalism, \lyg \emph{overapproximates}\,---\,but never
+underapproximates\,---\,the set of reaching values passed to $\unc$ and $\ann$.
+As a result, \lyg will never fail to report uncovered clauses (no false
+negatives), but it may report false positives. Similarly, \lyg will never report
+accessible clauses as redundant (no false positives), but it may fail to report
+clauses which are redundant when the code involved is too close to ``undecidable
+territory''.
+
+Remarkably, the symbolic checking process involving $\unc$, $\ann$ und $\red$
+does not overapproximate at all.
+To my knowledge, \lyg overapproximates only in these three mechanisms:
+
+\begin{itemize}
+  \item
+    \lyg can run out of fuel for inhabitation testing (\Cref{sec:inhabitation}).
+
+  \item
+    Throttling (\Cref{ssec:throttling}) is useful when implementing \lyg efficiently.
+
+  \item
+    \lyg forgoes non-trivial semantic analysis of expressions. \lyg can
+    recognize identical patterns or subexpressions, but it stops short of
+    anything more sophisticated, such as interprocedural analysis or
+    SMT-style reasoning (\Cref{ssec:comparison-with-structural}).
+\end{itemize}
+
+But what does it actually \emph{mean} for a value to match a particular part of
+a guard tree, such as a right-hand side $\gdtrhs{k}$, mathematically?
+In what precise sense does \lyg, or does not, overapproximate this supposed
+\emph{semantics}?
+
+Since this work appeared at ICFP 2020, \citet{dieterichs:thesis} worked out both
+a formal semantics as well as a mechanised correctness proof in Lean 3 for the
+coverage checking pass from guard trees into uncovered set and annotated trees.%
+\footnote{Types and type constraints are ignored; their interaction is largely
+a black box to \lyg anyway.}
+He shows that $\unc$, $\ann$ and $\red$ preserve key semantic properties of the
+guard trees under analysis, provided that function $\generate(\Theta)$ for
+generating inhabitants indeed overapproximates $\Theta$.
+I will briefly summarise the correctness results here.
+For that, I need to define a plausible formal semantics for guard trees and
+refinement predicates.
+
+\subsection{Semantics} \label{ssec:sem}
+
 \begin{figure}
 \[ \textbf{Semantics of guard trees} \]
 \[
@@ -3058,7 +3129,6 @@ to coverage checking. These include:
    r & \in & \Result [ \square ] & \Coloneqq & \yes{\square} \mid \no \mid \diverge \\
 \end{array}
 \]
-
 \[ \ruleform{\exprsem{e}_\rho \in \Domain, \qquad \grdsem{g}_\rho \in \Result [ \rho ], \qquad \gdtsem{t}_\rho \in \Result [ k ]} \]
 \[
 \begin{array}{lcl}
@@ -3086,7 +3156,6 @@ to coverage checking. These include:
 \end{cases} \\
 \end{array}
 \]
-
 \[ \textbf{Semantics of refinement types} \]
 \[ \ruleform{ \reftvalid{\rho}{(\varphi,\rho)}, \qquad \reftvalid{\rho}{\Theta}} \]
 \[
@@ -3108,7 +3177,7 @@ to coverage checking. These include:
     \reftvalid{\rho}{(x \ntermeq K,\rho)}
   }
 \\
-\\[-0.5em]
+\\[-0.75em]
   \inferrule{
     {\rho(x) = \bot}
   }{
@@ -3134,7 +3203,8 @@ to coverage checking. These include:
   }{
     \reftvalid{\rho_1}{\reft{\Gamma_1}{\varphi \wedge \Phi}}
   }
-\qquad
+\\
+\\[-0.75em]
   \inferrule{
     \reftvalid{\rho}{\reft{\Gamma}{\Phi_1}}
   }{
@@ -3148,58 +3218,12 @@ to coverage checking. These include:
   }
 \end{array}
 \]
-
+\\[-1.5\baselineskip]
 \caption{Semantics of guard trees}
 \label{fig:sem}
 \end{figure}
 
-The evaluation in \Cref{sec:eval} yields compelling evidence that \lyg is \emph{sound}.
-That is, in terms of the formalism, \lyg \emph{overapproximates}---but never
-underapproximates---the set of reaching values passed to $\unc$ and $\ann$.
-As a result, \lyg will never fail to report uncovered clauses (no false
-negatives), but it may report false positives. Similarly, \lyg will never report
-accessible clauses as redundant (no false positives), but it may fail to report
-clauses which are redundant when the code involved is too close to ``undecidable
-territory''.
-
-Remarkably, the symbolic checking process involving $\unc$, $\ann$ und $\red$
-does not overapproximate at all.
-To our knowledge, \lyg overapproximates only in these three mechanisms:
-
-\begin{itemize}
-  \item
-    \lyg can run out of fuel for inhabitation testing (\Cref{sec:inhabitation}).
-
-  \item
-    Throttling (\Cref{ssec:throttling}) is useful when implementing \lyg efficiently.
-
-  \item
-    \lyg forgoes non-trivial semantic analysis of expressions. \lyg can
-    recognize identical patterns or subexpressions, but it stops short of
-    anything more sophisticated, such as interprocedural analysis or
-    SMT-style reasoning (\Cref{ssec:comparison-with-structural}).
-\end{itemize}
-
-But what does it actually \emph{mean} for a value to match a particular part of
-a guard tree, such as a right-hand side $\gdtrhs{k}$?
-In what precise sense does \lyg --- or does not --- overapproximate this supposed
-\emph{semantics}?
-
-Since this work appeared at ICFP 2020, \citet{dieterichs:thesis} worked out both
-a formal semantics as well as a mechanised correctness proof in Lean 3 for the
-coverage checking pass from guard trees into uncovered set and annotated trees.%
-\footnote{Types and type constraints are ignored; their interaction is largely
-a black box to our approach anyway.}
-He shows that $\unc$, $\ann$ and $\red$ preserve key semantic properties of the
-guard trees under analysis, provided that function $\generate(\Theta)$ for
-generating inhabitants indeed overapproximates $\Theta$.
-We will briefly summarise the correctness results here.
-For that, we need to define a plausible formal semantics for guard trees and
-refinement predicates.
-
-\subsection{Semantics} \label{ssec:sem}
-
-We have described the semantics of guard trees and guards informally in
+I have described the semantics of guard trees and guards informally in
 \Cref{sec:desugar}.
 \Cref{fig:sem} formalises this intuition, describing the semantics of
 guard trees by a function $\gdtsem{t}_\rho$ that, given a guard tree $t$ and an
@@ -3243,7 +3267,7 @@ scoping semantics briefly mentioned in \Cref{sec:check}.
 Any binding constructs in the $\varphi$ to the left of $\wedge$, such as
 $\ctlet{x}{e}$ or $\ctcon{K \; \overline{y}}{x}$, introduce names that are
 subsequently in scope in the $\Phi$ to the right of $\wedge$.
-In hindsight, we could have picked a different operator symbol to
+In hindsight, I could have picked a different operator symbol to
 avoid this confusion, for example $(\varphi~\textsf{in}~\Phi)$, such as in
 \citet{dieterichs:thesis}.
 Doing so would however complicate the $(\Theta \andtheta \varphi)$ operator a bit.
@@ -3252,7 +3276,7 @@ becomes a scoping check, namely that $\Gamma$ has the same domain as $\rho$.
 
 \subsection{Formal Soundness Statement}
 
-Having stated plausible semantics for the inputs and outputs of $\unc$, we can
+Having stated plausible semantics for the inputs and outputs of $\unc$, I can
 formulate what it means for $\unc$ to be correct, following \citet[Section
 4.1]{dieterichs:thesis} who mechanised the proof in Lean 3.
 
@@ -3383,7 +3407,7 @@ extend $\addphi$ with SMT-like reasoning about booleans and linear integer arith
 can identify clauses that are not \emph{useful}, \ie \emph{useless}. While
 OCaml is a strict language, the algorithm can be adapted to handle languages
 with non-strict semantics such as Haskell. In a lazy setting, uselessness
-corresponds to our notion of unreachable clauses.
+corresponds to unreachable clauses.
 \citeauthor{maranget:warnings} does not distinguish inaccessible clauses from
 redundant ones; thus clauses flagged as useless (such as the first two clauses
 of |u'| in \Cref{sssec:inaccessibility}) generally cannot be deleted without
@@ -3403,9 +3427,9 @@ a dependently typed setting using sets of inhabitants of data types,
 which have similarities to case trees.
 
 One could take inspiration from case trees should one wish to extend \lyg to
-support dependent types. Our implementation of \lyg in GHC can already handle
+support dependent types. My implementation of \lyg in GHC can already handle
 quasi-dependently typed code, such as the \texttt{singletons} library
-\citep{singletons,singletons-promotion}, so we expect that it can be adapted to
+\citep{singletons,singletons-promotion}, so I expect that it can be adapted to
 full dependent types. One key change that would be required is extending equation
 (9) in \Cref{fig:add-delta} to reason about term constraints in addition to type
 constraints. GHC's constraint solver already has limited support for term-level
@@ -3471,9 +3495,9 @@ be purely syntactic transformations, and in fact, they could be modified to take
 $\Phi$ as an argument rather than $\Theta$.
 
 Making $\unc$ and $\ann$ operate over $\Theta$ or $\Phi$ is ultimately a design
-choice. We have opted to operate over $\Theta$ mainly because we find it
+choice. I have opted to operate over $\Theta$ mainly because we find it
 more intuitive to think about coverage checking as refining a vector of values as
-it falls from one match to the next. In our opinion, that intuition is more
+it falls from one match to the next. In my opinion, that intuition is more
 easily expressed with refinement types than predicates alone.
 
 \subsection{Positive and Negative Information}
@@ -3493,25 +3517,22 @@ only track positive information, such as those of
 and
 \citet{maranget:warnings} (\Cref{ssec:maranget}),
 consider the following example:
-
-\begin{minipage}{\textwidth}
-\begin{minipage}{0.4\textwidth}
-\centering
+\[
+\mathhs
+\begin{array}[t]{cc}
 \begin{code}
 pattern True' = True
 {-# COMPLETE True', False #-}
 \end{code}
-\end{minipage} %
-\begin{minipage}{0.4\textwidth}
-\centering
+&
 \begin{code}
 f False  = 1
 f True'  = 2
 f True   = 3
 \end{code}
-\end{minipage}
-\end{minipage}
-
+\end{array}
+\plainhs
+\]
 \noindent
 \gmtm would have to commit to a particular \extension{COMPLETE} set when
 encountering the match on |False|, without any semantic considerations.
@@ -3523,23 +3544,20 @@ set would generate \citep{complete-users-guide}, which was broken still
 \citep{gitlab:13363}.
 
 Negative constraints make \lyg efficient in other places too, such as in this example:
-
-\begin{minipage}{\textwidth}
-\begin{minipage}{0.4\textwidth}
-\centering
+\[
+\mathhs
+\begin{array}[t]{cc}
 \begin{code}
 data T = A1 | ... | A1000
 \end{code}
-\end{minipage} %
-\begin{minipage}{0.4\textwidth}
-\centering
+&
 \begin{code}
 h A1  _   = 1
 h _   A1  = 2
 \end{code}
-\end{minipage}
-\end{minipage}
-
+\end{array}
+\plainhs
+\]
 \noindent
 In |h|, \gmtm would split the value vector (which is like \lyg's
 $\Delta$s without negative constructor constraints) into 1000 alternatives over
@@ -3557,28 +3575,25 @@ function from \Cref{ssec:strictness} is exhaustive. This trick was pioneered
 by \citet{oury}, who uses it to check for unreachable cases in the presence of
 dependent types. Coverage checkers for strict and total programming
 languages usually implement inhabitation testing, but sometimes with
-less-than-perfect results. As two data points, we decided to see how OCaml and
+less-than-perfect results. As two data points, Ryan decided to see how OCaml and
 Idris, two call-by-value languages that check for pattern-match coverage
 \footnote{Idris has separate compile-time and runtime semantics, the latter
 of which is call by value.},
 would fare when checking functions like |v|:
-
-\begin{minipage}{\textwidth}
-\begin{minipage}{0.4\textwidth}
-\centering
+\[
+\mathhs
+\begin{array}[t]{cc}
 \begin{code}
 (* OCaml *)
-type void = |;;
+type void = ^^ |;;
 
 let v (None : void option) : int = 0;;
 let v' (o : void option) : int =
       match o with
-        None    -> 0
+      | None    -> 0
       | Some _  -> 1;;
 \end{code}
-\end{minipage} %
-\begin{minipage}{0.4\textwidth}
-\centering
+&
 \begin{code}
 -- Idris
 v : Maybe Void -> Int
@@ -3588,9 +3603,10 @@ v' : Maybe Void -> Int
 v' Nothing   = 0
 v' (Just _)  = 1
 \end{code}
-\end{minipage}
-\end{minipage}
-
+\end{array}
+\plainhs
+\]
+\noindent
 Both OCaml 4.10.0 and Idris 1.3.2 correctly mark their respective versions of
 |v| as exhaustive. OCaml also correctly warns that the |Some| case in |v'| is
 unreachable, while Idris emits no warnings for |v'| at all.
@@ -3599,19 +3615,16 @@ unreachable, while Idris emits no warnings for |v'| at all.
 will fail to recognize as exhaustive due to \lyg's conservative, fuel-based
 approach to inhabitation testing. Porting |f| to OCaml and Idris reveals that
 both languages will also conservatively claim that |f| is non-exhaustive:
-
-\begin{minipage}{\textwidth}
-\begin{minipage}{0.4\textwidth}
-\centering
+\[
+\mathhs
+\begin{array}[t]{cc}
 \begin{code}
 (* OCaml *)
 type t = MkT of t;;
 
 let f (None : t option) : int = 0;;
 \end{code}
-\end{minipage} %
-\begin{minipage}{0.4\textwidth}
-\centering
+&
 \begin{code}
 -- Idris
 data T : Type where
@@ -3620,21 +3633,24 @@ data T : Type where
 f : Maybe T -> Int
 f Nothing = 0
 \end{code}
-\end{minipage}
-\end{minipage}
-
+\end{array}
+\plainhs
+\]
+\noindent
 Indeed, the warning that OCaml produces will cite
-|Some (MkT (MkT (MkT (MkT (MkT _)))))|
+\begin{code}
+Some (MkT (MkT (MkT (MkT (MkT _)))))
+\end{code}
 as a case that is not matched, which suggests that OCaml may also be using
-a fuel-based approach. We believe these examples show that inhabitation testing
+a fuel-based approach. I believe these examples show that inhabitation testing
 is something that programming language implementors have discovered
 independently, but with varying degrees
-of success in putting into practice. We hope that \lyg can bring this
-knowledge into wider use.
+of success in putting into practice.
+I hope that \lyg can bring this knowledge into wider use.
 
 \section{Conclusion}
 
-In this paper, we describe Lower Your Guards, a coverage checking algorithm that
+I described Lower Your Guards, a coverage checking algorithm that
 distills rich pattern matching into simple guard trees. Guard trees are
 amenable to analyses that are not easily expressible in coverage checkers
 that work over structural pattern matches.
