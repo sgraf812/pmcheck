@@ -2983,26 +2983,27 @@ caliber and could benefit from |considerAccessible| as well.
 \subsection{Performance Tests}
 
 \begin{table}
-
+\centering
+\begin{tabular}{l  r r r  r r r }
+\toprule
+                             & \multicolumn{3}{c}{Time (milliseconds)} & \multicolumn{3}{c}{Allocation (megabytes)} \\
+                               \cmidrule(lr){2-4}                        \cmidrule(lr){5-7}
+Testcase                     & 8.8.3 & HEAD & Change  &  8.8.3 & HEAD & Change \\
+\midrule
+\texttt{T11276}              &  1.16 & 1.69 &  45.7\% &   1.86 & 2.39 &  28.6\% \\
+\texttt{T11303}              &  28.1 & 18.0 & -36.0\% &   60.2 & 39.9 & -33.8\% \\
+\texttt{T11303b}             &  1.15 & 0.39 & -65.8\% &   1.65 & 0.47 & -71.8\% \\
+\texttt{T11374}              &  4.62 & 3.00 & -35.0\% &   6.16 & 3.20 & -48.1\% \\
+\texttt{T11822}              & 1,060 & 16.0 & -98.5\% &  2,010 & 27.9 & -98.6\% \\
+\texttt{T11195}              & 2,680 & 22.3 & -99.2\% &  3,080 & 39.5 & -98.7\% \\
+\texttt{T17096}              & 7,470 & 16.6 & -99.8\% & 17,300 & 35.4 & -99.8\% \\
+\texttt{PmSeriesS}           &  44.5 & 2.58 & -94.2\% &   52.9 & 6.19 & -88.3\% \\
+\texttt{PmSeriesT}           &  48.3 & 6.86 & -85.8\% &   61.4 & 17.6 & -71.4\% \\
+\texttt{PmSeriesV}           &   131 & 4.54 & -96.5\% &    139 & 9.53 & -93.2\% \\
+\bottomrule
+\end{tabular}
 \caption{The relative compile-time performance of GHC 8.8.3 (which implements \gmtm) and HEAD
          (which implements \lyg) on test cases designed to stress-test coverage checking.}
-\begin{tabular}{c || r r r || r r r ||}
-\cline{2-7}
-\textbf{}                                  & \multicolumn{3}{c||}{\textbf{Time (milliseconds)}} & \multicolumn{3}{c||}{\textbf{Megabytes allocated}} \\ \cline{2-7}
-\textbf{}                                  & \multicolumn{1}{c||}{8.8.3} & \multicolumn{1}{c||}{HEAD} & \multicolumn{1}{c||}{\% change}
-                                           & \multicolumn{1}{c||}{8.8.3} & \multicolumn{1}{c||}{HEAD} & \multicolumn{1}{c||}{\% change} \\ \hline
-\multicolumn{1}{||c||}{\texttt{T11276}}    &  1.16 & 1.69 &  45.7\% &   1.86 & 2.39 &  28.6\% \\
-\multicolumn{1}{||c||}{\texttt{T11303}}    &  28.1 & 18.0 & -36.0\% &   60.2 & 39.9 & -33.8\% \\
-\multicolumn{1}{||c||}{\texttt{T11303b}}   &  1.15 & 0.39 & -65.8\% &   1.65 & 0.47 & -71.8\% \\
-\multicolumn{1}{||c||}{\texttt{T11374}}    &  4.62 & 3.00 & -35.0\% &   6.16 & 3.20 & -48.1\% \\
-\multicolumn{1}{||c||}{\texttt{T11822}}    & 1,060 & 16.0 & -98.5\% &  2,010 & 27.9 & -98.6\% \\
-\multicolumn{1}{||c||}{\texttt{T11195}}    & 2,680 & 22.3 & -99.2\% &  3,080 & 39.5 & -98.7\% \\
-\multicolumn{1}{||c||}{\texttt{T17096}}    & 7,470 & 16.6 & -99.8\% & 17,300 & 35.4 & -99.8\% \\
-\multicolumn{1}{||c||}{\texttt{PmSeriesS}} &  44.5 & 2.58 & -94.2\% &   52.9 & 6.19 & -88.3\% \\
-\multicolumn{1}{||c||}{\texttt{PmSeriesT}} &  48.3 & 6.86 & -85.8\% &   61.4 & 17.6 & -71.4\% \\
-\multicolumn{1}{||c||}{\texttt{PmSeriesV}} &   131 & 4.54 & -96.5\% &    139 & 9.53 & -93.2\% \\ \hline
-\end{tabular}
-
 \label{fig:perf}
 \end{table}
 
