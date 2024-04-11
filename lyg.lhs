@@ -242,7 +242,7 @@ we can at least give decent warnings for some common cases.
 For instance, take the following functions:
 \[
 \mathhs
-\begin{array}{ccc}
+\begin{array}[t]{ccc}
 \begin{code}
 not :: Bool -> Bool
 not b  | False <- b  = True
@@ -565,7 +565,7 @@ equalities between types is matching on GADTs \citep{recdatac}. The following ex
 demonstrate the interaction between GADTs and coverage checking:
 \[
 \mathhs
-\begin{array}{ccc}
+\begin{array}[t]{ccc}
 \begin{code}
 data T a b where
   T1 :: T Int  Bool
@@ -1367,7 +1367,7 @@ To illustrate the second case, consider |u'| from \Cref{sssec:inaccessibility} a
 
 \[
 \mathhs
-\begin{array}{ccc}
+\begin{array}[t]{ccc}
 \begin{code}
   u' ()  | False  = 1
          | False  = 2
@@ -2178,7 +2178,7 @@ Functions |g1|, |g2| match on a \emph{newtype} |N|, while functions
 \[
 \hfuzz=2em
 \mathhs
-\begin{array}{cc}
+\begin{array}[t]{cc}
 \begin{code}
 newtype N a = MkN a
 g1 :: N Void -> Bool -> Int
@@ -2839,6 +2839,7 @@ asymptotical improvements. Consider the following function:
 data T = A1 | ... | A1000
 pattern P = ...
 {-# COMPLETE A1, P #-}
+^^
 \end{code} &
 \begin{code}
 f A1     = 1
@@ -2939,7 +2940,7 @@ has the same number of elements as there are |grhs| in a |match|, so a simple
 
 To put the new coverage checker to the test, Ryan Scott performed a survey of
 real-world Haskell code using the \texttt{head.hackage} repository
-\footnote{\url{https://gitlab.haskell.org/ghc/head.hackage/commit/30a310fd8033629e1cbb5a9696250b22db5f7045}}.
+\footnote{\hfuzz=5em\mbox{\url{https://gitlab.haskell.org/ghc/head.hackage/commit/30a310fd8033629e1cbb5a9696250b22db5f7045}}}.
 \texttt{head.hackage} contains a sizable collection of libraries and minimal
 patches necessary to make them build with a development version of GHC.
 Ryan identified those libraries which compiled without coverage warnings using
@@ -3517,22 +3518,13 @@ only track positive information, such as those of
 and
 \citet{maranget:warnings} (\Cref{ssec:maranget}),
 consider the following example:
-\[
-\mathhs
-\begin{array}[t]{cc}
 \begin{code}
 pattern True' = True
 {-# COMPLETE True', False #-}
-\end{code}
-&
-\begin{code}
 f False  = 1
 f True'  = 2
 f True   = 3
 \end{code}
-\end{array}
-\plainhs
-\]
 \noindent
 \gmtm would have to commit to a particular \extension{COMPLETE} set when
 encountering the match on |False|, without any semantic considerations.
@@ -3544,20 +3536,11 @@ set would generate \citep{complete-users-guide}, which was broken still
 \citep{gitlab:13363}.
 
 Negative constraints make \lyg efficient in other places too, such as in this example:
-\[
-\mathhs
-\begin{array}[t]{cc}
 \begin{code}
 data T = A1 | ... | A1000
-\end{code}
-&
-\begin{code}
 h A1  _   = 1
 h _   A1  = 2
 \end{code}
-\end{array}
-\plainhs
-\]
 \noindent
 In |h|, \gmtm would split the value vector (which is like \lyg's
 $\Delta$s without negative constructor constraints) into 1000 alternatives over
@@ -3602,6 +3585,7 @@ v Nothing  = 0
 v' : Maybe Void -> Int
 v' Nothing   = 0
 v' (Just _)  = 1
+^^
 \end{code}
 \end{array}
 \plainhs
@@ -3623,6 +3607,8 @@ both languages will also conservatively claim that |f| is non-exhaustive:
 type t = MkT of t;;
 
 let f (None : t option) : int = 0;;
+^^
+^^
 \end{code}
 &
 \begin{code}
