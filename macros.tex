@@ -1,6 +1,3 @@
-% Highlight changes and keyword undone
-\newcommand{\highlight}[1]{\setlength{\fboxsep}{2pt}\colorbox[gray]{0.8}{\ensuremath{#1}}} % less height
-
 \newcommand{\TODO}[1]{{\bf{\begin{color}{red}{TODO: }\end{color} #1}}}
 \newcommand{\lyg}{\textsf{LYG}\xspace}
 \newcommand{\gmtm}{\textsf{GMTM}\xspace}
@@ -10,20 +7,11 @@
 \newcommand{\termeq}{\approx}       % positive term equality
 \newcommand{\ntermeq}{\not\approx}  % negative term equality
 
-\newcommand{\ruleform}[1]{\fbox{$#1$}}
 \newcommand{\rulename}[1]{\textsc{[#1]}}
 \newcommand{\freein}{\;\#\;}
 
 \newcommand{\ticket}[1]{\href{https://ghc.haskell.org/trac/ghc/ticket/#1}{\##1}}
 \newcommand{\extension}[1]{\texttt{#1}}
-
-% \newcommand{\sg}[1]{\begin{color}{red}{\bf SG:} #1\end{color}}
-% \newcommand{\simon}[1]{\begin{color}{purple}{\bf SLPJ:} #1\end{color}}
-% \newcommand{\ryan}[1]{\begin{color}{orange}{\bf Ryan:} #1\end{color}}
-\newcommand{\sg}[1]{}
-\newcommand{\simon}[1]{}
-\newcommand{\ryan}[1]{}
-
 
 % Types and Grd syntax
 \newcommand{\ty}[1]{\textsf{#1}\xspace}
