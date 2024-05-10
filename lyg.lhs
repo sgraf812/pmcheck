@@ -518,7 +518,7 @@ data type strict fields, such as in this example:
 
 \begin{code}
 data Void -- No data constructors; only inhabitant is bottom
-data SMaybe a = SJust !!a | SNothing
+data SMaybe a = SJust ~!a | SNothing
 
 v :: SMaybe Void -> Int
 v SNothing   = 0
@@ -1793,7 +1793,7 @@ the checking process that actually are not inhabited and trigger false positive
 warnings. But that also means that the $\inhabited{}{}$ relation is
 undecidable! Consider the following example:
 \begin{code}
-data T = MkT !!T
+data T = MkT ~!T
 f :: SMaybe T -> ()
 f SNothing = ()
 \end{code}
@@ -2190,7 +2190,7 @@ g1 !_       True   = 3  -- Inaccessible
 \begin{code}
 ^^
 g2 :: N () -> Bool -> Int
-g2 !!(MkN _)   True  = 1
+g2 ~!(MkN _)   True  = 1
 g2   (MkN !_)  True  = 2  -- Redundant
 g2         _   _     = 3
 \end{code}
@@ -2206,7 +2206,7 @@ h1 !_       True   = 3  -- Redundant
 \begin{code}
 ^^
 h2 :: D () -> Bool -> Int
-h2 !!(MkD _)   True  = 1
+h2 ~!(MkD _)   True  = 1
 h2   (MkD !_)  True  = 2  -- Inaccessible
 h2         _   _     = 3
 \end{code}
