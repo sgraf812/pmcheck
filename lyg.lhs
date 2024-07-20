@@ -2,8 +2,6 @@
 %\widowpenalty = 1000000
 %\displaywidowpenalty = 1000000
 
-\chapter{A Compositional Pattern-Match Coverage Checker}
-
 %\begin{abstract}
 %A compiler should warn if a function defined by pattern matching
 %does not cover its inputs---that is, if there are missing or redundant
@@ -470,8 +468,9 @@ semantics, whereas an inaccessible equation cannot, even though its right-hand
 side is unreachable.
 The examples below illustrate the challenges for \lyg in more detail:
 
+\noindent
 \begin{minipage}{\textwidth}
-\begin{minipage}{0.4\textwidth}
+\begin{minipage}{0.5\textwidth}
 \centering
 \begin{code}
 u :: () -> Int
@@ -479,8 +478,8 @@ u ()   | False   = 1
        | True    = 2
 u _              = 3
 \end{code}
-\end{minipage} %
-\begin{minipage}{0.4\textwidth}
+\end{minipage}%
+\begin{minipage}{0.5\textwidth}
 \centering
 \begin{code}
 u' :: () -> Int
@@ -490,6 +489,7 @@ u' _              = 3
 \end{code}
 \end{minipage}
 \end{minipage}
+
 \noindent
 Within |u|, the equations that return |1| and |3| could be deleted without
 changing the semantics of |u|, so they are classified as \emph{redundant}.
@@ -928,17 +928,18 @@ liftEq mx       (Just y)  |  Just x <- mx, x == y  = True
 \noindent
 It desugars thus:
 
+\noindent
 \begin{forest}
   grdtree
   [
     [{$\grdbang{|mx|},\, \grdcon{|Nothing|}{|mx|},\, \grdbang{|my|},\, \grdcon{|Nothing|}{|my|}$} [1]]
     [{$\grdbang{|my|},\, \grdcon{|Just y|}{|my|}$}
-     [{$ \grdbang{|mx|},\, \grdcon{|Just x|}{|mx|},\, \grdlet{t}{|x == y|},\, \grdbang{t},\, \grdcon{|True|}{t}$} [2]]
-      [{$\grdbang{otherwise},\, \grdcon{|True|}{otherwise}$} [3]]]]
+     [{$ \grdbang{|mx|},\, \grdcon{|Just x|}{|mx|},\, \grdlet{|t|}{|x == y|},\, \grdbang{|t|},\, \grdcon{|True|}{|t|}$} [2]]
+      [{$\grdbang{|otherwise|},\, \grdcon{|True|}{|otherwise|}$} [3]]]]
 \end{forest}
 
 \noindent
-Notice that the pattern guard |(Just x <- |mx|)| and the
+Notice that the pattern guard |(Just x <- mx)| and the
 boolean guard |(x == y)| have both turned into the same constructor-matching
 construct in the guard tree.
 
@@ -2330,9 +2331,9 @@ and allow arbitrary side-effects in expressions. Here's an example in OCaml:
 \begin{code}
 let rec f p x =
   match x with
-  | []                         -> []
-  | hd::_ when p hd && x = []  -> [hd]
-  | _::tl                      -> f p tl;;
+  | []                             -> []
+  | head::_ when p head && x = []  -> [head]
+  | _::tail                        -> f p tail;;
 \end{code}
 
 \noindent
@@ -2351,17 +2352,17 @@ match above to the following guard tree:
   grdtree,
   [
     [{$\grdcon{|[]|}{x}$} [1]]
-    [{$\grdcon{|hd::tl|}{x}, \grdlet{t}{|p hd|}, \grdbang{t}, \grdcon{true}{t}, \grdcon{|[]|}{x}$} [2]]
-    [{$\grdcon{|hd::tl|}{x}$} [3]]]
+    [{$\grdcon{|head::tail|}{x}, \grdlet{t}{|p head|}, \grdbang{t}, \grdcon{|true|}{t}, \grdcon{|[]|}{x}$} [2]]
+    [{$\grdcon{|head::tail|}{x}$} [3]]]
 \end{forest}
 
 Compared to Haskell, note the lack of a bang guard on the match variable |x|.
 Instead, there's now a bang guard on |t|, the new temporary that stands for
-|p hd|. The bang guard will keep alive the second clause of the guard tree and
+|p head|. The bang guard will keep alive the second clause of the guard tree and
 \lyg would not classify the second clause as redundant, although it
 will be flagged as inaccessible. Since the RHS of a |let| guard, such as
-|p hd|, might have arbitrary side-effects, equational reasoning is lost and we
-may no longer identify $|p hs| \termeq |t|$ as in \Cref{ssec:extviewpat}.
+|p head|, might have arbitrary side-effects, equational reasoning is lost and we
+may no longer identify $|p hd| \termeq |t|$ as in \Cref{ssec:extviewpat}.
 
 Zooming out a bit more, desugaring of Haskell pattern matches using bang guards
 $\grdbang{|x|}$ can be understood as forcing \emph{one
@@ -2501,7 +2502,7 @@ f _         _         = 2
 The desugaring to guard trees according to \Cref{fig:orpats} is
 
 \vskip\abovedisplayskip
-\hfuzz=2em
+\noindent\hfuzz=2em
 \begin{forest}
   grdtree,
   [
@@ -2973,10 +2974,10 @@ the |False| guard to quickly try out a code path that prints a more detailed
 error message. Moreover, leaving the first clause in the code ensures that it
 is typechecked and less susceptible to bitrotting over time.
 
-In order to support this use case in \texttt{HsYAML}, a primitive definition
-|considerAccessible = False| was added in GHC 9.2, to be used instead of |False|
-above and signalling to GHC that the first clause should not get marked as
-redundant.
+In order to support this use case in \texttt{HsYAML}, we added a primitive
+definition |considerAccessible = False| in GHC 9.2, to be used instead of
+|False| above and signalling to GHC that the first clause should not get marked
+as redundant.
 The unreachable code in \texttt{Cabal} and \texttt{network} is of a similar
 caliber and could benefit from |considerAccessible| as well.
 
