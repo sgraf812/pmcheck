@@ -3,11 +3,11 @@
 %\displaywidowpenalty = 1000000
 
 %\begin{abstract}
-%A compiler should warn if a function defined by pattern matching
+%A compiler should warn if a function defined by pattern-matching
 %does not cover its inputs---that is, if there are missing or redundant
 %patterns. Generating such warnings accurately is difficult
 %for modern languages due to the myriad of language features
-%that interact with pattern matching. This is especially true in Haskell, a language with
+%that interact with pattern-matching. This is especially true in Haskell, a language with
 %a complicated pattern language that is made even more complex by extensions
 %offered by the Glasgow Haskell Compiler (GHC). Although GHC has spent a
 %significant amount of effort towards improving its
@@ -15,7 +15,7 @@
 %it reports inaccurate warnings.
 %
 %We introduce a coverage checking algorithm called Lower Your Guards,
-%which boils down the complexities of pattern matching into \emph{guard trees}.
+%which boils down the complexities of pattern-matching into \emph{guard trees}.
 %While the source language may have many exotic forms of patterns, guard
 %trees only have three different constructs, which vastly simplifies the
 %coverage checking process. Our algorithm is modular, allowing for new forms
@@ -27,9 +27,9 @@
 
 %\section{Introduction}
 
-Program definition by pattern matching is a tremendously useful feature in
+Program definition by pattern-matching is a tremendously useful feature in
 Haskell and many other programming languages, but it must be used with care.
-Consider this example of a function defined by pattern matching:
+Consider this example of a function defined by pattern-matching:
 \begin{code}
 f :: Int -> Bool
 f 0 = True
@@ -38,18 +38,18 @@ f 0 = False
 \noindent
 The function |f| has two serious flaws. One obvious problem is that there
 are two clauses that match on |0|, and due to the top-to-bottom semantics of
-pattern matching, this makes the |f 0 = False| clause completely unreachable.
+pattern-matching, this makes the |f 0 = False| clause completely unreachable.
 Even worse is that |f| never matches on any patterns besides |0|, rendering its definition incomplete.
 Attempting to invoke |f 1|, for instance, will fail.
 
-To avoid these mishaps, compilers for languages with pattern matching often
+To avoid these mishaps, compilers for languages with pattern-matching often
 emit warnings (or errors) if a function is missing clauses (i.e., if it is
 \emph{non-exhaustive}), if one of its right-hand sides will never be entered
 (i.e., if it is \emph{inaccessible}), or if one of its equations can be deleted
 altogether (i.e., if it is \emph{redundant}). Let us refer to the combination of
 checking for exhaustivity, redundancy, and accessibility as \emph{pattern-match
 coverage checking}. Coverage checking is the first line of defence in catching
-programmer mistakes when defining code that uses pattern matching.
+programmer mistakes when defining code that uses pattern-matching.
 
 Coverage checking for a set of equations matching on algebraic data
 types is a well studied (although still surprisingly tricky) problem---see
@@ -61,9 +61,9 @@ overloaded literals, bang patterns, lazy patterns, as-patterns, strict data cons
 empty case expressions, and long-distance effects (\Cref{sec:extensions}).
 Particularly tricky are: \emph{Generalised Algebraic Datatypes} (\emph{GADTs}) where the \emph{type} of a match can determine
 what \emph{values} can possibly appear \citep{recdatac}; and \emph{local type-equality constraints} brought into
-scope by pattern matching \citep{outsideinx}.
+scope by pattern-matching \citep{outsideinx}.
 
-% If coverage checking catches mistakes in pattern matches, then who checks for
+% If coverage checking catches mistakes in pattern-matches, then who checks for
 % mistakes in the coverage checker itself? It is a surprisingly frequent
 % occurrence for coverage checkers to contain bugs that impact correctness.
 % This is especially true in Haskell, which has a rich pattern language, and the
@@ -77,7 +77,7 @@ sort was \emph{GADTs Meet Their Match} \citep{gadtpm}, or \gmtm{} for short. It
 presents an algorithm that handles the intricacies of checking GADTs, lazy
 patterns, and pattern guards. However, \gmtm{} is monolithic and does not
 account for a number of important language features; it gives incorrect results
-in certain cases; its formulation in terms of structural pattern matching makes
+in certain cases; its formulation in terms of structural pattern-matching makes
 it hard to avoid some serious performance problems; and its implementation in
 the Glasgow Haskell Compiler (GHC), while a big step forward over its
 predecessors, has proved complex and hard to maintain.
@@ -98,7 +98,7 @@ performance pitfalls.
   I describe a new, compositional coverage checking algorithm, \lyg{}, in \Cref{sec:overview}.
   The key insight is to abandon the notion of structural pattern
   matching altogether, and instead desugar all
-  the complexities of pattern matching into a very simple language
+  the complexities of pattern-matching into a very simple language
   of \emph{guard trees}, with just three constructs (\Cref{sec:desugar}).
   Coverage checking on these guard trees becomes remarkably simple,
   returning an \emph{annotated tree} (\Cref{sec:check}) decorated with
@@ -135,9 +135,9 @@ performance pitfalls.
 %   \begin{itemize}
 %     \item Strictness, including bang patterns, data structures with strict fields.
 % \item 	COMPLETE pragmas
-% \item	newtype pattern matching
+% \item	newtype pattern-matching
 % \item	..anything else?
-% \item	Less syntactic; robust to mixing pattern guards and syntax pattern matching and view patterns
+% \item	Less syntactic; robust to mixing pattern guards and syntax pattern-matching and view patterns
 % \end{itemize}
 %
 %   \item
@@ -220,7 +220,7 @@ The fourth GRHS uses |otherwise|, which is simply defined as |True|.
 
 Guards can be thought of as a generalisation of patterns, and a useful coverage
 checker should include them. Checking guards is significantly more complicated
-than checking ordinary structural pattern matches, however, since guards can
+than checking ordinary structural pattern-matches, however, since guards can
 contain arbitrary expressions. Consider this implementation of the |signum|
 function:
 
@@ -417,7 +417,7 @@ the programmer to ensure that this invariant is upheld.
 \subsection{Strictness}
 \label{ssec:strictness}
 
-The evaluation order of pattern matching can impact whether a pattern is
+The evaluation order of pattern-matching can impact whether a pattern is
 reachable or not.
 Consider:
 
@@ -559,7 +559,7 @@ the second equation being reached. Note that the second equation is inaccessible
 
 \subsection{Type-Equality Constraints}
 
-Besides strictness, another way for pattern matches to be rendered unreachable
+Besides strictness, another way for pattern-matches to be rendered unreachable
 is by way of \emph{type equality constraints}. A popular method for introducing
 equalities between types is matching on GADTs \citep{recdatac}. The following examples
 demonstrate the interaction between GADTs and coverage checking:
@@ -612,7 +612,7 @@ This cannot be true, so matching against |T1 T2| is impossible (and similarly
 for |T2 T1|).
 
 Concluding that |g2| is exhaustive requires some non-trivial reasoning about
-equality constraints. In GHC, the same engine that typechecks GADT pattern matches is
+equality constraints. In GHC, the same engine that typechecks GADT pattern-matches is
 also used to rule out cases made unreachable by type equalities, and \lyg
 adopts a similar approach.
 Besides GHC's current coverage checker \citep{gadtpm}, there are a variety of
@@ -630,7 +630,7 @@ Stardust \citep{dunfieldthesis}.
 \begin{figure}
 \centering
 \includegraphics[scale=0.85]{lyg/pipeline.pdf}
-\caption{Bird's eye view of pattern match checking}
+\caption{Bird's eye view of pattern-match checking}
 \label{fig:pipeline}
 \end{figure}
 
@@ -652,7 +652,7 @@ Stardust \citep{dunfieldthesis}.
 \begin{array}{rcl}
   |defn|   &\Coloneqq& \overline{clause} \\
   |clause| &\Coloneqq&  f \; \overline{|pat|} \; |match| \\
-  |pat|    &\Coloneqq& x \mid |_| \mid K \; \overline{|pat|} \mid x|@||pat| \\
+  |pat|    &\Coloneqq& x \mid |_| \mid K \; \overline{|pat|} \mid x|@pat| \\
                   &\mid     & |!pat| \mid |expr| \rightarrow |pat| \\
   |match|  &\Coloneqq& \mathtt{=} \; |expr| \mid \overline{|grhs|} \\
   |grhs|   &\Coloneqq& \mathtt{\mid} \; \overline{guard} \; \mathtt{=} \; |expr| \\
@@ -886,7 +886,7 @@ Referring to the syntax of guard trees in \Cref{fig:syn}, matching is
 defined as follows:
 \begin{itemize}
 \item Matching a guard tree $\gdtrhs{k}$ succeeds, and selects the $k$'th right
-  hand side of the pattern match group.
+  hand side of the pattern-match group.
 \item Matching a guard tree $\gdtpar{t_1}{t_2}$ means matching against $t_1$;
   if that succeeds, the overall match succeeds; if not, match against $t_2$.
 \item Matching a guard tree $\gdtguard{\grdbang{x}}{t}$ evaluates $x$;
@@ -944,7 +944,7 @@ boolean guard |(x == y)| have both turned into the same constructor-matching
 construct in the guard tree.
 
 In equation $(\dagger)$ of \Cref{fig:desugar} we generate an explicit
-bang guard $!x$ to reflect the fact that pattern matching against a data constructor
+bang guard $!x$ to reflect the fact that pattern-matching against a data constructor
 requires evaluation.  However, Haskell's |newtype| declarations introduce data
 constructors that are \emph{not} strict, so their desugaring is just like $(\dagger)$ but
 with no $!x$ (\Cref{ssec:newtypes}).
@@ -970,7 +970,7 @@ surprisingly long time to come up with the language of guard trees.
 % However, the definition is non-exhaustive:
 % neither equation will match the call |liftEq (Just 1) Nothing|, leading to
 % a crash.
-% To see this, we can follow Haskell's top-to-bottom, left-to-right pattern match
+% To see this, we can follow Haskell's top-to-bottom, left-to-right pattern-match
 % semantics. The first equation fails to match |Just 1| against |Nothing|, while
 % the second equation successfully matches |1| with |x| but then fails trying to
 % match |Nothing| against |Just y|. There is no third equation, and the
@@ -985,10 +985,10 @@ surprisingly long time to come up with the language of guard trees.
 % /= 2|. The second GRHS is tried next, and because |otherwise| is a
 % boolean guard that never fails, this successfully matches.
 %
-% Note how both the pattern matching per clause and the guard checking within a
+% Note how both the pattern-matching per clause and the guard checking within a
 % syntactic $match$ share top-to-bottom and left-to-right semantics. Having to
 % make sense of both pattern and guard semantics seems like a waste of energy.
-% Perhaps we can express \emph{all} pattern matching by (nested) pattern guards, thus:
+% Perhaps we can express \emph{all} pattern-matching by (nested) pattern guards, thus:
 % \begin{code}
 % liftEq mx my
 %   | Nothing <- mx, Nothing <- my              = True
@@ -1183,7 +1183,7 @@ emphasises clarity over efficiency.}.
 %
 % Perhaps surprisingly and most importantly, $\Grd$ with its three primitive
 % guards, combined with left-to-right or top-to-bottom semantics in $\Gdt$, is
-% expressive enough to express all pattern matching in Haskell (cf. the
+% expressive enough to express all pattern-matching in Haskell (cf. the
 % desugaring function $\ds$ in \Cref{fig:desugar})! We have yet to find a
 % language extension that does not fit into this framework.
 
@@ -1856,7 +1856,7 @@ free.
 \subsection{Empty Case}
 
 As can be seen in \Cref{fig:srcsyn}, Haskell function definitions need to have
-at least one clause. That leads to an awkward situation when pattern matching
+at least one clause. That leads to an awkward situation when pattern-matching
 on empty data types, like |Void|:
 
 \begin{minipage}{0.4\textwidth}
@@ -2233,7 +2233,7 @@ Analogous subtle reasoning justifies the difference in warnings for |g2| and
 
 \begin{itemize}
 
-  \item A newtype pattern match $N \; |pat|_1\,...\,|pat|_n$ is lazy: it does not
+  \item A newtype pattern-match $N \; |pat|_1\,...\,|pat|_n$ is lazy: it does not
   force evaluation. So, compared to data constructor matches, the desugaring
   function $\ds$ omits the $\grdbang{x}$. Additionally, Equation (4) of
   $\addphi$, responsible for reasoning about |let| bindings, has a special case
@@ -2364,7 +2364,7 @@ will be flagged as inaccessible. Since the RHS of a |let| guard, such as
 |p head|, might have arbitrary side-effects, equational reasoning is lost and we
 may no longer identify $|p hd| \termeq |t|$ as in \Cref{ssec:extviewpat}.
 
-Zooming out a bit more, desugaring of Haskell pattern matches using bang guards
+Zooming out a bit more, desugaring of Haskell pattern-matches using bang guards
 $\grdbang{|x|}$ can be understood as forcing \emph{one
 specific effect}, namely divergence. In this work, I have given this side-effect
 a first-class treatment in the formalism in order to get accurate coverage
@@ -3419,8 +3419,8 @@ changing (lazy) program semantics.
 \subsubsection{Case Trees in Dependently Typed Languages}
 
 \emph{Case tree}s \citep{augustsson-case-trees} are a standard way of compiling
-pattern matches to efficient code. Much like \lyg's guard trees, case trees
-present a simplified representation of pattern matching. Several compilers for
+pattern-matches to efficient code. Much like \lyg's guard trees, case trees
+present a simplified representation of pattern-matching. Several compilers for
 dependently typed languages also use case trees as coverage checking algorithms,
 as a well typed case tree can guarantee that it covers all possible cases.
 Case trees play an integral role in coverage checking in
@@ -3639,9 +3639,9 @@ I hope that \lyg can bring this knowledge into wider use.
 \section{Conclusion}
 
 I described Lower Your Guards, a coverage checking algorithm that
-distills rich pattern matching into simple guard trees. Guard trees are
+distills rich pattern-matching into simple guard trees. Guard trees are
 amenable to analyses that are not easily expressible in coverage checkers
-that work over structural pattern matches.
+that work over structural pattern-matches.
 The last four years of continued maintenance of GHC's implementation offer a
 compelling retrospective: the approach scales well to new language features,
 causes very few functional bug reports in practice, and offers robust
