@@ -653,7 +653,7 @@ Stardust \citep{dunfieldthesis}.
   |defn|   &\Coloneqq& \overline{clause} \\
   |clause| &\Coloneqq&  f \; \overline{|pat|} \; |match| \\
   |pat|    &\Coloneqq& x \mid |_| \mid K \; \overline{|pat|} \mid x|@||pat| \\
-                  &\mid     & |!||pat| \mid |expr| \rightarrow |pat| \\
+                  &\mid     & |!pat| \mid |expr| \rightarrow |pat| \\
   |match|  &\Coloneqq& \mathtt{=} \; |expr| \mid \overline{|grhs|} \\
   |grhs|   &\Coloneqq& \mathtt{\mid} \; \overline{guard} \; \mathtt{=} \; |expr| \\
   |guard|  &\Coloneqq& |pat| \leftarrow |expr| \mid |expr| \\
@@ -758,7 +758,7 @@ advantages are:
 
   \item
     Using detailed term-level reasoning
-    (\Cref{fig:gen,fig:add,fig:inh}),
+    (\Cref{fig:gen,fig:add-phi,fig:inh}),
     which \gmtm does not.
 
   \item
@@ -866,7 +866,7 @@ This desugars to the following guard tree (where the $x_i$ represent |f|'s argum
   grdtree,
   [
     [{$\grdbang{x_1}, \grdcon{|Just t1|}{x_1}, \grdbang{t_1}, \grdcon{(t_2, t_3)}{t_1}, \grdbang{t_2}, \grdlet{|xs|}{t_2}, \grdlet{|ys|}{x_2}$} [1]]
-    [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_4}{|g x2|}, \grdbang{t_4}, \grdcon{|True|}{t_4}$} [2]]]
+    [{$\grdbang{x_1}, \grdcon{|Nothing|}{x_1}, \grdlet{t_4}{|g|~x_2}, \grdbang{t_4}, \grdcon{|True|}{t_4}$} [2]]]
 \end{forest}
 \\
 The first line says ``evaluate $x_1$; then match $x_1$ against |Just t1|;
@@ -2752,8 +2752,8 @@ where we have to conservatively approximate in order not to slow down
 compilation too much. Consider the following example and its corresponding
 guard tree:
 \begin{code}
-g _  | True <- f1 1,  True <- f2 1  = ()
-     | True <- f1 2,  True <- f2 2  = ()
+g _  | True <- f1 1,            True <- f2 1            = ()
+     | True <- f1 2,            True <- f2 2            = ()
      | ...
      | True <- f1 {-"\; N "-},  True <- f2 {-"\; N "-}  = ()
 \end{code}
